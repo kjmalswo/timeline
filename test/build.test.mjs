@@ -22,8 +22,11 @@ test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
   assert.match(html, /P:\{ hp:'#32d66b'/);
   assert.match(html, /E:\{ hp:'#ff4f57'/);
   assert.doesNotMatch(html, /const track=`<div class="track"/, '거리 트랙은 캐릭터 위치로 대체됩니다.');
-  assert.match(html, /P:\[40,35,30,25,20\]/);
-  assert.match(html, /E:\[60,65,70,75,80\]/);
+  assert.match(html, /startPositions:\{P:30,E:70\}/);
+  assert.match(html, /panel&&panel\.parentNode!==el/);
+  assert.match(html, /\.battle-scene \.battle-actor \.panel\{[^}]*top:var\(--hud-top/);
+  assert.match(html, /\.battle-timeline \.tl-lane\{[^}]*background:transparent;box-shadow:none/);
+  assert.doesNotMatch(html, /E:\[60,65,70,75,80\]/, '거리는 공통 위치 배열이 아닌 절대 좌표로 관리합니다.');
   assert.match(html, /assets\/battle\/standard\/advance-1\.png/);
   assert.match(worker, /message\.type === 'start'/);
   assert.match(worker, /normalizeBuild/);
@@ -58,4 +61,9 @@ test('공유 엔진이 유효한 첫 행동을 처리한다', async () => {
   assert.equal(Battle.basic('P', 'approach'), true);
   assert.equal(Battle.st.visual.motion, 'advance');
   assert.equal(Battle.st.visual.side, 'P');
+  assert.equal(Battle.st.visual.coords.P, 40);
+  assert.equal(Battle.st.visual.coords.E, 70);
+  assert.equal(Battle.basic('E', 'approach'), true);
+  assert.equal(Battle.st.visual.coords.P, 40);
+  assert.equal(Battle.st.visual.coords.E, 60);
 });
