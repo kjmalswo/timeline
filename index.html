@@ -146,7 +146,48 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 /* ============================================================================
    전투 화면
    ============================================================================ */
-#screen-battle.active{display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;height:100%;gap:0;overflow:hidden}
+#screen-battle.active{display:grid;grid-template-rows:clamp(310px,43vh,430px) auto minmax(0,1fr) auto;height:100%;gap:0;overflow:hidden}
+
+/* 전투 장면 — 배경과 무기별 프레임은 DB.visual에서 공급한다 */
+.battle-scene{position:relative;min-height:0;margin:10px 14px 8px;overflow:hidden;isolation:isolate;
+  background:var(--p-white);border:1px solid color-mix(in srgb,var(--p-deep) 28%,var(--p-white))}
+.battle-scene-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;
+  image-rendering:pixelated;z-index:-3;user-select:none;pointer-events:none}
+.battle-scene::after{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,251,.10),rgba(91,95,151,.08))}
+.battle-hud{position:absolute;inset:0 0 auto;z-index:4}
+.battle-hud .panel{background:color-mix(in srgb,var(--self-bg) 88%,transparent);backdrop-filter:blur(3px)}
+.battle-hud .panel.p-foe{background:color-mix(in srgb,var(--foe-bg) 88%,transparent)}
+.battle-actors{position:absolute;inset:0;z-index:2;pointer-events:none}
+.battle-actor{position:absolute;bottom:72px;left:50%;width:clamp(130px,22vw,260px);height:clamp(150px,24vw,285px);
+  display:flex;align-items:flex-end;justify-content:center;transition:left 360ms var(--e)}
+.battle-actor img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;
+  image-rendering:pixelated;filter:drop-shadow(5px 8px 5px rgba(91,95,151,.34))}
+.battle-actor.foe img{transform:scaleX(-1)}
+.battle-actor-fallback{padding:9px 14px;border-radius:999px;color:var(--p-white);background:var(--p-deep);
+  box-shadow:3px 3px 8px rgba(91,95,151,.34);font-weight:850}
+.battle-actor.foe .battle-actor-fallback{background:var(--p-coral)}
+.battle-timeline{position:absolute;inset:auto 0 0;z-index:5;padding:4px 10px 9px}
+.battle-timeline .tl{background:color-mix(in srgb,var(--p-white) 86%,transparent);backdrop-filter:blur(4px)}
+@media(max-width:760px){
+  #screen-battle.active{grid-template-rows:clamp(340px,48vh,430px) auto minmax(0,1fr) auto}
+  .battle-scene{margin:8px 8px 6px}
+  .battle-actor{bottom:90px;width:clamp(112px,34vw,176px);height:clamp(132px,39vw,205px)}
+  .battle-hud .panel{padding:7px 8px;gap:4px}
+  .battle-hud .st-row{display:none}
+  .battle-timeline{padding:3px 6px 6px}
+  .battle-timeline .tl{padding:7px 8px 6px}
+  .battle-timeline .tl-top{margin-bottom:6px}
+  .battle-timeline .track{margin-top:5px}
+  .battle-timeline .trk{min-width:150px;height:38px}
+  .battle-timeline .trk .cell{height:28px}
+}
+@media(max-height:650px){
+  #screen-battle.active{grid-template-rows:270px auto minmax(0,1fr) auto}
+  .battle-actor{bottom:62px;height:145px;width:145px}
+  .battle-hud .st-row,.battle-hud .duo{display:none}
+  .battle-timeline .track{display:none}
+}
 
 /* 적 패널 */
 .duobar{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 14px 6px}
@@ -766,11 +807,15 @@ body{
   </section>
 
   <section id="screen-battle" class="screen">
-    <div class="duobar">
-      <div class="panel p-self" id="selfPanel"></div>
-      <div class="panel p-foe" id="foePanel"></div>
+    <div class="battle-scene nm" id="battleScene" aria-label="전투 장면">
+      <img class="battle-scene-bg" id="battleSceneBg" alt="">
+      <div class="duobar battle-hud">
+        <div class="panel p-self" id="selfPanel"></div>
+        <div class="panel p-foe" id="foePanel"></div>
+      </div>
+      <div class="battle-actors" id="battleActors" aria-hidden="true"></div>
+      <div class="tlwrap battle-timeline"><div class="tl nm" id="tlBox"></div></div>
     </div>
-    <div class="tlwrap"><div class="tl nm" id="tlBox"></div></div>
     <div class="ringwrap"><div class="ring nm" id="ringBox"></div></div>
     <div class="techwrap">
       <div class="techcol"><div id="techBox"></div></div>
@@ -834,7 +879,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V5.0', build:'CF',
+    title:'THE TIMELINE', version:'V6.0', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1182,6 +1227,44 @@ DB.weapons = {
     mod:{ rangeMin:1, rangeMax:1, dealt:0.10 } }
 };
 DB.weaponStart = 'standard';
+
+/* ==========================================================================================
+   [DB] 전투 연출 — 배경·무기·모션·프레임을 데이터만 추가해 확장한다
+   ========================================================================================== */
+DB.visual = {
+  scene:{
+    background:'assets/battle/grassland.png',
+    alt:'푸른 하늘과 초원이 펼쳐진 전투장',
+    positions:{
+      P:[34,30,26,22,18],
+      E:[66,70,74,78,82]
+    }
+  },
+  weapons:{
+    standard:{
+      name:'표준 도검',
+      motions:{
+        idle:{ frameMs:0, loop:true, frames:['assets/battle/standard/idle.png'] },
+        advance:{ frameMs:105, loop:false, frames:[
+          'assets/battle/standard/advance-1.png',
+          'assets/battle/standard/advance-2.png',
+          'assets/battle/standard/advance-3.png'
+        ]},
+        retreat:{ frameMs:115, loop:false, frames:[
+          'assets/battle/standard/retreat-1.png',
+          'assets/battle/standard/retreat-2.png',
+          'assets/battle/standard/retreat-3.png'
+        ]}
+      }
+    }
+  },
+  actionMotion:{
+    basic:{ approach:'advance', retreat:'retreat' },
+    tech:{}
+  },
+  fallbackMotion:'idle'
+};
+
 
 /* ==========================================================================================
    [DB] 연계 — 특정 자세 경로(어느 자세에서 어느 자세로 이동했는가)에 보상을 건다.
@@ -1708,6 +1791,7 @@ const Battle = {
 
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
+      visual:{seq:0,side:null,motion:DB.visual.fallbackMotion},
       over:false, winner:null, finished:false, onEnd, enemyId, tutorial:!!opt.tutorial };
     Battle.awaitInput=false; Battle.selected=null; Battle.empowered=false;
     Ann.clear();
@@ -2004,6 +2088,15 @@ const Battle = {
     return true;
   },
 
+
+  visualAction(side, kind, id){
+    const map=DB.visual&&DB.visual.actionMotion&&DB.visual.actionMotion[kind];
+    const motion=map&&map[id];
+    if(!motion||!Battle.st) return;
+    const current=Battle.st.visual||{seq:0};
+    Battle.st.visual={seq:(current.seq||0)+1,side,motion};
+  },
+
   useTech(side, techId, empowered){
     const s=Battle.st, a=Battle.A(side), def=DB.techs[techId];
     if(!def || a.techs.indexOf(techId)<0) return false;
@@ -2032,6 +2125,7 @@ const Battle = {
     a.stance=def.to;
     a.readyAt=s.tick+Battle.recoveryOf(a,def);
     Battle.fireChains(side, fromStance, def.to);
+    Battle.visualAction(side,'tech',techId);
     return true;
   },
 
@@ -2065,6 +2159,7 @@ const Battle = {
     Battle.log(id,{side:lbl},cls);
     if(cost>cfg.staminaCost) Battle.log('retreatCost',{side:lbl,v:cost},cls);
     Battle.log('move',{v:D.labels[s.distance]},'n');
+    Battle.visualAction(side,'basic',id);
     return true;
   },
   moveCost(a,cfg){
@@ -3103,11 +3198,75 @@ UI.actions = function(){
   return h;
 };
 
+
+UI.motionSeq=-1;
+UI.motionTimers={};
+UI.clearMotion=function(side){
+  (UI.motionTimers[side]||[]).forEach(clearTimeout);
+  UI.motionTimers[side]=[];
+};
+UI.visualWeapon=function(side){
+  const actor=Battle.A(side);
+  return DB.visual.weapons[actor.weapon]||null;
+};
+UI.renderBattleScene=function(){
+  const s=Battle.st, scene=DB.visual.scene;
+  const bg=document.getElementById('battleSceneBg');
+  bg.src=scene.background; bg.alt=scene.alt;
+  const box=document.getElementById('battleActors');
+  [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(side=>{
+    const actor=Battle.A(side), weapon=UI.visualWeapon(side);
+    let el=box.querySelector('[data-actor="'+side+'"]');
+    if(!el){
+      el=document.createElement('div');
+      el.dataset.actor=side;
+      el.className='battle-actor '+(side===DB.meta.sides.FOE?'foe':'self');
+      box.appendChild(el);
+    }
+    const positions=scene.positions[side]||scene.positions.P;
+    el.style.left=positions[U.clamp(s.distance,0,positions.length-1)]+'%';
+    if(weapon){
+      let img=el.querySelector('img');
+      if(!img){ el.innerHTML='<img alt="">'; img=el.querySelector('img'); }
+      img.alt=actor.name+' '+weapon.name;
+      img.dataset.weapon=actor.weapon;
+      if(!img.src||img.dataset.motion!=='playing'){
+        img.src=weapon.motions[DB.visual.fallbackMotion].frames[0];
+      }
+    }else{
+      el.innerHTML='<span class="battle-actor-fallback">'+U.esc(actor.name)+'</span>';
+    }
+  });
+};
+UI.playBattleMotion=function(){
+  const event=Battle.st.visual;
+  if(!event||!event.side||event.seq===UI.motionSeq) return;
+  UI.motionSeq=event.seq;
+  const side=event.side, weapon=UI.visualWeapon(side), motion=weapon&&weapon.motions[event.motion];
+  if(!motion) return;
+  UI.clearMotion(side);
+  const el=document.querySelector('#battleActors [data-actor="'+side+'"] img');
+  if(!el) return;
+  const idle=weapon.motions[DB.visual.fallbackMotion].frames[0];
+  if(!App.settings.animations){
+    el.src=idle; el.dataset.motion='idle'; return;
+  }
+  el.dataset.motion='playing';
+  motion.frames.forEach((frame,index)=>{
+    UI.motionTimers[side].push(setTimeout(()=>{ el.src=frame; },index*motion.frameMs));
+  });
+  UI.motionTimers[side].push(setTimeout(()=>{
+    el.src=idle; el.dataset.motion='idle';
+  },motion.frames.length*motion.frameMs));
+};
+
 UI.renderBattle = function(){
   const s=Battle.st; if(!s) return;
   document.getElementById('foePanel').innerHTML=UI.panel(DB.meta.sides.FOE);
   document.getElementById('selfPanel').innerHTML=UI.panel(DB.meta.sides.SELF);
   document.getElementById('tlBox').innerHTML=UI.timeline();
+  UI.renderBattleScene();
+  UI.playBattleMotion();
   document.getElementById('ringBox').innerHTML=UI.ring();
   document.getElementById('techBox').innerHTML=UI.techs();
   document.getElementById('briefBox').innerHTML=UI.brief();

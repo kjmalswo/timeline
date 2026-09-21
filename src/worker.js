@@ -337,6 +337,7 @@ export class GameRoom {
         E: this.actorFromPlayer('E', this.meta.players.E)
       },
       queue: [], reactions: [], log: [], seq: 0,
+      visual: { seq: 0, side: null, motion: DB.visual.fallbackMotion },
       over: false, winner: null, finished: false, tutorial: false
     };
     for (const side of ['P', 'E']) {

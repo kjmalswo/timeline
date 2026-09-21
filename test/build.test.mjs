@@ -13,6 +13,9 @@ test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
   assert.match(html, /입장 링크 복사/);
   assert.match(html, /덱 직접 설정/);
   assert.match(html, /type:'start'/);
+  assert.match(html, /DB\.visual/);
+  assert.match(html, /battle-scene/);
+  assert.match(html, /assets\/battle\/standard\/advance-1\.png/);
   assert.match(worker, /message\.type === 'start'/);
   assert.match(worker, /normalizeBuild/);
   assert.match(engine, /export \{DB,U,Battle\}/);
@@ -42,4 +45,7 @@ test('공유 엔진이 유효한 첫 행동을 처리한다', async () => {
   Battle.st = { tick: 0, distance: 2, actors: { P: actor('P'), E: actor('E') }, queue: [], reactions: [], log: [], seq: 0, over: false, winner: null };
   assert.equal(Battle.basic('P', 'wait'), true);
   assert.equal(Battle.st.actors.P.readyAt, 3);
+  assert.equal(Battle.basic('P', 'approach'), true);
+  assert.equal(Battle.st.visual.motion, 'advance');
+  assert.equal(Battle.st.visual.side, 'P');
 });
