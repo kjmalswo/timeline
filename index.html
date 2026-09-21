@@ -141,7 +141,13 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 
 /* 적 패널 */
 .duobar{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 14px 6px}
-@media(max-width:760px){.duobar{grid-template-columns:1fr}}
+@media(max-width:760px){
+  .duobar{grid-template-columns:1fr 1fr;gap:8px;padding:8px 10px 5px}
+  .panel{padding:9px 10px;gap:6px}
+  .panel .duo{grid-template-columns:1fr;gap:5px}
+  .pl-name{font-size:.94em}.pl-hp{font-size:.86em}
+  .stance-badge{padding:3px 8px;font-size:.72em}
+}
 .ringwrap{padding:0 14px 8px}
 .panel{padding:11px 14px;display:flex;flex-direction:column;gap:7px;flex:1;min-width:0;
   border-radius:var(--r-m);position:relative;overflow:hidden}
@@ -330,9 +336,27 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .log .lg-t{color:var(--ink-4);font-size:.9em;margin-right:5px}
 .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
+@media(min-width:901px){
+  #screen-battle.active{grid-template-rows:auto auto auto minmax(190px,1fr) auto}
+  .duobar{padding:9px 14px 5px}
+  .tlwrap{padding-bottom:6px}
+  .tl-lane{height:38px}
+  .tl-ent{top:6px}
+  .ringwrap{padding-bottom:7px}
+  .techwrap{grid-template-columns:minmax(0,1fr) clamp(260px,24vw,340px);gap:14px}
+  .techcol{padding:5px 8px 12px 3px}
+  .techrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:12px}
+  .tech,.tech.mini{width:100%}
+  .side{padding-bottom:4px}
+  .log{font-size:.82em;line-height:1.68;background:#dfe5ef}
+  .btfoot{padding-top:8px;border-top:1px solid rgba(188,198,214,.7)}
+  .acts .btn{min-height:42px}
+}
 @media(max-width:900px){
-  .techwrap{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(70px,22vh)}
+  .techwrap{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(92px,24vh)}
   .tech,.tech.mini{width:calc(50% - 6px);min-width:150px}
+  .tl{padding:9px 10px 7px}
+  .ring{gap:9px}
 }
 /* 좁은 화면에서는 고정 높이 배분 대신 화면 전체를 스크롤시킨다 */
 @media(max-width:760px),(max-height:620px){
@@ -1253,10 +1277,10 @@ DB.ui = {
   laneSelf:'아군 예고', laneFoe:'적군 예고',
   menu:[
     { id:'newrun', label:'새 게임' },
+    { id:'multi', label:'멀티플레이' },
     { id:'continue', label:'이어하기' },
     { id:'tutorial', label:'튜토리얼 (실전 진행)' },
     { id:'codex', label:'규칙 안내' },
-    { id:'multi', label:'멀티플레이' },
     { id:'settings', label:'설정' }
   ],
   /* 중앙 알림 — 화면 한가운데에 잠깐 떠오르는 굵은 안내. 흐름의 분기만 띄운다 */
@@ -3458,9 +3482,25 @@ const Tut = {
    ========================================================================================== */
 const Net = {
   ws:null, token:'', connected:false, active:false, roomCode:'', roomStatus:'',
-  players:[], error:'', reconnectTimer:null, lastPreset:'direct',
+  players:[], error:'', reconnectTimer:null, connectionKey:'', lastPreset:'direct',
 
   url(){ return `${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/${Net.roomCode}?token=${encodeURIComponent(Net.token)}`; },
+  normalizeCode(value){
+    return String(value||'').normalize('NFKC').toUpperCase().replace(/[\s-]/g,'').replace(/[^A-Z2-9]/g,'').slice(0,6);
+  },
+  adoptSession(data,status){
+    clearTimeout(Net.reconnectTimer);
+    const old=Net.ws;
+    Net.ws=null; Net.connectionKey=''; Net.connected=false;
+    if(old){ old.onopen=old.onmessage=old.onclose=old.onerror=null; try{ old.close(1000,'방 전환'); }catch(e){} }
+    Net.roomCode=Net.normalizeCode(data.code);
+    Net.token=String(data.token||'');
+    Net.roomStatus=data.status||status;
+    Net.error='';
+    Net.saveSession();
+    Net.connect();
+    UI.renderMulti();
+  },
   open(){
     try{ Net.token=sessionStorage.getItem('timeline_pvp_token')||''; }catch(e){}
     try{ Net.roomCode=sessionStorage.getItem('timeline_pvp_room')||''; }catch(e){}
@@ -3474,18 +3514,32 @@ const Net = {
     if(App.screen==='multi') UI.renderMulti();
   },
   connect(){
-    if(Net.ws && (Net.ws.readyState===WebSocket.OPEN||Net.ws.readyState===WebSocket.CONNECTING)) return;
+    if(!Net.roomCode||!Net.token) return;
+    const key=Net.roomCode+':'+Net.token;
+    if(Net.ws && Net.connectionKey===key &&
+       (Net.ws.readyState===WebSocket.OPEN||Net.ws.readyState===WebSocket.CONNECTING)) return;
+    if(Net.ws){
+      const old=Net.ws; Net.ws=null; Net.connectionKey='';
+      old.onopen=old.onmessage=old.onclose=old.onerror=null;
+      try{ old.close(1000,'새 세션으로 전환'); }catch(e){}
+    }
     Net.error='';
-    try{ Net.ws=new WebSocket(Net.url()); }catch(e){ Net.error='서버에 연결할 수 없다.'; UI.renderMulti(); return; }
-    Net.ws.onopen=()=>{ Net.connected=true; if(App.screen==='multi') UI.renderMulti(); };
-    Net.ws.onmessage=e=>{ try{ Net.receive(JSON.parse(e.data)); }catch(err){ Net.fail('서버 응답을 해석할 수 없다.'); } };
-    Net.ws.onclose=()=>{
-      Net.connected=false;
+    let socket;
+    try{ socket=new WebSocket(Net.url()); }catch(e){ Net.error='서버에 연결할 수 없다.'; UI.renderMulti(); return; }
+    Net.ws=socket; Net.connectionKey=key;
+    socket.onopen=()=>{ if(Net.ws!==socket) return; Net.connected=true; if(App.screen==='multi') UI.renderMulti(); };
+    socket.onmessage=e=>{
+      if(Net.ws!==socket) return;
+      try{ Net.receive(JSON.parse(e.data)); }catch(err){ Net.fail('서버 응답을 해석할 수 없다.'); }
+    };
+    socket.onclose=()=>{
+      if(Net.ws!==socket) return;
+      Net.ws=null; Net.connectionKey=''; Net.connected=false;
       if(Net.active){ Battle.awaitInput=false; UI.renderBattle(); }
       if(App.screen==='multi') UI.renderMulti();
       if(Net.roomCode){ clearTimeout(Net.reconnectTimer); Net.reconnectTimer=setTimeout(()=>Net.connect(),1200); }
     };
-    Net.ws.onerror=()=>Net.fail('멀티플레이 서버 연결을 확인해 달라.');
+    socket.onerror=()=>{ if(Net.ws===socket) Net.fail('멀티플레이 서버 연결을 확인해 달라.'); };
   },
   send(v){ if(Net.ws&&Net.ws.readyState===WebSocket.OPEN){ Net.ws.send(JSON.stringify(v)); return true; } return false; },
   fail(msg){ Net.error=msg; if(App.screen==='multi') UI.renderMulti(); },
@@ -3509,7 +3563,7 @@ const Net = {
   formData(){
     const name=(document.getElementById('mpName')||{}).value||'';
     const preset=(document.getElementById('mpPreset')||{}).value||Net.lastPreset;
-    const code=((document.getElementById('mpCode')||{}).value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const code=Net.normalizeCode((document.getElementById('mpCode')||{}).value||'');
     Net.rememberPreset(preset); return {name:name.trim().slice(0,18),preset,code};
   },
   async request(path,body){
@@ -3523,13 +3577,13 @@ const Net = {
   async create(test){
     const d=Net.formData(); if(!d.name) return Net.fail('표시 이름을 입력해 달라.');
     try{ const x=await Net.request('/api/rooms',{name:d.name,preset:d.preset,test:!!test});
-      Net.roomCode=x.code; Net.token=x.token; Net.roomStatus=test?'playing':'waiting'; Net.saveSession(); Net.connect(); UI.renderMulti(); }
+      Net.adoptSession(x,test?'playing':'waiting'); }
     catch(e){ Net.fail(e.message); }
   },
   async join(){
     const d=Net.formData(); if(!d.name||d.code.length!==6) return Net.fail('이름과 6자리 방 코드를 확인해 달라.');
-    try{ const x=await Net.request(`/api/rooms/${d.code}/join`,{name:d.name,preset:d.preset});
-      Net.roomCode=x.code; Net.token=x.token; Net.roomStatus='playing'; Net.saveSession(); Net.connect(); UI.renderMulti(); }
+    try{ const x=await Net.request(`/api/rooms/${encodeURIComponent(d.code)}/join`,{name:d.name,preset:d.preset});
+      Net.adoptSession(x,'playing'); }
     catch(e){ Net.fail(e.message); }
   },
   action(action){
@@ -3540,8 +3594,9 @@ const Net = {
   forfeit(){ Net.send({type:'forfeit'}); },
   leave(){
     Net.send({type:'leave'}); clearTimeout(Net.reconnectTimer);
-    const old=Net.ws; Net.ws=null; if(old) setTimeout(()=>old.close(),40);
-    Net.active=false; Net.roomCode=''; Net.roomStatus=''; Net.players=[]; Net.token=''; Net.clearSession(); UI.showScreen('multi'); Net.health();
+    const old=Net.ws; Net.ws=null; Net.connectionKey='';
+    if(old){ old.onopen=old.onmessage=old.onclose=old.onerror=null; setTimeout(()=>old.close(1000,'방 나가기'),40); }
+    Net.active=false; Net.connected=false; Net.roomCode=''; Net.roomStatus=''; Net.players=[]; Net.token=''; Net.clearSession(); UI.showScreen('multi'); Net.health();
   },
   showResult(won,reason){
     const why=reason==='forfeit'?'상대의 포기':(reason==='disconnect'?'상대 연결 종료':'전투 판정');
@@ -3584,7 +3639,8 @@ UI.renderMulti = function(){
   document.getElementById('mpCreate').onclick=()=>Net.create(false);
   document.getElementById('mpTest').onclick=()=>Net.create(true);
   document.getElementById('mpJoin').onclick=()=>Net.join();
-  document.getElementById('mpCode').oninput=e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  document.getElementById('mpCode').oninput=e=>e.target.value=Net.normalizeCode(e.target.value);
+  document.getElementById('mpCode').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.join(); } };
 };
 
 /* ==========================================================================================
