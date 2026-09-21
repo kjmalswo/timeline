@@ -9,25 +9,25 @@
    NEUMORPHIC LIGHT THEME — 토큰
    ============================================================================ */
 :root{
-  /* 바탕 — 완전한 무채색 대신 살짝 푸른 기를 넣어 눈이 덜 피로하도록 한다 */
-  --bg:#e4e9f1; --sf:#e7ecf4; --sf-2:#eef2f8;
-  --ink:#2c3442; --ink-2:#55607240; --ink-2:#556072; --ink-3:#7f8b9d; --ink-4:#9ea9b9;
-  --line:#ccd4e1; --sh-d:#b9c2d2; --sh-l:#ffffff;
-  --acc:#3a63a0; --acc-soft:#dbe4f3;
-  --ok:#2c7a68; --warn:#a4632f; --dang:#9a424d;
+  /* 바탕은 차분하게 유지하고, 콘텐츠 표면과 기능 색은 더 선명하게 분리합니다. */
+  --bg:#d8e1ef; --sf:#c2d0e4; --sf-2:#d8e4f3;
+  --ink:#17223b; --ink-2:#344766; --ink-3:#566987; --ink-4:#74839a;
+  --line:#9eb3d0; --sh-d:#9cacc3; --sh-l:#edf4ff;
+  --acc:#064cae; --acc-soft:#a9c9f7;
+  --ok:#00624b; --warn:#8f3f00; --dang:#a71434;
 
-  /* 진영별 색조 — 패널마다 그림자 색까지 바꿔 뉴모피즘이 단조로워지지 않게 한다 */
-  --self:#3a63a0; --self-bg:#e3eaf6; --self-sd:#b5c3dc; --self-sl:#fbfdff;
-  --foe:#9a424d;  --foe-bg:#f2e7e9;  --foe-sd:#d6c0c4;  --foe-sl:#fffafb;
+  /* 진영별 색조 */
+  --self:#075dcc; --self-bg:#bfd4f4; --self-sd:#8fa9cf; --self-sl:#e6f0ff;
+  --foe:#c21f46; --foe-bg:#efbcc8; --foe-sd:#c18f9c; --foe-sl:#ffe5eb;
 
   /* 공격 방향 색 */
-  --L-high:#b04a55; --L-mid:#3a63a0; --L-low:#2c7a68; --L-side:#6f51a3; --L-none:#8a94a5;
+  --L-high:#d51f49; --L-mid:#075dcc; --L-low:#007c5b; --L-side:#6d2fbb; --L-none:#4e607c;
 
   /* 자원 색 */
-  --c-hp:#b04a55; --c-hp2:#d47b83;
-  --c-sta:#2c7a68; --c-sta2:#58a795;
-  --c-foc:#a4632f; --c-foc2:#cf9359;
-  --c-time:#4a5a75;
+  --c-hp:#c91f46; --c-hp2:#f05a78;
+  --c-sta:#007c5b; --c-sta2:#19b98a;
+  --c-foc:#a94b00; --c-foc2:#f08a24;
+  --c-time:#31476b;
 
   --r-s:8px; --r-m:14px; --r-l:22px;
   --fs:15px; --t:190ms; --e:cubic-bezier(.33,.9,.32,1);
@@ -607,6 +607,77 @@ body{min-width:0}
   .btn{padding:10px 14px}
   .multi-panel{padding:14px}
 }
+
+
+/* ---------- 선명한 컬러 표면 테마 ---------- */
+body{
+  background-image:radial-gradient(1200px 620px at 18% -8%,#c4d9fa 0%,rgba(196,217,250,0) 62%),
+                   radial-gradient(1000px 520px at 108% 112%,#efc7d4 0%,rgba(239,199,212,0) 58%)}
+.nm{
+  background:linear-gradient(145deg,#c9d8ec 0%,#b8c8df 100%);
+  border:1px solid #a7bbd6}
+.nm-in{
+  background:linear-gradient(145deg,#b8c9e0 0%,#cad8ea 100%);
+  border:1px solid #a3b6d0}
+.nm-sm{
+  background:linear-gradient(145deg,#d3e0f0 0%,#bdcde2 100%);
+  border:1px solid #aec0d8}
+.card-box.nm{
+  background:linear-gradient(145deg,#bed0e8 0%,#afc2dc 100%);
+  border-color:#9fb5d2}
+.btn{
+  background:linear-gradient(145deg,#dbe7f6 0%,#b9cbe3 100%);
+  border:1px solid #a9bdd7}
+.btn.acc{
+  color:var(--acc);
+  background:linear-gradient(145deg,#c9dcfa 0%,#a9c7f1 100%);
+  border-color:#8aafe4}
+.btn.dang{
+  color:var(--dang);
+  background:linear-gradient(145deg,#f3ced7 0%,#dfacba 100%);
+  border-color:#ce8fa0}
+.btn.on{
+  background:linear-gradient(145deg,#acc9f0 0%,#c7daf3 100%);
+  border-color:#83a8dc}
+.tag{
+  background:color-mix(in srgb,currentColor 12%,#d6e2f1);
+  border:1px solid color-mix(in srgb,currentColor 24%,#aabbd1)}
+.title-rule{background:linear-gradient(90deg,#b9cef0,#d2bbec,#efbdca)}
+.panel.p-self{background:linear-gradient(145deg,#c9dcfa,#afc9ef)}
+.panel.p-foe{background:linear-gradient(145deg,#f3c8d2,#dfa9b8)}
+.tl{background:linear-gradient(180deg,#c7d9f1,#afc4df)}
+.tl-lane{background:linear-gradient(180deg,#aebfd8,#c2d1e5)}
+.ring{background:linear-gradient(145deg,#becfe6,#aebfda)}
+.snode{border:1px solid #9eb3cf}
+.snode:nth-child(1){background:linear-gradient(145deg,#c5dafa,#a9c5ee)}
+.snode:nth-child(2){background:linear-gradient(145deg,#f0c5ce,#dda8b7)}
+.snode:nth-child(3){background:linear-gradient(145deg,#bce2d5,#9bcdbd)}
+.snode:nth-child(4){background:linear-gradient(145deg,#d7c5ef,#bda7df)}
+.snode:nth-child(5){background:linear-gradient(145deg,#c8d2e1,#acbbcf)}
+.tech{
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--card-accent) 24%,#e3eaf4) 0%,
+    color-mix(in srgb,var(--card-accent) 13%,#bccbe0) 100%);
+  border-color:color-mix(in srgb,var(--card-accent) 55%,#8fa4c1)}
+.tech.line-high{--card-bg:#eeb9c5}
+.tech.line-mid{--card-bg:#b8cff2}
+.tech.line-low{--card-bg:#add9cb}
+.tech.line-side{--card-bg:#cfb9ea}
+.tech.line-none{--card-bg:#becada}
+.log{background:linear-gradient(180deg,#afc0d9,#c5d3e5)}
+.turnbar.you{background:linear-gradient(90deg,#b8d1f7,#c5d5ea)}
+.turnbar.foe{background:linear-gradient(90deg,#efbac7,#cbd5e5)}
+.multi-panel.create{background:linear-gradient(145deg,#b9d1f3,#a8c2e8)}
+.multi-panel.join{background:linear-gradient(145deg,#b6ddcf,#9fcbbd)}
+.multi-deck{background:linear-gradient(145deg,#d2bfea,#bba7dc)}
+.modal-box{background:linear-gradient(145deg,#cbd9eb,#b4c6df);border:1px solid #9fb4d0}
+.mapnode:nth-child(3n+1){background:linear-gradient(145deg,#c4d8f4,#adc4e5)}
+.mapnode:nth-child(3n+2){background:linear-gradient(145deg,#c3dfd5,#a8cebf)}
+.mapnode:nth-child(3n){background:linear-gradient(145deg,#ddc9ed,#c3addd)}
+.set-row{background:rgba(210,224,242,.55);border-radius:var(--r-s);padding:10px 12px;margin-bottom:5px}
+.menu .btn:nth-child(3n+1){background:linear-gradient(145deg,#c5d9f7,#acc5ea)}
+.menu .btn:nth-child(3n+2){background:linear-gradient(145deg,#c1dfd5,#a6cdbf)}
+.menu .btn:nth-child(3n){background:linear-gradient(145deg,#ddc9ed,#c3addd)}
 
 </style>
 </head>
