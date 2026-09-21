@@ -28,6 +28,45 @@ function validPreset(id) {
   return DB.setup.presets.some((preset) => preset.id === id) ? id : DB.setup.presets[0].id;
 }
 
+function normalizeBuild(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const uniqueIds = (items, table) => {
+    if (!Array.isArray(items) || items.some((id) => typeof id !== 'string' || !table[id])) return null;
+    const unique = [...new Set(items)];
+    return unique.length === items.length ? unique : null;
+  };
+  const weapon = typeof value.weapon === 'string' && DB.weapons[value.weapon] ? value.weapon : null;
+  const techs = uniqueIds(value.techs, DB.techs);
+  const sigils = uniqueIds(value.sigils, DB.sigils);
+  const chains = uniqueIds(value.chains, DB.chains);
+  const traits = uniqueIds(value.traits, DB.traits);
+  const hp = Number(value.hp);
+  const stamina = Number(value.stamina);
+  const focus = Number(value.focus);
+  if (!weapon || !techs || !sigils || !chains || !traits) return null;
+  if (![hp, stamina, focus].every(Number.isInteger)) return null;
+  const setup = DB.setup;
+  if (techs.length < setup.minTechs || techs.length > setup.maxTechs ||
+      sigils.length > DB.sigilSlots || chains.length > DB.chainSlots ||
+      hp < 0 || hp > setup.maxStep.hp || stamina < 0 || stamina > setup.maxStep.stamina ||
+      focus < 0 || focus > setup.maxStep.focus) return null;
+  const perStance = {};
+  for (const id of techs) {
+    const stance = DB.techs[id].stance;
+    perStance[stance] = (perStance[stance] || 0) + 1;
+    if (perStance[stance] > DB.balance.slots.perStanceBase) return null;
+  }
+  const techCost = (id) => {
+    const tier = DB.techs[id].tier;
+    return tier === 'rare' ? setup.cost.techRare : tier === 'common' ? setup.cost.techCommon : setup.cost.techBase;
+  };
+  const spent = (setup.cost.weapon[weapon] || 0) + techs.reduce((sum, id) => sum + techCost(id), 0) +
+    sigils.length * setup.cost.sigil + chains.length * setup.cost.chain + traits.length * setup.cost.trait +
+    hp * setup.cost.hpStep + stamina * setup.cost.staminaStep + focus * setup.cost.focusStep;
+  if (spent > setup.points) return null;
+  return { weapon, techs, sigils, chains, traits, hp, stamina, focus };
+}
+
 function makeToken() {
   return `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll('-', '');
 }
@@ -57,11 +96,13 @@ export default {
       try { body = await readJson(request); } catch (error) { return errorResponse(error.message); }
       const name = cleanName(body.name);
       if (!name) return errorResponse('표시 이름을 입력해 달라.');
+      const build = body.build == null ? null : normalizeBuild(body.build);
+      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않다.');
       for (let attempt = 0; attempt < 20; attempt += 1) {
         const code = makeRoomCode();
         const id = env.GAME_ROOMS.idFromName(code);
         const response = await env.GAME_ROOMS.get(id).fetch('https://room.internal/create', {
-          method: 'POST', body: JSON.stringify({ code, name, preset: validPreset(body.preset), test: body.test === true })
+          method: 'POST', body: JSON.stringify({ code, name, preset: validPreset(body.preset), build, test: body.test === true })
         });
         if (response.status === 409) continue;
         return response;
@@ -75,10 +116,12 @@ export default {
       try { body = await readJson(request); } catch (error) { return errorResponse(error.message); }
       const name = cleanName(body.name);
       if (!name) return errorResponse('표시 이름을 입력해 달라.');
+      const build = body.build == null ? null : normalizeBuild(body.build);
+      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않다.');
       const code = join[1];
       const id = env.GAME_ROOMS.idFromName(code);
       return env.GAME_ROOMS.get(id).fetch('https://room.internal/join', {
-        method: 'POST', body: JSON.stringify({ code, name, preset: validPreset(body.preset) })
+        method: 'POST', body: JSON.stringify({ code, name, preset: validPreset(body.preset), build })
       });
     }
 
@@ -131,7 +174,7 @@ export class GameRoom {
       status: 'waiting',
       reason: '',
       players: {
-        P: { token, name: body.name, preset: validPreset(body.preset), bot: false }
+        P: { token, name: body.name, preset: validPreset(body.preset), build: body.build || null, bot: false }
       },
       disconnectDeadlines: {},
       waitingExpiresAt: Date.now() + CONFIG.waitingTtlMs,
@@ -151,10 +194,10 @@ export class GameRoom {
   async join(body) {
     if (!this.meta || this.meta.status !== 'waiting' || this.meta.players.E) return errorResponse('입장 가능한 방을 찾지 못했다.', 404);
     const token = makeToken();
-    this.meta.players.E = { token, name: body.name, preset: validPreset(body.preset), bot: false };
-    this.startGame();
+    this.meta.players.E = { token, name: body.name, preset: validPreset(body.preset), build: body.build || null, bot: false };
     await this.persist();
     await this.scheduleAlarm();
+    this.broadcastRoom(`${body.name}님이 입장했습니다.`);
     return json({ code: this.meta.code, token, status: this.meta.status });
   }
 
@@ -217,12 +260,13 @@ export class GameRoom {
     return view;
   }
 
-  broadcastRoom() {
+  broadcastRoom(notice = '') {
     for (const side of ['P', 'E']) {
       const player = this.meta.players[side];
       if (!player || player.bot) continue;
       this.send(this.socketForSide(side), {
-        type: 'room', code: this.meta.code, status: this.meta.status, players: this.roomPlayers()
+        type: 'room', code: this.meta.code, status: this.meta.status, players: this.roomPlayers(),
+        youAreHost: side === 'P', notice
       });
     }
   }
@@ -257,22 +301,23 @@ export class GameRoom {
 
   actorFromPlayer(side, player) {
     const preset = DB.setup.presets.find((item) => item.id === player.preset) || DB.setup.presets[0];
-    const hp = DB.setup.base.hp + preset.hp * DB.setup.step.hp;
+    const build = player.build || { ...preset, traits: [] };
+    const hp = DB.setup.base.hp + build.hp * DB.setup.step.hp;
     const actor = Battle.makeActor(side, {
       name: player.name,
       hp,
       hpMax: hp,
       stamina: DB.balance.resource.staminaStart,
-      staminaMax: DB.setup.base.stamina + preset.stamina * DB.setup.step.stamina,
+      staminaMax: DB.setup.base.stamina + build.stamina * DB.setup.step.stamina,
       staminaRegen: DB.balance.resource.staminaRegenPerTick,
       focus: 0,
-      focusMax: DB.setup.base.focus + preset.focus * DB.setup.step.focus,
+      focusMax: DB.setup.base.focus + build.focus * DB.setup.step.focus,
       stance: DB.stanceStart,
-      techs: preset.techs,
-      traits: [],
-      weapon: preset.weapon,
-      chains: preset.chains,
-      sigils: preset.sigils,
+      techs: build.techs,
+      traits: build.traits || [],
+      weapon: build.weapon,
+      chains: build.chains,
+      sigils: build.sigils,
       milestones: [],
       controller: player.bot ? 'bot' : 'human'
     });
@@ -349,6 +394,24 @@ export class GameRoom {
     await this.advanceGame();
   }
 
+  async handleBuild(side, build, socket) {
+    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '대기방에서만 덱을 바꿀 수 있다.' });
+    const normalized = normalizeBuild(build);
+    if (!normalized) return this.send(socket, { type: 'error', message: '덱 구성이 올바르지 않다.' });
+    this.meta.players[side].build = normalized;
+    await this.persist();
+    this.broadcastRoom(`${this.meta.players[side].name}님이 덱을 변경했습니다.`);
+  }
+
+  async handleStart(side, socket) {
+    if (side !== 'P') return this.send(socket, { type: 'error', message: '방장만 게임을 시작할 수 있다.' });
+    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '이미 시작했거나 시작할 수 없는 방이다.' });
+    if (!this.meta.players.E) return this.send(socket, { type: 'error', message: '상대가 입장한 뒤 시작할 수 있다.' });
+    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '두 플레이어의 연결을 확인해 달라.' });
+    this.startGame();
+    await this.advanceGame();
+  }
+
   async handleAction(side, action, socket) {
     if (!this.game || this.meta.status !== 'playing' || this.game.over) return this.send(socket, { type: 'error', message: '진행 중인 전투가 없다.' });
     if (!this.allConnected()) return this.send(socket, { type: 'error', message: '상대의 재접속을 기다리는 중이다.' });
@@ -392,7 +455,9 @@ export class GameRoom {
     if (attachment.rateCount > CONFIG.maxMessagesPerWindow) { socket.close(1008, '요청 제한'); return; }
     let message;
     try { message = JSON.parse(raw); } catch (error) { this.send(socket, { type: 'error', message: '요청 형식이 올바르지 않다.' }); return; }
-    if (message.type === 'action') await this.handleAction(attachment.side, message.action, socket);
+    if (message.type === 'build') await this.handleBuild(attachment.side, message.build, socket);
+    else if (message.type === 'start') await this.handleStart(attachment.side, socket);
+    else if (message.type === 'action') await this.handleAction(attachment.side, message.action, socket);
     else if (message.type === 'forfeit') await this.forfeit(attachment.side, 'forfeit');
     else if (message.type === 'leave') await this.leave(attachment.side, socket);
     else this.send(socket, { type: 'error', message: '지원하지 않는 요청이다.' });
@@ -420,7 +485,14 @@ export class GameRoom {
 
   async leave(side, socket) {
     if (this.meta.status === 'playing' && !this.game.over) await this.forfeit(side, 'forfeit');
-    else if (this.meta.status === 'waiting') await this.reset();
+    else if (this.meta.status === 'waiting' && side === 'E') {
+      const name = this.meta.players.E?.name || '2P';
+      delete this.meta.players.E;
+      delete this.meta.disconnectDeadlines.E;
+      await this.persist();
+      await this.scheduleAlarm();
+      this.broadcastRoom(`${name}님이 퇴장했습니다.`);
+    } else if (this.meta.status === 'waiting') await this.reset();
     try { socket.close(1000, '방 나가기'); } catch (error) {}
   }
 
