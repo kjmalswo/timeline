@@ -258,39 +258,54 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .techcol::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
 .btfoot{display:flex;flex-direction:column;gap:8px;padding:0 14px 12px}
 .techrow{display:flex;gap:11px;flex-wrap:wrap;align-content:flex-start}
-.tech{width:186px;padding:0;border-radius:var(--r-m);cursor:pointer;position:relative;overflow:hidden;
-  background:var(--sf);box-shadow:5px 5px 12px var(--sh-d),-5px -5px 12px var(--sh-l);
-  transition:transform var(--t) var(--e),box-shadow var(--t) var(--e),opacity var(--t) var(--e)}
-.tech:hover:not(.no){transform:translateY(-4px);box-shadow:7px 10px 17px var(--sh-d),-5px -5px 12px var(--sh-l)}
-.tech.sel{box-shadow:inset 4px 4px 10px var(--sh-d),inset -4px -4px 10px var(--sh-l);transform:translateY(2px)}
-.tech.no{opacity:.5;cursor:not-allowed} .tech.no:hover{transform:none}
-.tech.mini{width:172px}
-.tc-line{height:4px;width:100%}
-.tc-body{padding:9px 11px 10px;display:flex;flex-direction:column;gap:7px}
-.tc-top{display:flex;align-items:flex-start;gap:7px}
-.tc-name{font-weight:800;font-size:.97em;letter-spacing:.01em;flex:1;line-height:1.3}
-.tc-cost{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;flex:none;
-  font-size:.78em;font-weight:850;color:var(--ok);
-  box-shadow:inset 2px 2px 4px var(--sh-d),inset -2px -2px 4px var(--sh-l)}
-.tc-sub{display:flex;align-items:center;gap:6px;font-size:.68em;font-weight:750;color:var(--ink-3);
-  letter-spacing:.03em;flex-wrap:wrap}
+.tech{
+  --card-accent:var(--L-none);--card-bg:#e4e9f1;
+  width:194px;flex:0 0 194px;padding:0;border-radius:13px;cursor:pointer;position:relative;overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--card-accent) 30%,var(--line));
+  background:linear-gradient(145deg,color-mix(in srgb,var(--card-accent) 10%,#edf1f7) 0%,var(--card-bg) 58%,#dce3ed 100%);
+  box-shadow:4px 5px 11px rgba(124,136,154,.38),-3px -3px 8px rgba(255,255,255,.72);
+  transition:transform var(--t) var(--e),box-shadow var(--t) var(--e),opacity var(--t) var(--e),border-color var(--t) var(--e)}
+.tech.line-high{--card-accent:var(--L-high);--card-bg:#eee1e4}
+.tech.line-mid{--card-accent:var(--L-mid);--card-bg:#e0e8f3}
+.tech.line-low{--card-accent:var(--L-low);--card-bg:#dfece8}
+.tech.line-side{--card-accent:var(--L-side);--card-bg:#e8e1f0}
+.tech.line-none{--card-accent:var(--L-none);--card-bg:#e3e8ef}
+.tech::after{content:"";position:absolute;inset:6px 0 auto;height:36px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.28),transparent)}
+.tech:hover:not(.no){transform:translateY(-3px);border-color:var(--card-accent);
+  box-shadow:6px 9px 16px rgba(116,127,145,.4),-3px -3px 8px rgba(255,255,255,.7)}
+.tech.sel{transform:translateY(-1px);border-color:var(--acc);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 70%,transparent),5px 7px 14px rgba(90,105,128,.38)}
+.tech.no{opacity:.48;filter:saturate(.45);cursor:not-allowed}.tech.no:hover{transform:none}
+.tech.mini{width:184px;flex-basis:184px}
+.tc-line{height:6px;width:100%;position:relative;z-index:1;box-shadow:0 1px 3px rgba(40,48,62,.22)}
+.tc-body{padding:10px 11px 11px;display:flex;flex-direction:column;gap:8px;position:relative;z-index:2}
+.tc-top{display:flex;align-items:flex-start;gap:8px}
+.tc-name{font-weight:850;font-size:1em;letter-spacing:.015em;flex:1;line-height:1.25;color:#26303f}
+.tc-cost{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;flex:none;
+  font-size:.78em;font-weight:900;color:#fff;background:var(--card-accent);
+  box-shadow:0 3px 7px color-mix(in srgb,var(--card-accent) 38%,transparent),inset 0 1px 1px rgba(255,255,255,.3)}
+.tc-sub{display:flex;align-items:center;gap:6px;font-size:.69em;font-weight:800;color:#606c7d;
+  letter-spacing:.035em;flex-wrap:wrap}
 .tc-sub>span{white-space:nowrap}
 /* 미니 시간 막대: 준비(진한) + 빈틈(연한) */
-.tbar{display:flex;gap:2px;align-items:center}
-.tbar i{width:7px;height:9px;border-radius:2px;background:var(--ink-4);opacity:.3}
-.tbar i.cast{background:currentColor;opacity:.9}
-.tbar i.rec{background:var(--ink-3);opacity:.32}
-.tbar .tb-lab{font-size:.92em;color:var(--ink-4);margin-left:3px;font-weight:700}
+.tbar{display:flex;gap:2px;align-items:center;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,.34)}
+.tbar i{width:7px;height:10px;border-radius:2px;background:#8792a2;opacity:.27}
+.tbar i.cast{background:var(--card-accent);opacity:.95}
+.tbar i.rec{background:#6f7a8b;opacity:.42}
+.tbar .tb-lab{font-size:.93em;color:#596577;margin-left:3px;font-weight:800}
 /* 사거리 점 */
-.rdots{display:flex;gap:3px}
-.rdots i{width:9px;height:9px;border-radius:3px;background:var(--line)}
-.rdots i.on{background:var(--acc)}
-.rdots i.cur{box-shadow:0 0 0 2px var(--sf),0 0 0 3px var(--ink-3)}
-.tc-text{font-size:.79em;color:var(--ink-2);line-height:1.52;min-height:38px}
-.tc-foot{display:flex;align-items:center;gap:6px;border-top:1px dashed var(--line);padding-top:7px;font-size:.71em}
-.tc-to{display:inline-flex;align-items:center;gap:4px;color:var(--ink-3);font-weight:750}
-.tc-emp{font-size:.72em;color:var(--warn);border-top:1px dashed var(--line);padding-top:6px;line-height:1.45}
-.tc-mult{margin-left:auto;font-weight:850}
+.rdots{display:flex;gap:3px;padding:3px 5px;border-radius:5px;background:rgba(255,255,255,.3)}
+.rdots i{width:9px;height:9px;border-radius:3px;background:#b6bfcc}
+.rdots i.on{background:var(--card-accent)}
+.rdots i.cur{box-shadow:0 0 0 2px var(--card-bg),0 0 0 3px #465267}
+.tc-text{font-size:.79em;color:#465263;line-height:1.5;min-height:42px;padding:7px 8px;
+  border-left:3px solid var(--card-accent);border-radius:3px 7px 7px 3px;background:rgba(255,255,255,.34)}
+.tc-foot{display:flex;align-items:center;gap:6px;border-top:1px solid color-mix(in srgb,var(--card-accent) 23%,var(--line));
+  padding-top:7px;font-size:.71em}
+.tc-to{display:inline-flex;align-items:center;gap:4px;color:#556173;font-weight:800}
+.tc-emp{font-size:.72em;color:#805020;border-top:1px solid rgba(164,99,47,.3);padding:6px 7px 0;line-height:1.45}
+.tc-mult{margin-left:auto;font-weight:900;padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.35)}
 .tc-mult.up{color:var(--dang)} .tc-mult.dn{color:var(--ok)}
 
 .secthead{display:flex;align-items:center;gap:8px;font-size:.73em;font-weight:800;letter-spacing:.09em;color:var(--ink-3)}
@@ -314,11 +329,12 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .costline b{color:var(--ink-2)}
 
 /* 카드 잠금 사유 */
-.tc-block{font-size:.73em;font-weight:800;color:var(--dang);border-top:1px dashed var(--line);padding-top:6px}
-.tc-good{position:absolute;top:8px;right:8px;font-size:.66em;font-weight:850;padding:2px 7px;border-radius:999px;
-  color:var(--ok);background:var(--sf);box-shadow:2px 2px 4px var(--sh-d),-2px -2px 4px var(--sh-l);z-index:2}
-.tech.best{box-shadow:0 0 0 2px var(--ok),5px 5px 12px var(--sh-d),-5px -5px 12px var(--sh-l)}
-.tech.best:hover:not(.no){box-shadow:0 0 0 2px var(--ok),7px 10px 17px var(--sh-d),-5px -5px 12px var(--sh-l)}
+.tc-block{font-size:.73em;font-weight:850;color:#7f303b;background:rgba(176,74,85,.09);
+  border:1px solid rgba(176,74,85,.22);border-radius:6px;padding:5px 7px}
+.tc-good{position:absolute;top:9px;right:48px;font-size:.65em;font-weight:900;padding:2px 7px;border-radius:999px;
+  color:#fff;background:var(--ok);box-shadow:0 3px 7px rgba(44,122,104,.28);z-index:4}
+.tech.best:not(.sel){box-shadow:0 0 0 2px var(--ok),4px 6px 12px rgba(110,126,145,.38)}
+.tech.best:hover:not(.no):not(.sel){box-shadow:0 0 0 2px var(--ok),6px 9px 16px rgba(100,118,138,.42)}
 
 /* 판정 미리보기 */
 .proj{padding:10px 13px;border-radius:var(--r-m);display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:.83em;
@@ -345,8 +361,9 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   .ringwrap{padding-bottom:7px}
   .techwrap{grid-template-columns:minmax(0,1fr) clamp(260px,24vw,340px);gap:14px}
   .techcol{padding:5px 8px 12px 3px}
-  .techrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:12px}
-  .tech,.tech.mini{width:100%}
+  .techrow{display:flex;gap:11px}
+  .tech{width:194px;flex:0 0 194px}
+  .tech.mini{width:184px;flex-basis:184px}
   .side{padding-bottom:4px}
   .log{font-size:.82em;line-height:1.68;background:#dfe5ef}
   .btfoot{padding-top:8px;border-top:1px solid rgba(188,198,214,.7)}
@@ -515,12 +532,19 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
 /* ---------- 멀티플레이 ---------- */
-.multi-shell{width:min(720px,94vw);margin:auto;padding:24px}
-.multi-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
-.multi-panel{padding:18px;border-radius:var(--r-m)}
-.multi-panel label{display:block;font-size:.76em;font-weight:800;color:var(--ink-3);margin:10px 0 5px}
-.multi-panel input,.multi-panel select{width:100%;border:0;outline:0;padding:11px 13px;border-radius:var(--r-s);
+.multi-shell{width:min(760px,94vw);margin:auto;padding:24px}
+.multi-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;align-items:start}
+.multi-panel{padding:18px;border-radius:var(--r-m);position:relative}
+.multi-panel.create{border-top:4px solid var(--self)}
+.multi-panel.join{border-top:4px solid var(--ok)}
+.multi-panel-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.95em;font-weight:850}
+.multi-panel-head small{margin-left:auto;color:var(--ink-3);font-size:.72em;font-weight:700}
+.multi-panel label{display:block;font-size:.76em;font-weight:800;color:var(--ink-2);margin:10px 0 5px}
+.multi-panel input,.multi-panel select{width:100%;border:1px solid transparent;outline:0;padding:11px 13px;border-radius:var(--r-s);
   color:var(--ink);background:var(--sf);font:inherit;box-shadow:inset 3px 3px 7px var(--sh-d),inset -3px -3px 7px var(--sh-l)}
+.multi-panel input:focus,.multi-panel select:focus{border-color:var(--acc);box-shadow:inset 2px 2px 5px var(--sh-d),0 0 0 3px var(--acc-soft)}
+.form-error{min-height:20px;margin-top:9px;color:var(--dang);font-size:.78em;font-weight:750}
+.form-error:empty{visibility:hidden}
 .room-code{font-size:clamp(28px,7vw,48px);font-weight:850;letter-spacing:.2em;color:var(--acc);margin:.3em 0}
 .net-status{min-height:22px;margin-top:12px;color:var(--ink-3);font-size:.86em}
 .net-status.bad{color:var(--dang)} .net-status.ok{color:var(--ok)}
@@ -2589,8 +2613,8 @@ const UI = {
     const emp=d.empower&&!opt.mini?`<div class="tc-emp">집중 ${d.empower.focus} — ${U.esc(d.empower.text)}</div>`:'';
     const block=opt.block?`<div class="tc-block">${U.esc(opt.block)}</div>`:'';
     const good=opt.good?`<div class="tc-good">${U.esc(opt.good)}</div>`:'';
-    return `<div class="tech ${opt.cls||''}" data-tech="${id}" ${opt.attrs||''}>
-      ${good}<div class="tc-line" style="background:var(${ln.css})"></div>
+    return `<div class="tech line-${d.line} ${opt.cls||''}" data-tech="${id}" ${opt.attrs||''}>
+      ${good}<div class="tc-line" style="background:linear-gradient(90deg,var(${ln.css}),color-mix(in srgb,var(${ln.css}) 48%,transparent))"></div>
       <div class="tc-body">
         <div class="tc-top">
           <div style="flex:1">
@@ -3560,11 +3584,20 @@ const Net = {
     }
   },
   rememberPreset(id){ Net.lastPreset=id; try{ localStorage.setItem('timeline_pvp_preset',id); }catch(e){} },
-  formData(){
-    const name=(document.getElementById('mpName')||{}).value||'';
-    const preset=(document.getElementById('mpPreset')||{}).value||Net.lastPreset;
-    const code=Net.normalizeCode((document.getElementById('mpCode')||{}).value||'');
+  formData(kind){
+    const name=(document.getElementById(kind==='join'?'mpJoinName':'mpCreateName')||{}).value||'';
+    const preset=(document.getElementById(kind==='join'?'mpJoinPreset':'mpCreatePreset')||{}).value||Net.lastPreset;
+    const code=kind==='join'?Net.normalizeCode((document.getElementById('mpCode')||{}).value||''):'';
     Net.rememberPreset(preset); return {name:name.trim().slice(0,18),preset,code};
+  },
+  formFail(kind,msg){
+    const el=document.getElementById(kind==='join'?'mpJoinError':'mpCreateError');
+    if(el){ el.textContent=msg; return; }
+    Net.fail(msg);
+  },
+  clearFormError(kind){
+    const el=document.getElementById(kind==='join'?'mpJoinError':'mpCreateError');
+    if(el) el.textContent='';
   },
   async request(path,body){
     const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
@@ -3575,16 +3608,21 @@ const Net = {
   saveSession(){ try{ sessionStorage.setItem('timeline_pvp_token',Net.token); sessionStorage.setItem('timeline_pvp_room',Net.roomCode); }catch(e){} },
   clearSession(){ try{ sessionStorage.removeItem('timeline_pvp_token'); sessionStorage.removeItem('timeline_pvp_room'); }catch(e){} },
   async create(test){
-    const d=Net.formData(); if(!d.name) return Net.fail('표시 이름을 입력해 달라.');
+    const d=Net.formData('create');
+    Net.clearFormError('create');
+    if(!d.name) return Net.formFail('create','방을 만들 이름을 입력해 주세요.');
     try{ const x=await Net.request('/api/rooms',{name:d.name,preset:d.preset,test:!!test});
       Net.adoptSession(x,test?'playing':'waiting'); }
-    catch(e){ Net.fail(e.message); }
+    catch(e){ Net.formFail('create',e.message); }
   },
   async join(){
-    const d=Net.formData(); if(!d.name||d.code.length!==6) return Net.fail('이름과 6자리 방 코드를 확인해 달라.');
+    const d=Net.formData('join');
+    Net.clearFormError('join');
+    if(!d.name) return Net.formFail('join','방에 입장할 이름을 입력해 주세요.');
+    if(d.code.length!==6) return Net.formFail('join','6자리 방 코드를 정확히 입력해 주세요.');
     try{ const x=await Net.request(`/api/rooms/${encodeURIComponent(d.code)}/join`,{name:d.name,preset:d.preset});
       Net.adoptSession(x,'playing'); }
-    catch(e){ Net.fail(e.message); }
+    catch(e){ Net.formFail('join',e.message); }
   },
   action(action){
     if(!Net.active||!Battle.awaitInput) return;
@@ -3627,19 +3665,33 @@ UI.renderMulti = function(){
   b.innerHTML=`<div class="h2">1 대 1 PvP</div>
     <p class="muted">싱글플레이와 같은 시간축·자세·기력·사거리 규칙을 사용한다. 방 생성자는 첫 행동권을 가진다.</p>
     <div class="multi-grid">
-      <div class="multi-panel nm-in"><label for="mpName">표시 이름</label><input id="mpName" maxlength="18" autocomplete="nickname" placeholder="검객">
-        <label for="mpPreset">PvP 구성</label><select id="mpPreset">${presetOpts}</select>
-        <button class="btn wide acc" id="mpCreate" style="margin-top:14px">방 만들기</button>
-        <button class="btn wide" id="mpTest" style="margin-top:9px">혼자 테스트하는 임시방</button></div>
-      <div class="multi-panel nm-in"><label for="mpCode">방 코드</label><input id="mpCode" maxlength="6" autocapitalize="characters" placeholder="ABC123">
-        <button class="btn wide" id="mpJoin" style="margin-top:14px">코드로 입장</button>
-        <p class="dim" style="margin-top:12px">임시방에서는 서버 봇이 2P를 맡아 연결과 전투 흐름을 혼자 검증할 수 있다.</p></div>
+      <div class="multi-panel create nm-in">
+        <div class="multi-panel-head"><span>방 만들기</span><small>1P · 방장</small></div>
+        <label for="mpCreateName">방장 이름</label><input id="mpCreateName" maxlength="18" autocomplete="nickname" placeholder="방장 이름">
+        <label for="mpCreatePreset">PvP 구성</label><select id="mpCreatePreset">${presetOpts}</select>
+        <div class="form-error" id="mpCreateError" role="alert"></div>
+        <button class="btn wide acc" id="mpCreate">방 만들기</button>
+        <button class="btn wide" id="mpTest" style="margin-top:9px">혼자 테스트하는 임시방</button>
+      </div>
+      <div class="multi-panel join nm-in">
+        <div class="multi-panel-head"><span>코드로 입장</span><small>2P · 참가자</small></div>
+        <label for="mpJoinName">참가자 이름</label><input id="mpJoinName" maxlength="18" autocomplete="nickname" placeholder="참가자 이름">
+        <label for="mpJoinPreset">PvP 구성</label><select id="mpJoinPreset">${presetOpts}</select>
+        <label for="mpCode">6자리 방 코드</label><input id="mpCode" maxlength="6" autocapitalize="characters" placeholder="ABC123">
+        <div class="form-error" id="mpJoinError" role="alert"></div>
+        <button class="btn wide" id="mpJoin">코드로 입장</button>
+        <p class="dim" style="margin-top:12px">방장이 전달한 코드를 입력해 바로 참가할 수 있다.</p>
+      </div>
     </div>
     <p class="net-status ${Net.error?'bad':(Net.connected?'ok':'')}">${Net.error||(Net.connected?'서버 연결됨':'서버 연결 중…')}</p>`;
   document.getElementById('mpCreate').onclick=()=>Net.create(false);
   document.getElementById('mpTest').onclick=()=>Net.create(true);
   document.getElementById('mpJoin').onclick=()=>Net.join();
-  document.getElementById('mpCode').oninput=e=>e.target.value=Net.normalizeCode(e.target.value);
+  document.getElementById('mpCreateName').oninput=()=>Net.clearFormError('create');
+  document.getElementById('mpJoinName').oninput=()=>Net.clearFormError('join');
+  document.getElementById('mpCode').oninput=e=>{ e.target.value=Net.normalizeCode(e.target.value); Net.clearFormError('join'); };
+  document.getElementById('mpCreateName').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.create(false); } };
+  document.getElementById('mpJoinName').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.join(); } };
   document.getElementById('mpCode').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.join(); } };
 };
 
