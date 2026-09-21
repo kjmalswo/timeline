@@ -82,7 +82,7 @@ function swapSide(side) {
 
 async function readJson(request) {
   const size = Number(request.headers.get('content-length') || 0);
-  if (size > CONFIG.maxMessageBytes) throw new Error('요청이 너무 크다.');
+  if (size > CONFIG.maxMessageBytes) throw new Error('요청 내용이 너무 큽니다.');
   return request.json();
 }
 
@@ -95,9 +95,9 @@ export default {
       let body;
       try { body = await readJson(request); } catch (error) { return errorResponse(error.message); }
       const name = cleanName(body.name);
-      if (!name) return errorResponse('표시 이름을 입력해 달라.');
+      if (!name) return errorResponse('표시 이름을 입력해 주세요.');
       const build = body.build == null ? null : normalizeBuild(body.build);
-      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않다.');
+      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않습니다.');
       for (let attempt = 0; attempt < 20; attempt += 1) {
         const code = makeRoomCode();
         const id = env.GAME_ROOMS.idFromName(code);
@@ -107,7 +107,7 @@ export default {
         if (response.status === 409) continue;
         return response;
       }
-      return errorResponse('방 코드를 만들 수 없다. 잠시 후 다시 시도해 달라.', 503);
+      return errorResponse('방 코드를 만들 수 없습니다. 잠시 후 다시 시도해 주세요.', 503);
     }
 
     const join = url.pathname.match(/^\/api\/rooms\/([A-Z2-9]{6})\/join$/);
@@ -115,9 +115,9 @@ export default {
       let body;
       try { body = await readJson(request); } catch (error) { return errorResponse(error.message); }
       const name = cleanName(body.name);
-      if (!name) return errorResponse('표시 이름을 입력해 달라.');
+      if (!name) return errorResponse('표시 이름을 입력해 주세요.');
       const build = body.build == null ? null : normalizeBuild(body.build);
-      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않다.');
+      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않습니다.');
       const code = join[1];
       const id = env.GAME_ROOMS.idFromName(code);
       return env.GAME_ROOMS.get(id).fetch('https://room.internal/join', {
@@ -127,12 +127,12 @@ export default {
 
     const socket = url.pathname.match(/^\/ws\/([A-Z2-9]{6})$/);
     if (socket) {
-      if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return errorResponse('WebSocket 연결이 필요하다.', 426);
+      if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return errorResponse('WebSocket 연결이 필요합니다.', 426);
       const id = env.GAME_ROOMS.idFromName(socket[1]);
       return env.GAME_ROOMS.get(id).fetch(request);
     }
 
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return errorResponse('경로를 찾지 못했다.', 404);
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return errorResponse('요청한 경로를 찾을 수 없습니다.', 404);
     // Always resolve the site root explicitly. This prevents a Worker/static
     // asset deployment from treating the Worker source as a downloadable file.
     if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -163,11 +163,11 @@ export class GameRoom {
     if (url.hostname === 'room.internal' && url.pathname === '/create') return this.create(await request.json());
     if (url.hostname === 'room.internal' && url.pathname === '/join') return this.join(await request.json());
     if (url.pathname.startsWith('/ws/')) return this.connect(request);
-    return errorResponse('방 요청을 찾지 못했다.', 404);
+    return errorResponse('요청한 방 정보를 찾을 수 없습니다.', 404);
   }
 
   async create(body) {
-    if (this.meta) return errorResponse('이미 사용 중인 방 코드다.', 409);
+    if (this.meta) return errorResponse('이미 사용 중인 방 코드입니다.', 409);
     const token = makeToken();
     this.meta = {
       code: body.code,
@@ -192,7 +192,7 @@ export class GameRoom {
   }
 
   async join(body) {
-    if (!this.meta || this.meta.status !== 'waiting' || this.meta.players.E) return errorResponse('입장 가능한 방을 찾지 못했다.', 404);
+    if (!this.meta || this.meta.status !== 'waiting' || this.meta.players.E) return errorResponse('입장할 수 있는 방을 찾지 못했습니다.', 404);
     const token = makeToken();
     this.meta.players.E = { token, name: body.name, preset: validPreset(body.preset), build: body.build || null, bot: false };
     await this.persist();
@@ -202,10 +202,10 @@ export class GameRoom {
   }
 
   async connect(request) {
-    if (!this.meta) return errorResponse('방이 만료되었거나 존재하지 않는다.', 404);
+    if (!this.meta) return errorResponse('방이 만료되었거나 존재하지 않습니다.', 404);
     const token = new URL(request.url).searchParams.get('token') || '';
     const side = ['P', 'E'].find((candidate) => this.meta.players[candidate]?.token === token);
-    if (!side) return errorResponse('방 접속 정보가 올바르지 않다.', 403);
+    if (!side) return errorResponse('방 접속 정보가 올바르지 않습니다.', 403);
 
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
@@ -395,28 +395,28 @@ export class GameRoom {
   }
 
   async handleBuild(side, build, socket) {
-    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '대기방에서만 덱을 바꿀 수 있다.' });
+    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '대기방에서만 덱을 변경할 수 있습니다.' });
     const normalized = normalizeBuild(build);
-    if (!normalized) return this.send(socket, { type: 'error', message: '덱 구성이 올바르지 않다.' });
+    if (!normalized) return this.send(socket, { type: 'error', message: '덱 구성이 올바르지 않습니다.' });
     this.meta.players[side].build = normalized;
     await this.persist();
     this.broadcastRoom(`${this.meta.players[side].name}님이 덱을 변경했습니다.`);
   }
 
   async handleStart(side, socket) {
-    if (side !== 'P') return this.send(socket, { type: 'error', message: '방장만 게임을 시작할 수 있다.' });
-    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '이미 시작했거나 시작할 수 없는 방이다.' });
-    if (!this.meta.players.E) return this.send(socket, { type: 'error', message: '상대가 입장한 뒤 시작할 수 있다.' });
-    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '두 플레이어의 연결을 확인해 달라.' });
+    if (side !== 'P') return this.send(socket, { type: 'error', message: '방장만 게임을 시작할 수 있습니다.' });
+    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '이미 시작했거나 현재 시작할 수 없는 방입니다.' });
+    if (!this.meta.players.E) return this.send(socket, { type: 'error', message: '상대가 입장한 뒤 시작할 수 있습니다.' });
+    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '두 플레이어의 연결 상태를 확인해 주세요.' });
     this.startGame();
     await this.advanceGame();
   }
 
   async handleAction(side, action, socket) {
-    if (!this.game || this.meta.status !== 'playing' || this.game.over) return this.send(socket, { type: 'error', message: '진행 중인 전투가 없다.' });
-    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '상대의 재접속을 기다리는 중이다.' });
-    if (this.meta.turn !== side) return this.send(socket, { type: 'error', message: '현재 행동권이 없다.' });
-    if (!action || typeof action.kind !== 'string' || typeof action.id !== 'string') return this.send(socket, { type: 'error', message: '잘못된 행동 요청이다.' });
+    if (!this.game || this.meta.status !== 'playing' || this.game.over) return this.send(socket, { type: 'error', message: '진행 중인 전투가 없습니다.' });
+    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '상대의 재접속을 기다리고 있습니다.' });
+    if (this.meta.turn !== side) return this.send(socket, { type: 'error', message: '현재 행동권이 없습니다.' });
+    if (!action || typeof action.kind !== 'string' || typeof action.id !== 'string') return this.send(socket, { type: 'error', message: '올바르지 않은 행동 요청입니다.' });
 
     let ok = false;
     this.withGame(() => {
@@ -427,7 +427,7 @@ export class GameRoom {
       else if (action.kind === 'basic') ok = Battle.basic(side, action.id);
     });
     if (!ok) {
-      this.send(socket, { type: 'error', message: '현재 상태에서는 그 행동을 사용할 수 없다.' });
+      this.send(socket, { type: 'error', message: '현재 상태에서는 해당 행동을 사용할 수 없습니다.' });
       this.broadcastState();
       return;
     }
@@ -454,13 +454,13 @@ export class GameRoom {
     socket.serializeAttachment(attachment);
     if (attachment.rateCount > CONFIG.maxMessagesPerWindow) { socket.close(1008, '요청 제한'); return; }
     let message;
-    try { message = JSON.parse(raw); } catch (error) { this.send(socket, { type: 'error', message: '요청 형식이 올바르지 않다.' }); return; }
+    try { message = JSON.parse(raw); } catch (error) { this.send(socket, { type: 'error', message: '요청 형식이 올바르지 않습니다.' }); return; }
     if (message.type === 'build') await this.handleBuild(attachment.side, message.build, socket);
     else if (message.type === 'start') await this.handleStart(attachment.side, socket);
     else if (message.type === 'action') await this.handleAction(attachment.side, message.action, socket);
     else if (message.type === 'forfeit') await this.forfeit(attachment.side, 'forfeit');
     else if (message.type === 'leave') await this.leave(attachment.side, socket);
-    else this.send(socket, { type: 'error', message: '지원하지 않는 요청이다.' });
+    else this.send(socket, { type: 'error', message: '지원하지 않는 요청입니다.' });
   }
 
   async webSocketClose(socket) {
