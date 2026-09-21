@@ -160,7 +160,7 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .battle-scene .battle-hud .panel{position:absolute;bottom:calc(72px + clamp(150px,24vw,285px) - 10px);
   left:50%;transform:translateX(-50%);width:clamp(150px,19vw,230px);min-width:0;padding:0;gap:4px;
   overflow:visible;background:transparent;box-shadow:none;border:0;backdrop-filter:none;
-  transition:left 360ms var(--e)}
+  transition:left var(--battle-move-ms,360ms) var(--e)}
 .battle-scene .battle-hud .panel::before{display:none}
 .pixel-hud-head{display:flex;align-items:center;gap:5px;min-width:0;color:var(--p-deep);
   font-size:.72em;font-weight:900;line-height:1.15;text-shadow:1px 1px 0 var(--p-white),-1px -1px 0 var(--p-white)}
@@ -182,7 +182,7 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .pixel-hud-status .tag::before{width:3px;height:3px}
 .battle-actors{position:absolute;inset:0;z-index:2;pointer-events:none}
 .battle-actor{position:absolute;bottom:72px;left:50%;width:clamp(130px,22vw,260px);height:clamp(150px,24vw,285px);
-  display:flex;align-items:flex-end;justify-content:center;transition:left 360ms var(--e)}
+  display:flex;align-items:flex-end;justify-content:center;transition:left var(--battle-move-ms,360ms) var(--e)}
 .battle-actor img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;
   image-rendering:pixelated;filter:drop-shadow(5px 8px 5px rgba(91,95,151,.34))}
 .battle-actor.foe img{transform:scaleX(-1)}
@@ -906,7 +906,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V6.1', build:'CF',
+    title:'THE TIMELINE', version:'V6.2', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1262,9 +1262,10 @@ DB.visual = {
   scene:{
     background:'assets/battle/grassland.png',
     alt:'푸른 하늘과 초원이 펼쳐진 전투장',
+    movementMs:360,
     positions:{
-      P:[34,30,26,22,18],
-      E:[66,70,74,78,82]
+      P:[40,35,30,25,20],
+      E:[60,65,70,75,80]
     },
     hud:{
       segments:{ hp:16, stamina:12, focus:6 },
@@ -3030,21 +3031,6 @@ UI.timeline = function(){
     return h;
   };
 
-  /* 거리 트랙 — 왼쪽이 나, 오른쪽 원이 상대. 사이가 벌어질수록 상대가 멀어진다. */
-  let cells='';
-  for(let i=D.min;i<=D.max;i++){
-    const inG=ghost&&i>=ghost.range[0]&&i<=ghost.range[1];
-    cells+=`<span class="cell ${inG?'reach':(i<=s.distance?'gap':'')}" title="${U.esc(D.labels[i])}">${U.esc(D.labels[i])}</span>`;
-  }
-  const pct=(s.distance-D.min)/(D.max-D.min);
-  const track=`<div class="track"><span class="cap">거리</span>
-    <div class="trk"><div class="cells">${cells}</div>
-      <span class="gapline" style="left:26px;width:calc(${(pct*100).toFixed(1)}% - 26px)"></span>
-      <span class="tok me" title="나">나</span>
-      <span class="tok foe" style="left:calc(${(pct*100).toFixed(1)}% - ${(pct*26).toFixed(0)}px)" title="상대">상대</span></div>
-    <span class="now">칸 <b>${s.distance}</b> · ${U.esc(D.labels[s.distance])}</span>
-    ${ghost?`<span class="tag ${ghost.inRange?'t-ok':'t-dang'}">${ghost.inRange?'현재 사거리 내':'현재 사거리 밖'}</span>`:''}</div>`;
-
   const leftT=Math.max(0,TK.maxTickGuard-s.tick);
   const lead=(selfA.hp/selfA.hpMax)>=(foeA.hp/foeA.hpMax)?'내가 우세':'상대가 우세';
   return `
@@ -3052,7 +3038,6 @@ UI.timeline = function(){
       <span class="tl-now"><small>현재</small>${s.tick}틱</span>
       <span class="tag ${leftT<=TK.warnRemaining?'t-dang':'t-key'}" title="제한 시간에 도달하면 남은 체력 비율이 높은 쪽이 승리합니다.">제한 ${leftT}틱 · ${lead}</span>
     </div>
-    ${track}
     <div class="tl-grid">
       <div class="tl-lane">${lane(DB.meta.sides.FOE)}</div>
       <div class="tl-axis">${axis}</div>
@@ -3241,6 +3226,7 @@ UI.renderBattleScene=function(){
   const s=Battle.st, scene=DB.visual.scene;
   const bg=document.getElementById('battleSceneBg');
   bg.src=scene.background; bg.alt=scene.alt;
+  document.getElementById('battleScene').style.setProperty('--battle-move-ms',scene.movementMs+'ms');
   const box=document.getElementById('battleActors');
   [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(side=>{
     const actor=Battle.A(side), weapon=UI.visualWeapon(side);

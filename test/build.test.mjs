@@ -21,6 +21,9 @@ test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
   assert.match(html, /UI\.pixelGauge/);
   assert.match(html, /P:\{ hp:'#32d66b'/);
   assert.match(html, /E:\{ hp:'#ff4f57'/);
+  assert.doesNotMatch(html, /const track=`<div class="track"/, '거리 트랙은 캐릭터 위치로 대체됩니다.');
+  assert.match(html, /P:\[40,35,30,25,20\]/);
+  assert.match(html, /E:\[60,65,70,75,80\]/);
   assert.match(html, /assets\/battle\/standard\/advance-1\.png/);
   assert.match(worker, /message\.type === 'start'/);
   assert.match(worker, /normalizeBuild/);
