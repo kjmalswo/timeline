@@ -1,0 +1,20 @@
+{
+  "name": "the-timeline-pvp",
+  "version": "4.1.0",
+  "private": true,
+  "description": "THE TIMELINE 1v1 PvP on Cloudflare Workers and Durable Objects",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check": "npm test && wrangler deploy --dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "wrangler": "^4.135.0"
+  }
+}
