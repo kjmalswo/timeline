@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>THE TIMELINE</title>
 <style>
 /* ============================================================================
@@ -551,6 +551,63 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .lobby-players{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
 .lobby-player{padding:9px 12px;border-radius:var(--r-s);background:var(--sf);box-shadow:inset 2px 2px 5px var(--sh-d),inset -2px -2px 5px var(--sh-l)}
 @media(max-width:640px){.multi-grid{grid-template-columns:1fr}.multi-shell{padding:14px}}
+
+/* ---------- 휴대기기·태블릿 반응형 보정 ---------- */
+html,body{height:100%;height:100dvh;min-height:100%;overscroll-behavior:none}
+body{min-width:0}
+#app{height:100%;height:100dvh;min-height:0}
+#stage,.screen,.page{min-height:0}
+.page{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y}
+.topbar{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.multi-shell{width:min(980px,100%);max-width:100%;margin:auto}
+.multi-grid{grid-template-columns:minmax(0,1fr) minmax(156px,.55fr) minmax(0,1fr)}
+.multi-deck{padding:18px 12px;text-align:center;align-self:stretch;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.multi-deck .btn{white-space:normal}
+.invite-actions,.lobby-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+.room-link{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:9px 11px;margin:8px 0 12px;
+  color:var(--ink-2);font-size:.78em;border-radius:var(--r-s);box-shadow:inset 2px 2px 5px var(--sh-d),inset -2px -2px 5px var(--sh-l)}
+.lobby-notice{min-height:24px;margin:8px 0;color:var(--acc);font-weight:750}
+@media(max-width:1100px),(max-height:820px){
+  body{background-attachment:scroll}
+  #screen-title{overflow-y:auto;justify-content:flex-start;min-height:100%;padding-top:max(28px,env(safe-area-inset-top))}
+  #screen-battle.active{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;height:100%;-webkit-overflow-scrolling:touch}
+  #screen-battle>.duobar,#screen-battle>.tlwrap,#screen-battle>.ringwrap,#screen-battle>.techwrap,#screen-battle>.btfoot{flex:0 0 auto}
+  .techwrap{display:flex;flex-direction:column;overflow:visible;min-height:auto}
+  .techcol,.side{overflow:visible;min-height:auto}
+  .log{max-height:34vh;min-height:110px}
+  .btfoot{position:sticky;bottom:0;background:var(--bg);padding-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom));z-index:6;
+    box-shadow:0 -8px 14px var(--bg)}
+}
+@media(max-width:760px){
+  .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);
+    padding-top:max(10px,env(safe-area-inset-top));backdrop-filter:blur(8px)}
+  .page{padding:4px max(10px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+  .card-box{padding:14px;margin-bottom:11px}
+  .multi-shell{margin:0;padding:14px}
+  .multi-grid{grid-template-columns:1fr}
+  .multi-deck{order:-1;min-height:0}
+  .room-code{font-size:clamp(25px,11vw,42px);overflow-wrap:anywhere}
+  .duobar{padding-left:8px;padding-right:8px}
+  .tlwrap,.ringwrap,.techwrap,.btfoot{padding-left:8px;padding-right:8px}
+  .ring-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .snode{min-width:0}
+  .acts .btn{flex:1 1 calc(50% - 8px);white-space:normal}
+  .ptbar{position:static}
+  .stepper{align-items:flex-start}
+  .stepper .hint{flex-basis:100%}
+}
+@media(max-width:430px){
+  :root{--fs:14px}
+  #screen-title{gap:20px;padding:18px 12px}
+  .title-mark h1{font-size:clamp(28px,10vw,40px)}
+  .duobar{grid-template-columns:1fr;gap:8px}
+  .panel .duo{grid-template-columns:1fr 1fr}
+  .ring-row{grid-template-columns:1fr 1fr}
+  .tech,.tech.mini{max-width:none}
+  .btn{padding:10px 14px}
+  .multi-panel{padding:14px}
+}
+
 </style>
 </head>
 <body>
@@ -573,8 +630,8 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   </section>
 
   <section id="screen-school" class="screen">
-    <div class="topbar"><button class="btn sm" data-nav="title">뒤로</button><div class="grow"></div>
-      <span class="dim">개전 설계</span></div>
+    <div class="topbar"><button class="btn sm" id="schoolBack">뒤로</button><div class="grow"></div>
+      <span class="dim" id="schoolTitle">개전 설계</span></div>
     <div class="page"><div class="card-box nm" id="schoolBody"></div></div>
   </section>
 
@@ -664,7 +721,7 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V4.1', build:'CLOUDFLARE',
+    title:'THE TIMELINE', version:'V5.1', build:'CLOUDFLARE',
     footer:'싱글플레이 · Cloudflare 서버 판정 1 대 1 PvP',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -2373,6 +2430,7 @@ const UI = {
   },
   menu(id){
     if(id==='newrun'){
+      UI.setupContext='single';
       if(Run.hasSave()){
         UI.modal(`<div class="h2">새 게임</div><p class="muted">진행 중인 기록이 있다. 새로 시작하면 사라진다.</p>
           <div class="rowwrap" style="margin-top:15px"><button class="btn dang" id="mkY">새로 시작</button>
@@ -2391,6 +2449,7 @@ const UI = {
   /* ---------- 개전 설계 ----------
      설계 점수를 나눠 써서 시작 구성을 직접 조립한다. 프리셋은 시작점일 뿐 언제든 바꿀 수 있다. */
   setupDraft:null,
+  setupContext:'single',
   techCost(id){
     const S=DB.setup.cost, t=DB.techs[id];
     return t.tier==='rare'?S.techRare:(t.tier==='common'?S.techCommon:S.techBase);
@@ -2489,6 +2548,9 @@ const UI = {
             <span class="hint">한 단계 +${step} · ${cost}점 · 최대 ${mx}단계 (현재 ${d[k]}단계)</span></div>`).join('')}
       </div>`;
 
+    const schoolTitle=document.getElementById('schoolTitle');
+    if(schoolTitle) schoolTitle.textContent=UI.setupContext==='multi'?'멀티플레이 덱 설정':'개전 설계';
+    if(UI.setupContext==='multi') h=h.replace('이 구성으로 시작','브라우저에 저장');
     const body=document.getElementById('schoolBody'); body.innerHTML=h;
     const re=()=>UI.renderSchool();
     body.querySelectorAll('[data-preset]').forEach(el=>el.onclick=()=>{
@@ -2508,7 +2570,10 @@ const UI = {
     body.querySelectorAll('[data-s]').forEach(el=>el.onclick=()=>{
       if(el.disabled) return; d[el.dataset.s]+= +el.dataset.d; re(); });
     document.getElementById('suReset').onclick=()=>{ UI.setupLoad(null); re(); };
-    document.getElementById('suGo').onclick=()=>{ Run.createFromSetup(d); UI.showScreen('map'); };
+    document.getElementById('suGo').onclick=()=>{
+      if(UI.setupContext==='multi') Net.saveBuild(d);
+      else { Run.createFromSetup(d); UI.showScreen('map'); }
+    };
   },
 
   /* ---------- 규칙 안내 ---------- */
@@ -3506,7 +3571,8 @@ const Tut = {
    ========================================================================================== */
 const Net = {
   ws:null, token:'', connected:false, active:false, roomCode:'', roomStatus:'',
-  players:[], error:'', reconnectTimer:null, connectionKey:'', lastPreset:'direct',
+  players:[], error:'', notice:'', reconnectTimer:null, connectionKey:'', lastPreset:'direct',
+  customBuild:null, pendingCode:'', isHost:false,
 
   url(){ return `${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/${Net.roomCode}?token=${encodeURIComponent(Net.token)}`; },
   normalizeCode(value){
@@ -3529,6 +3595,8 @@ const Net = {
     try{ Net.token=sessionStorage.getItem('timeline_pvp_token')||''; }catch(e){}
     try{ Net.roomCode=sessionStorage.getItem('timeline_pvp_room')||''; }catch(e){}
     try{ Net.lastPreset=localStorage.getItem('timeline_pvp_preset')||'direct'; }catch(e){}
+    try{ Net.customBuild=JSON.parse(localStorage.getItem('timeline_pvp_build_v1')||'null'); }catch(e){ Net.customBuild=null; }
+    try{ Net.pendingCode=Net.normalizeCode(new URL(location.href).searchParams.get('room')||''); }catch(e){}
     if(Net.roomCode&&Net.token) Net.connect(); else Net.health();
     UI.renderMulti();
   },
@@ -3571,6 +3639,8 @@ const Net = {
     if(m.type==='error'){ Net.fail(m.message||'요청을 처리하지 못했다.'); return; }
     if(m.type==='room'){
       Net.roomCode=m.code||''; Net.roomStatus=m.status||''; Net.players=m.players||[]; Net.error='';
+      Net.isHost=!!m.youAreHost;
+      if(m.notice) Net.notice=m.notice;
       if(App.screen!=='battle') UI.showScreen('multi'); else UI.renderMulti(); return;
     }
     if(m.type==='state'){
@@ -3584,11 +3654,48 @@ const Net = {
     }
   },
   rememberPreset(id){ Net.lastPreset=id; try{ localStorage.setItem('timeline_pvp_preset',id); }catch(e){} },
+  defaultBuild(){
+    const p=DB.setup.presets.find(x=>x.id===Net.lastPreset)||DB.setup.presets[0];
+    return {weapon:p.weapon,techs:p.techs.slice(),sigils:p.sigils.slice(),chains:p.chains.slice(),
+      traits:[],hp:p.hp,stamina:p.stamina,focus:p.focus};
+  },
+  saveBuild(build){
+    Net.customBuild=JSON.parse(JSON.stringify(build));
+    try{ localStorage.setItem('timeline_pvp_build_v1',JSON.stringify(Net.customBuild)); }catch(e){}
+    if(Net.roomCode){
+      Net.notice='내 덱을 저장했습니다.';
+      if(!Net.send({type:'build',build:Net.customBuild})) Net.fail('서버 연결을 확인해 달라.');
+    }
+    UI.setupContext='single'; UI.showScreen('multi'); UI.renderMulti();
+  },
+  editBuild(){
+    UI.setupContext='multi';
+    UI.setupDraft=JSON.parse(JSON.stringify(Net.customBuild||Net.defaultBuild()));
+    UI.showScreen('school');
+  },
+  shareURL(){
+    const u=new URL(location.href); u.search=''; u.hash=''; u.searchParams.set('room',Net.roomCode); return u.toString();
+  },
+  async copyInvite(){
+    const value=Net.shareURL();
+    try{ await navigator.clipboard.writeText(value); Net.notice='입장 링크를 복사했습니다.'; }
+    catch(e){
+      const ta=document.createElement('textarea'); ta.value=value; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); Net.notice='입장 링크를 복사했습니다.';
+    }
+    UI.renderMulti();
+  },
+  start(){
+    if(!Net.isHost||Net.players.length<2) return;
+    Net.notice='게임 시작을 요청했습니다.';
+    if(!Net.send({type:'start'})) Net.fail('서버 연결을 확인해 달라.');
+    UI.renderMulti();
+  },
   formData(kind){
     const name=(document.getElementById(kind==='join'?'mpJoinName':'mpCreateName')||{}).value||'';
     const preset=(document.getElementById(kind==='join'?'mpJoinPreset':'mpCreatePreset')||{}).value||Net.lastPreset;
     const code=kind==='join'?Net.normalizeCode((document.getElementById('mpCode')||{}).value||''):'';
-    Net.rememberPreset(preset); return {name:name.trim().slice(0,18),preset,code};
+    Net.rememberPreset(preset); return {name:name.trim().slice(0,18),preset,build:Net.customBuild||null,code};
   },
   formFail(kind,msg){
     const el=document.getElementById(kind==='join'?'mpJoinError':'mpCreateError');
@@ -3611,8 +3718,8 @@ const Net = {
     const d=Net.formData('create');
     Net.clearFormError('create');
     if(!d.name) return Net.formFail('create','방을 만들 이름을 입력해 주세요.');
-    try{ const x=await Net.request('/api/rooms',{name:d.name,preset:d.preset,test:!!test});
-      Net.adoptSession(x,test?'playing':'waiting'); }
+    try{ const x=await Net.request('/api/rooms',{name:d.name,preset:d.preset,build:d.build,test:!!test});
+      Net.isHost=true; Net.notice='방을 만들었습니다.'; Net.adoptSession(x,test?'playing':'waiting'); }
     catch(e){ Net.formFail('create',e.message); }
   },
   async join(){
@@ -3620,8 +3727,9 @@ const Net = {
     Net.clearFormError('join');
     if(!d.name) return Net.formFail('join','방에 입장할 이름을 입력해 주세요.');
     if(d.code.length!==6) return Net.formFail('join','6자리 방 코드를 정확히 입력해 주세요.');
-    try{ const x=await Net.request(`/api/rooms/${encodeURIComponent(d.code)}/join`,{name:d.name,preset:d.preset});
-      Net.adoptSession(x,'playing'); }
+    try{ const x=await Net.request(`/api/rooms/${encodeURIComponent(d.code)}/join`,{name:d.name,preset:d.preset,build:d.build});
+      Net.isHost=false; Net.notice='방에 입장했습니다. 방장이 시작할 때까지 기다려 주세요.'; Net.adoptSession(x,'waiting');
+      try{ const u=new URL(location.href); u.searchParams.delete('room'); history.replaceState(null,'',u); }catch(e){} }
     catch(e){ Net.formFail('join',e.message); }
   },
   action(action){
@@ -3634,7 +3742,8 @@ const Net = {
     Net.send({type:'leave'}); clearTimeout(Net.reconnectTimer);
     const old=Net.ws; Net.ws=null; Net.connectionKey='';
     if(old){ old.onopen=old.onmessage=old.onclose=old.onerror=null; setTimeout(()=>old.close(1000,'방 나가기'),40); }
-    Net.active=false; Net.connected=false; Net.roomCode=''; Net.roomStatus=''; Net.players=[]; Net.token=''; Net.clearSession(); UI.showScreen('multi'); Net.health();
+    Net.active=false; Net.connected=false; Net.roomCode=''; Net.roomStatus=''; Net.players=[]; Net.token=''; Net.isHost=false;
+    Net.notice='방에서 나왔습니다.'; Net.clearSession(); UI.showScreen('multi'); Net.health();
   },
   showResult(won,reason){
     const why=reason==='forfeit'?'상대의 포기':(reason==='disconnect'?'상대 연결 종료':'전투 판정');
@@ -3653,43 +3762,67 @@ UI.renderMulti = function(){
   const b=document.getElementById('multiBody'); if(!b) return;
   if(Net.roomCode){
     const waiting=Net.roomStatus==='waiting';
+    const ready=waiting&&Net.players.length>=2&&Net.isHost&&Net.connected;
+    const link=Net.shareURL();
+    const status=Net.error||Net.notice||(Net.players.length<2?'상대 입장을 기다리는 중입니다.':
+      (Net.isHost?'두 플레이어가 입장했습니다. 준비되면 게임을 시작하세요.':'방장이 게임을 시작할 때까지 기다려 주세요.'));
     b.innerHTML=`<div class="h2">${waiting?'입장 대기방':'멀티플레이 방'}</div>
-      <p class="dim">상대에게 아래 코드를 전달하면 바로 입장할 수 있다.</p>
+      <p class="dim">방 코드나 안전한 입장 링크를 상대에게 전달하세요. 링크에는 세션 토큰이 포함되지 않습니다.</p>
       <div class="room-code">${U.esc(Net.roomCode)}</div>
+      <code class="room-link" title="${U.esc(link)}">${U.esc(link)}</code>
+      <div class="invite-actions"><button class="btn sm" id="mpCopyCode">코드 복사</button>
+        <button class="btn sm acc" id="mpCopyLink">입장 링크 복사</button></div>
       <div class="lobby-players">${Net.players.map((p,i)=>`<div class="lobby-player"><b>${i+1}P</b> · ${U.esc(p.name)}${p.connected===false?' · 재접속 대기':''}</div>`).join('')}</div>
-      <p class="net-status ${Net.error?'bad':'ok'}">${Net.error||((waiting?'상대 입장을 기다리는 중이다.':'전투를 준비 중이다.'))}</p>
-      <button class="btn dang" id="mpLeave">방 나가기</button>`;
+      <p class="lobby-notice" aria-live="polite">${U.esc(Net.notice||'')}</p>
+      <p class="net-status ${Net.error?'bad':'ok'}">${U.esc(status)}</p>
+      <div class="lobby-actions">${Net.isHost&&waiting?`<button class="btn acc" id="mpStart" ${ready?'':'disabled'}>게임 시작</button>`:''}
+        <button class="btn" id="mpLobbyDeck">내 덱 설정</button>
+        <button class="btn dang" id="mpLeave">방 나가기</button></div>`;
+    document.getElementById('mpCopyCode').onclick=async()=>{ try{ await navigator.clipboard.writeText(Net.roomCode); Net.notice='방 코드를 복사했습니다.'; }catch(e){ Net.notice='코드 복사에 실패했습니다.'; } UI.renderMulti(); };
+    document.getElementById('mpCopyLink').onclick=()=>Net.copyInvite();
+    const start=document.getElementById('mpStart'); if(start) start.onclick=()=>Net.start();
+    document.getElementById('mpLobbyDeck').onclick=()=>Net.editBuild();
     document.getElementById('mpLeave').onclick=()=>Net.leave(); return;
   }
   const presetOpts=DB.setup.presets.map(p=>`<option value="${p.id}" ${p.id===Net.lastPreset?'selected':''}>${U.esc(p.name)} — ${U.esc(p.desc)}</option>`).join('');
+  const deck=Net.customBuild;
+  const deckSummary=deck?`${deck.techs.length}개 기술 · ${U.esc(DB.weapons[deck.weapon].name)}`:'저장된 덱 없음';
+  const pending=Net.pendingCode;
   b.innerHTML=`<div class="h2">1 대 1 PvP</div>
-    <p class="muted">싱글플레이와 같은 시간축·자세·기력·사거리 규칙을 사용한다. 방 생성자는 첫 행동권을 가진다.</p>
+    <p class="muted">각 플레이어가 자신의 덱을 정한 뒤 입장합니다. 2P가 들어와도 자동 시작되지 않으며 방장이 직접 시작합니다.</p>
     <div class="multi-grid">
       <div class="multi-panel create nm-in">
         <div class="multi-panel-head"><span>방 만들기</span><small>1P · 방장</small></div>
         <label for="mpCreateName">방장 이름</label><input id="mpCreateName" maxlength="18" autocomplete="nickname" placeholder="방장 이름">
-        <label for="mpCreatePreset">PvP 구성</label><select id="mpCreatePreset">${presetOpts}</select>
+        <label for="mpCreatePreset">저장된 덱이 없을 때 기본 구성</label><select id="mpCreatePreset">${presetOpts}</select>
         <div class="form-error" id="mpCreateError" role="alert"></div>
         <button class="btn wide acc" id="mpCreate">방 만들기</button>
         <button class="btn wide" id="mpTest" style="margin-top:9px">혼자 테스트하는 임시방</button>
       </div>
+      <div class="multi-deck nm-in">
+        <div class="multi-panel-head" style="justify-content:center">내 덱</div>
+        <p class="dim">${deckSummary}</p>
+        <button class="btn acc" id="mpDeck">덱 직접 설정</button>
+        <p class="dim">설정한 덱은 이 브라우저에 저장되어 다음 접속에도 사용됩니다.</p>
+      </div>
       <div class="multi-panel join nm-in">
-        <div class="multi-panel-head"><span>코드로 입장</span><small>2P · 참가자</small></div>
+        <div class="multi-panel-head"><span>코드 또는 링크로 입장</span><small>2P · 참가자</small></div>
         <label for="mpJoinName">참가자 이름</label><input id="mpJoinName" maxlength="18" autocomplete="nickname" placeholder="참가자 이름">
-        <label for="mpJoinPreset">PvP 구성</label><select id="mpJoinPreset">${presetOpts}</select>
-        <label for="mpCode">6자리 방 코드</label><input id="mpCode" maxlength="6" autocapitalize="characters" placeholder="ABC123">
+        <label for="mpJoinPreset">저장된 덱이 없을 때 기본 구성</label><select id="mpJoinPreset">${presetOpts}</select>
+        <label for="mpCode">6자리 방 코드</label><input id="mpCode" value="${U.esc(pending)}" maxlength="6" autocapitalize="characters" placeholder="ABC123">
         <div class="form-error" id="mpJoinError" role="alert"></div>
-        <button class="btn wide" id="mpJoin">코드로 입장</button>
-        <p class="dim" style="margin-top:12px">방장이 전달한 코드를 입력해 바로 참가할 수 있다.</p>
+        <button class="btn wide" id="mpJoin">방에 입장</button>
+        <p class="dim" style="margin-top:12px">${pending?'공유 링크의 방 코드를 불러왔습니다. 이름을 입력하고 참가하세요.':'방장이 전달한 코드 또는 입장 링크를 사용하세요.'}</p>
       </div>
     </div>
     <p class="net-status ${Net.error?'bad':(Net.connected?'ok':'')}">${Net.error||(Net.connected?'서버 연결됨':'서버 연결 중…')}</p>`;
+  document.getElementById('mpDeck').onclick=()=>Net.editBuild();
   document.getElementById('mpCreate').onclick=()=>Net.create(false);
   document.getElementById('mpTest').onclick=()=>Net.create(true);
   document.getElementById('mpJoin').onclick=()=>Net.join();
   document.getElementById('mpCreateName').oninput=()=>Net.clearFormError('create');
   document.getElementById('mpJoinName').oninput=()=>Net.clearFormError('join');
-  document.getElementById('mpCode').oninput=e=>{ e.target.value=Net.normalizeCode(e.target.value); Net.clearFormError('join'); };
+  document.getElementById('mpCode').oninput=e=>{ e.target.value=Net.normalizeCode(e.target.value); Net.pendingCode=e.target.value; Net.clearFormError('join'); };
   document.getElementById('mpCreateName').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.create(false); } };
   document.getElementById('mpJoinName').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.join(); } };
   document.getElementById('mpCode').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); Net.join(); } };
@@ -3704,6 +3837,10 @@ UI.renderMulti = function(){
   document.getElementById('setBack').onclick=()=>UI.showScreen(App.backTo);
   document.getElementById('cxBack').onclick=()=>UI.showScreen(App.backTo);
   document.getElementById('multiBack').onclick=()=>{ if(Net.roomCode) Net.leave(); UI.showScreen('title'); };
+  document.getElementById('schoolBack').onclick=()=>{
+    if(UI.setupContext==='multi'){ UI.setupContext='single'; UI.showScreen('multi'); UI.renderMulti(); }
+    else UI.showScreen('title');
+  };
   document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') UI.closeModal(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') UI.closeModal(); });
   window.addEventListener('resize',()=>Tut.refresh());
@@ -3714,7 +3851,10 @@ UI.renderMulti = function(){
     e.preventDefault(); e.returnValue='';
     return '';
   });
-  UI.showScreen('title');
+  let invite='';
+  try{ invite=Net.normalizeCode(new URL(location.href).searchParams.get('room')||''); }catch(e){}
+  if(invite){ Net.pendingCode=invite; UI.showScreen('multi'); Net.open(); }
+  else UI.showScreen('title');
 })();
 </script>
 </body>
