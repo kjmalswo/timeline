@@ -3240,7 +3240,9 @@ UI.renderBattleScene=function(){
 };
 UI.playBattleMotion=function(){
   const event=Battle.st.visual;
-  if(!event||!event.side||event.seq===UI.motionSeq) return;
+  if(!event) return;
+  if(!event.side){ if(event.seq===0) UI.motionSeq=0; return; }
+  if(event.seq===UI.motionSeq) return;
   UI.motionSeq=event.seq;
   const side=event.side, weapon=UI.visualWeapon(side), motion=weapon&&weapon.motions[event.motion];
   if(!motion) return;
