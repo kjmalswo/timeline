@@ -10,15 +10,20 @@
    ============================================================================ */
 :root{
   /* 사용자 지정 5색 팔레트 */
-  --p-soft:#b8b8d1;
-  --p-deep:#5b5f97;
-  --p-yellow:#ffc145;
-  --p-white:#fffffb;
-  --p-coral:#ff6b6c;
+  --p-soft:#d7c79d;
+  --p-deep:#263b50;
+  --p-yellow:#f4bf43;
+  --p-white:#fff9e8;
+  --p-coral:#d95745;
+  --rpg-sky:#4e9ee8;
+  --rpg-grass:#55a34a;
+  --rpg-forest:#255d43;
+  --rpg-leather:#75462b;
+  --rpg-night:#182738;
 
   --bg:var(--p-white); --sf:var(--p-soft); --sf-2:var(--p-white);
   --ink:var(--p-deep); --ink-2:var(--p-deep); --ink-3:var(--p-deep); --ink-4:var(--p-soft);
-  --line:var(--p-soft); --sh-d:rgba(91,95,151,.34); --sh-l:var(--p-white);
+  --line:var(--p-soft); --sh-d:rgba(38,59,80,.30); --sh-l:var(--p-white);
   --acc:var(--p-yellow); --acc-soft:color-mix(in srgb,var(--p-yellow) 42%,var(--p-white));
   --ok:var(--p-deep); --warn:var(--p-yellow); --dang:var(--p-coral);
 
@@ -798,6 +803,150 @@ body{
 .menu .btn:nth-child(3n+2){background:color-mix(in srgb,var(--p-yellow) 50%,var(--p-white))}
 .menu .btn:nth-child(3n){background:color-mix(in srgb,var(--p-coral) 34%,var(--p-white))}
 
+
+/* ============================================================================
+   PIXEL RPG UI — 전투 이미지 팔레트 기반
+   ============================================================================ */
+:root{
+  --r-s:3px;--r-m:6px;--r-l:9px;
+  --bg:#efe3bd;--sf:#f6edcf;--sf-2:#fff9e8;
+  --ink:#263b50;--ink-2:#334f62;--ink-3:#5e6f70;--ink-4:#87907d;
+  --line:#9b7a4c;--acc:#f4bf43;--acc-soft:#f8dda0;
+  --self:#347fc0;--self-bg:#dcecf0;--foe:#d95745;--foe-bg:#f4d0b9;
+  --sh-d:rgba(38,59,80,.28);--sh-l:#fff9e8;
+}
+html,body,#app,#stage{background:#efe3bd}
+body{
+  background-color:#efe3bd;
+  background-image:
+    linear-gradient(90deg,rgba(117,70,43,.07) 1px,transparent 1px),
+    linear-gradient(rgba(117,70,43,.07) 1px,transparent 1px),
+    linear-gradient(180deg,#d8e8cf 0,#efe3bd 34%,#d9c38d 100%);
+  background-size:8px 8px,8px 8px,100% 100%;
+}
+.nm,.card-box.nm,.nm-sm{
+  background:#f6edcf;border:2px solid #75462b;border-radius:6px;
+  box-shadow:4px 4px 0 rgba(38,59,80,.28),inset 1px 1px 0 #fff9e8}
+.nm-in{
+  background:#e5d5aa;border:2px solid #9b7a4c;border-radius:4px;
+  box-shadow:inset 2px 2px 0 rgba(38,59,80,.20),inset -1px -1px 0 #fff9e8}
+.btn{
+  border:2px solid #75462b;border-radius:4px;color:#263b50;
+  background:linear-gradient(180deg,#fff3c7,#e3c982);
+  box-shadow:3px 3px 0 rgba(38,59,80,.30);transition:transform 90ms linear,box-shadow 90ms linear}
+.btn:hover:not(:disabled){box-shadow:2px 2px 0 rgba(38,59,80,.34);transform:translate(1px,1px)}
+.btn:active:not(:disabled),.btn.on{background:#f4bf43;box-shadow:inset 2px 2px 0 rgba(117,70,43,.35);transform:translate(2px,2px)}
+.btn.acc{background:#f4bf43;border-color:#75462b}.btn.dang{background:#d95745;color:#fff9e8}
+.tag{border:1px solid #75462b;border-radius:3px;background:#f6edcf;box-shadow:1px 1px 0 rgba(38,59,80,.22)}
+.tag.t-high,.tag.t-dang{background:#e98a65}.tag.t-low,.tag.t-warn{background:#f4bf43}
+.tag.t-mid,.tag.t-acc,.tag.t-ok{background:#8bc7dc}.tag.t-side{background:#a7c582}
+
+/* 타이틀 메뉴 버튼만 흰색 뉴모피즘 유지 */
+#screen-title .menu .btn{
+  color:#263b50;border:1px solid #e4ddca;border-radius:14px;
+  background:linear-gradient(145deg,#ffffff,#f5f1e7);
+  box-shadow:7px 7px 15px rgba(38,59,80,.20),-7px -7px 15px rgba(255,255,255,.94);
+  transform:none;transition:box-shadow var(--t) var(--e),transform var(--t) var(--e)}
+#screen-title .menu .btn:hover:not(:disabled){
+  background:linear-gradient(145deg,#ffffff,#f5f1e7);
+  box-shadow:4px 4px 9px rgba(38,59,80,.22),-4px -4px 9px #ffffff;transform:translateY(1px)}
+#screen-title .menu .btn:active:not(:disabled){
+  background:#f8f6ef;box-shadow:inset 4px 4px 9px rgba(38,59,80,.18),inset -4px -4px 9px #ffffff;
+  transform:translateY(2px)}
+
+/* 상대 발밑 도트 RPG 예고 */
+.battle-timeline{top:8px;bottom:auto;width:auto;max-width:calc(100% - 18px)}
+.battle-timeline .tl{padding:0;background:transparent;border:0;box-shadow:none}
+.battle-clock{display:flex;align-items:center;justify-content:center;gap:8px;color:#fff9e8;
+  font-size:.62em;font-weight:850;text-shadow:1px 1px 0 #182738}
+.battle-clock span{padding:2px 5px;border:1px solid #75462b;background:#263b50;box-shadow:2px 2px 0 rgba(24,39,56,.40)}
+.battle-clock .warn{color:#ffd15d;background:#713b35}
+.battle-intent{
+  position:absolute;left:50%;bottom:-2px;transform:translate(-50%,100%);z-index:7;
+  display:flex;align-items:center;gap:7px;min-width:max-content;max-width:190px;padding:4px 7px;
+  color:#fff9e8;background:#182738;border:2px solid var(--intent-line,#f4bf43);border-radius:0;
+  box-shadow:3px 3px 0 rgba(24,39,56,.52);font-size:.69em;font-weight:900;line-height:1.15;
+  text-shadow:1px 1px 0 #000;pointer-events:auto}
+.battle-intent::before{content:"";position:absolute;left:50%;top:-6px;width:7px;height:7px;
+  background:#182738;border-left:2px solid var(--intent-line,#f4bf43);
+  border-top:2px solid var(--intent-line,#f4bf43);transform:translateX(-50%) rotate(45deg)}
+.battle-intent b{color:#f4bf43}.intent-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 도트 RPG 말풍선 — 카드와 예고 공용 */
+[data-tooltip]{position:relative}
+[data-tooltip]::after{
+  content:attr(data-tooltip);position:absolute;left:50%;bottom:calc(100% + 9px);z-index:80;
+  width:max-content;max-width:min(300px,78vw);padding:8px 10px;color:#fff9e8;background:#182738;
+  border:2px solid #f4bf43;border-radius:0;box-shadow:4px 4px 0 rgba(24,39,56,.45);
+  font-size:12px;font-weight:700;line-height:1.45;text-align:left;white-space:normal;
+  opacity:0;visibility:hidden;transform:translate(-50%,4px);pointer-events:none}
+[data-tooltip]:hover::after,[data-tooltip]:focus-visible::after{
+  opacity:1;visibility:visible;transform:translate(-50%,0)}
+.battle-actor[data-actor="E"] .battle-intent::after{bottom:calc(100% + 10px)}
+
+/* 압축형 자세 선택 */
+.ring{padding:5px 7px;gap:7px;background:#e8d7a8;border:2px solid #75462b;box-shadow:3px 3px 0 rgba(38,59,80,.25)}
+.ring-head{display:flex;align-items:center;gap:7px;min-width:max-content}
+.ring-head strong{font-size:.72em;letter-spacing:.06em}
+.stance-spend-note{padding:2px 5px;color:#fff9e8;background:#75462b;font-size:.58em;font-weight:850}
+.ring-row{display:grid;grid-template-columns:repeat(5,minmax(70px,1fr));gap:5px}
+.snode{min-width:0;padding:4px 5px;border:2px solid #75462b;border-radius:3px;
+  background:#f6edcf;box-shadow:2px 2px 0 rgba(38,59,80,.26);display:grid;
+  grid-template-columns:14px 1fr auto;align-items:center;gap:4px;text-align:left}
+.snode:nth-child(n){background:#f6edcf}.snode.cur{background:#f4bf43;box-shadow:inset 2px 2px 0 rgba(117,70,43,.30)}
+.snode.no{opacity:.48}.sn-sym{height:auto;margin:0}.sn-name{font-size:.68em;white-space:nowrap}
+.sn-cost{font-size:.55em;margin:0;white-space:nowrap}.sn-cost.spend{color:#d95745;font-weight:950}
+.sn-thr{position:static;grid-column:3;font-size:.52em;padding:0}
+
+/* 설명을 말풍선으로 옮긴 전투 카드 */
+.techwrap{grid-template-columns:minmax(0,1fr) 220px;gap:8px;padding-bottom:7px;min-height:auto;overflow:visible}
+.techcol{overflow:visible;padding:0}.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:6px}
+.tech,.tech.mini{width:auto;min-width:0;min-height:78px;max-width:none;flex:none;border:2px solid #75462b;
+  border-radius:4px;background:#f6edcf;box-shadow:3px 3px 0 rgba(38,59,80,.28);overflow:visible}
+.tech.line-high{--card-accent:#d95745}.tech.line-mid{--card-accent:#4e9ee8}
+.tech.line-low{--card-accent:#f4bf43}.tech.line-side{--card-accent:#55a34a}.tech.line-none{--card-accent:#87907d}
+.tech:hover:not(.no){transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(38,59,80,.32)}
+.tech.sel{border-color:#f4bf43;box-shadow:0 0 0 2px #182738,4px 4px 0 rgba(38,59,80,.34)}
+.tc-line{height:4px;box-shadow:none}.tc-body{padding:5px 6px;gap:3px}.tc-top{align-items:center;gap:4px}
+.tc-name{font-size:.78em;line-height:1.05;color:#263b50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-cost{width:22px;height:22px;border-radius:2px;font-size:.66em;color:#fff9e8;background:#75462b;box-shadow:1px 1px 0 #182738}
+.tc-meta,.tc-quick{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:.55em;font-weight:850;line-height:1.15}
+.tc-quick span{padding:1px 3px;background:#e3d4ad;border:1px solid #9b7a4c}
+.tc-to{font-size:.56em;font-weight:850}.tc-switch-cost{font-size:.54em;color:#d95745;font-weight:950}
+.tc-good{position:absolute;right:3px;bottom:3px;padding:1px 3px;border-radius:0;background:#55a34a;color:#fff9e8;font-size:.5em}
+.tc-block{inset:auto 3px 3px 3px;padding:2px 4px;border-radius:0;font-size:.52em;background:#713b35;color:#fff9e8}
+.tc-text,.tc-sub,.costline,.tc-foot,.tc-emp{display:none}
+
+/* RPG 지도·대화창·로그 */
+.log,.brief,.proj,.turnbar,.modal-box,.multi-panel,.mapnode{
+  border-color:#75462b;border-radius:4px;box-shadow:3px 3px 0 rgba(38,59,80,.24)}
+.log{background:#f3e7c3}.modal{background:rgba(24,39,56,.72)}
+.modal-box{background:#f6edcf}.mapnode:nth-child(3n+1){background:#d8e8cf}
+.mapnode:nth-child(3n+2){background:#f2d483}.mapnode:nth-child(3n){background:#d9b897}
+
+@media(max-width:1100px){
+  .techwrap{grid-template-columns:1fr}.side{max-height:100px}.log{min-height:76px;max-height:100px}
+  .tech-grid{grid-template-columns:repeat(4,minmax(105px,1fr))}
+}
+@media(max-width:760px){
+  .battle-scene{height:300px;min-height:300px;flex-basis:300px}
+  .battle-clock{gap:3px;font-size:.54em}.battle-clock span{padding:1px 3px}
+  .battle-intent{font-size:.61em;max-width:145px;padding:3px 5px}
+  .ringwrap{padding-bottom:5px}.ring{display:block}.ring-head{justify-content:space-between;margin-bottom:4px}
+  .stance-spend-note{font-size:.52em}.ring-row{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .snode{grid-template-columns:1fr;padding:3px;text-align:center;gap:1px}.sn-sym{display:none}
+  .sn-name{font-size:.59em}.sn-cost{font-size:.49em}.sn-thr{display:none}
+  .tech-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .tech,.tech.mini{min-height:70px}.tc-body{padding:4px}.tc-name{font-size:.69em}
+  .tc-meta,.tc-quick,.tc-to,.tc-switch-cost{font-size:.48em}
+  .techwrap{padding-left:6px;padding-right:6px}.side{display:none}
+}
+@media(max-width:430px){
+  .tech-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stance-spend-note{max-width:190px;text-align:right}
+  [data-tooltip]::after{max-width:86vw}
+}
+
 </style>
 </head>
 <body>
@@ -915,7 +1064,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V6.3', build:'CF',
+    title:'THE TIMELINE', version:'V7.0', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -2932,44 +3081,32 @@ const UI = {
     const ref=a||{weapon:(Run.data&&Run.data.weapon)||DB.weaponStart,traits:(Run.data&&Run.data.traits)||[],
       statuses:{},stance:d.stance};
     const cast=a?Battle.castTimeOf(a,d):d.cast, rec=Battle.effRecovery(ref,d);
-    const rg=Battle.effRange(ref,d);
-    let bar=''; const total=Math.min(cast+rec,12);
-    for(let i=0;i<total;i++) bar+=`<i class="${i<cast?'cast':'rec'}"></i>`;
-    let dots=''; for(let i=D.min;i<=D.max;i++){
-      const on=i>=rg[0]&&i<=rg[1], cur=s&&s.distance===i;
-      dots+=`<i class="${on?'on':''} ${cur?'cur':''}" title="${U.esc(D.labels[i])}"></i>`; }
-
-    const tc=a?Battle.transitionCost(a,d.stance):0;
+    const rg=Battle.effRange(ref,d), tc=a?Battle.transitionCost(a,d.stance):0;
+    const cost=Battle.effCost(ref,d), total=cost+tc;
     let mult='';
-    if(opt.showMult && s && d.line!=='none'){
+    if(opt.showMult&&s&&d.line!=='none'){
       const m=Battle.lineMult(Battle.A(DB.meta.sides.FOE),d.line);
-      mult=`<span class="tc-mult ${m>1.01?'up':(m<0.99?'dn':'')}" title="상대 ${U.esc(U.stance(Battle.A(DB.meta.sides.FOE).stance).name)} 자세 기준 피해 배율">${m.toFixed(2)}배</span>`;
+      mult='<span class="tc-mult '+(m>1.01?'up':(m<0.99?'dn':''))+'">'+m.toFixed(2)+'배</span>';
     }
-    const emp=d.empower&&!opt.mini?`<div class="tc-emp">집중 ${d.empower.focus} — ${U.esc(d.empower.text)}</div>`:'';
-    const block=opt.block?`<div class="tc-block">${U.esc(opt.block)}</div>`:'';
-    const good=opt.good?`<div class="tc-good">${U.esc(opt.good)}</div>`:'';
-    return `<div class="tech line-${d.line} ${opt.cls||''}" data-tech="${id}" ${opt.attrs||''}>
-      ${good}<div class="tc-line" style="background:linear-gradient(90deg,var(${ln.css}),color-mix(in srgb,var(${ln.css}) 48%,transparent))"></div>
-      <div class="tc-body">
-        <div class="tc-top">
-          <div style="flex:1">
-            <div class="tc-name">${U.esc(d.name)}</div>
-            <div class="tc-sub"><span style="color:var(${ln.css})">${U.esc(ln.name)}</span>
-              <span style="color:var(${U.stance(d.stance).color})">${U.esc(U.stance(d.stance).name)}</span>
-              ${tc>0?`<span class="tag t-warn n" style="padding:1px 6px">전환 ${tc}</span>`:''}</div>
-          </div>
-          <div class="tc-cost" title="기술 자체의 기력 비용">${Battle.effCost(ref,d)}</div>
-        </div>
-        <div class="tc-sub" style="gap:9px">
-          <span class="tbar" style="color:var(${ln.css})">${bar}<span class="tb-lab">준비 ${cast}틱 · 빈틈 ${rec}틱</span></span>
-        </div>
-        <div class="costline">기력 <b>${Battle.effCost(ref,d)+tc}</b>${tc>0?` <span style="color:var(--warn)">(자세 바꾸기 ${tc} 포함)</span>`:''}</div>
-        <div class="tc-sub"><span class="rdots">${dots}</span>
-          <span style="color:var(--ink-4)">${rg[0]===D.min&&rg[1]===D.max?'전 거리':U.esc(D.labels[rg[0]]+(rg[0]!==rg[1]?'~'+D.labels[rg[1]]:''))}</span>${mult}</div>
-        <div class="tc-text">${U.esc(d.text)}</div>
-        ${block}${emp}
-        <div class="tc-foot"><span class="tc-to">사용 후 ${UI.sym(U.stance(d.to))} ${U.esc(U.stance(d.to).name)}</span></div>
-      </div></div>`;
+    const range=rg[0]===D.min&&rg[1]===D.max?'전 거리':
+      D.labels[rg[0]]+(rg[0]!==rg[1]?'~'+D.labels[rg[1]]:'');
+    let tip=d.text+' | 기력 '+total+' · 준비 '+cast+'틱 · 빈틈 '+rec+'틱 · '+range+
+      ' | 사용 후 '+U.stance(d.to).name;
+    if(d.empower) tip+=' | 강화: 집중 '+d.empower.focus+' · '+d.empower.text;
+    if(opt.block) tip+=' | '+opt.block;
+    const block=opt.block?'<div class="tc-block">'+U.esc(opt.block)+'</div>':'';
+    const good=opt.good?'<span class="tc-good">'+U.esc(opt.good)+'</span>':'';
+    return '<div class="tech line-'+d.line+' '+(opt.cls||'')+'" data-tech="'+id+
+      '" data-tooltip="'+U.esc(tip)+'" tabindex="0">'+
+      '<div class="tc-line" style="background:var('+ln.css+')"></div>'+
+      '<div class="tc-body"><div class="tc-top"><div class="tc-name">'+U.esc(d.name)+'</div>'+
+      '<div class="tc-cost" title="총 기력 비용">'+total+'</div></div>'+
+      '<div class="tc-meta"><span style="color:var('+U.stance(d.stance).color+')">'+
+      UI.sym(U.stance(d.stance))+' '+U.esc(U.stance(d.stance).name)+'</span>'+
+      '<span style="color:var('+ln.css+')">'+U.esc(ln.name)+'</span>'+mult+'</div>'+
+      '<div class="tc-quick"><span>준비 '+cast+'</span><span>빈틈 '+rec+'</span><span>'+U.esc(range)+'</span></div>'+
+      '<div class="tc-to">→ '+UI.sym(U.stance(d.to))+' '+U.esc(U.stance(d.to).name)+'</div>'+
+      (tc?'<div class="tc-switch-cost">자세 전환 −'+tc+' 기력</div>':'')+good+block+'</div></div>';
   }
 };
 
@@ -3010,148 +3147,84 @@ UI.panel = function(side){
 
 /* ---------- 전투: 시간축 ---------- */
 UI.timeline = function(){
-  const s=Battle.st, W=DB.ui.window, D=DB.balance.distance, TK=DB.balance.tick;
-  const t0=s.tick, t1=s.tick+W, pos=t=>U.clamp((t-t0)/W*100,0,100);
-  const intent=Run.difficulty().intent;
-  const selfA=Battle.A(DB.meta.sides.SELF), foeA=Battle.A(DB.meta.sides.FOE);
-
-  let axis='';
-  for(let t=t0;t<=t1;t++){
-    const mj=(t%DB.ui.majorEvery)===0; if(!mj&&t!==t0) continue;
-    const p=pos(t), sh=p<3?'0':(p>97?'-100%':'-50%');
-    axis+=`<div class="tl-tk ${mj?'mj':''}" style="left:${p}%;transform:translateX(${sh})">${t}</div>`;
-  }
-
-  let ghost=null;
-  if(Battle.selected && DB.techs[Battle.selected]){
-    const d=DB.techs[Battle.selected], keep=selfA.stance;
-    selfA.stance=d.stance; const cast=Battle.castTimeOf(selfA,d); selfA.stance=keep;
-    const mv=(d.onPlay||[]).filter(e=>e.k==='move').reduce((x,e)=>x+e.v,0);
-    const nd=U.clamp(s.distance+mv,D.min,D.max);
-    const rgG=Battle.effRange(selfA,d);
-    ghost={ at:s.tick+cast, ready:s.tick+Battle.recoveryOf(selfA,d), name:d.name, line:d.line,
-      hasHit:(d.onHit||[]).length>0, inRange:nd>=rgG[0]&&nd<=rgG[1], nd, range:rgG };
-  }
-
-  const lane=side=>{
-    const cls=side===DB.meta.sides.SELF?'self':'foe';
-    const me=Battle.A(side);
-    let h=`<div class="tl-lab">${side===DB.meta.sides.SELF?DB.ui.laneSelf:DB.ui.laneFoe}</div>`;
-    if(side===DB.meta.sides.SELF&&ghost&&ghost.hasHit&&ghost.at<=t1)
-      h+=`<div class="tl-ent ghost" style="left:${pos(ghost.at)}%;color:var(${U.line(ghost.line).css})"
-            title="선택한 기술의 예상 발동 시각">${U.esc(ghost.name)} 예정</div>`;
-    s.queue.filter(q=>q.status==='pending'&&q.owner===side).forEach(q=>{
-      if(q.resolveAt>t1) return;
-      const ln=U.line(q.line), foe=Battle.A(Battle.other(side));
-      const raw=(q.onHit||[]).filter(e=>e.k==='damage').reduce((x,e)=>x+e.v,0);
-      const show=(side===DB.meta.sides.SELF||intent==='full');
-      const est=raw?U.floor(raw*Battle.dealtMult(me,foe)*Battle.takenMult(foe)*Battle.lineMult(foe,q.line)*DB.balance.damage.globalScale):0;
-      const inR=s.distance>=q.range[0]&&s.distance<=q.range[1];
-      h+=`<div class="tl-ent ${cls}" style="left:${pos(q.resolveAt)}%;color:var(${ln.css})"
-        title="${U.esc(q.name)} · ${U.esc(ln.name)} · 발동 ${q.resolveAt}틱 · ${inR?'현재 사거리 내':'현재 사거리 밖'}">
-        ${U.esc(q.name)}${show&&est?` <b>${est}</b>`:''}${inR?'':' <span style="opacity:.6">밖</span>'}</div>`;
-    });
-    if(me.readyAt<=t1) h+=`<div class="tl-rdy ${cls}" style="left:${pos(me.readyAt)}%"
-      title="${DB.meta.sideLabel[side]} 다음 행동 가능"></div>`;
-    if(side===DB.meta.sides.SELF&&ghost&&ghost.ready<=t1)
-      h+=`<div class="tl-rdy ghost" style="left:${pos(ghost.ready)}%" title="선택한 기술 사용 시 다음 행동 가능"></div>`;
-    return h;
-  };
-
-  const leftT=Math.max(0,TK.maxTickGuard-s.tick);
-  const lead=(selfA.hp/selfA.hpMax)>=(foeA.hp/foeA.hpMax)?'내가 우세':'상대가 우세';
-  return `
-    <div class="tl-top">
-      <span class="tl-now"><small>현재</small>${s.tick}틱</span>
-      <span class="tag ${leftT<=TK.warnRemaining?'t-dang':'t-key'}" title="제한 시간에 도달하면 남은 체력 비율이 높은 쪽이 승리합니다.">제한 ${leftT}틱 · ${lead}</span>
-    </div>
-    <div class="tl-grid">
-      <div class="tl-lane">${lane(DB.meta.sides.FOE)}</div>
-      <div class="tl-axis">${axis}</div>
-      <div class="tl-lane">${lane(DB.meta.sides.SELF)}</div>
-      <div class="tl-head"></div>
-    </div>`;
+  const s=Battle.st, TK=DB.balance.tick;
+  const left=Math.max(0,TK.maxTickGuard-s.tick);
+  const self=Battle.A(DB.meta.sides.SELF), foe=Battle.A(DB.meta.sides.FOE);
+  const lead=(self.hp/self.hpMax)>=(foe.hp/foe.hpMax)?'내가 우세':'상대가 우세';
+  return '<div class="battle-clock">'+
+    '<span>현재 <b>'+s.tick+'틱</b></span>'+
+    '<span class="'+(left<=TK.warnRemaining?'warn':'')+'">남은 시간 <b>'+left+'틱</b></span>'+
+    '<span>'+lead+'</span></div>';
 };
 
 /* ---------- 전투: 자세 링 ---------- */
 UI.ring = function(){
   const a=Battle.A(DB.meta.sides.SELF), s=Battle.st;
   const inc=s.queue.filter(q=>q.status==='pending'&&q.owner===DB.meta.sides.FOE
-    && (q.onHit||[]).some(e=>e.k==='damage'));
+    &&(q.onHit||[]).some(e=>e.k==='damage'));
   let nodes='';
   DB.stances.forEach(st=>{
-    const cur=a.stance===st.id, cost=Battle.transitionCost(a,st.id);
-    const can=cur||a.stamina>=cost;
-    let thr='';
+    const cur=a.stance===st.id, cost=Battle.transitionCost(a,st.id), can=cur||a.stamina>=cost;
+    let ratio='';
     if(inc.length){
       const keep=a.stance; a.stance=st.id;
-      let t=0; inc.forEach(q=>{ const m=Battle.lineMult(a,q.line);
-        (q.onHit||[]).forEach(e=>{ if(e.k==='damage') t+=e.v*m; }); });
-      let base=0; inc.forEach(q=>(q.onHit||[]).forEach(e=>{ if(e.k==='damage') base+=e.v; }));
+      let hit=0,base=0;
+      inc.forEach(q=>(q.onHit||[]).forEach(e=>{ if(e.k==='damage'){ base+=e.v; hit+=e.v*Battle.lineMult(a,q.line); } }));
       a.stance=keep;
-      const ratio=base?t/base:1;
-      thr=`<span class="sn-thr ${ratio>1.01?'bad':(ratio<0.99?'good':'')}" title="예고된 상대 공격을 이 자세로 받을 때의 피해 배율입니다.">${ratio.toFixed(2)}</span>`;
+      const value=base?hit/base:1;
+      ratio='<span class="sn-thr '+(value>1.01?'bad':(value<0.99?'good':''))+'">'+value.toFixed(2)+'</span>';
     }
-    nodes+=`<div class="snode ${cur?'cur':''} ${can?'':'no'}" data-stance="${st.id}"
-      title="${U.esc(st.desc)}">
-      ${thr}<div class="sn-sym" style="${cur?`color:var(${st.color})`:''}">${UI.sym(st)}</div>
-      <div class="sn-name">${U.esc(st.name)}</div>
-      <div class="sn-cost">${cur?'현재':(can?`기력 ${cost}`:`기력 ${cost}`)}</div></div>`;
+    const costText=cur?'현재':'−'+cost+' 기력';
+    const tip=st.desc+' '+(cur?'현재 자세입니다.':'선택 즉시 기력 '+cost+'을 소모하며 시간은 흐르지 않습니다.');
+    nodes+='<button class="snode '+(cur?'cur ':'')+(can?'':'no')+'" data-stance="'+st.id+
+      '" data-tooltip="'+U.esc(tip)+'" '+(can?'':'disabled')+'>'+
+      ratio+'<span class="sn-sym" style="'+(cur?'color:var('+st.color+')':'')+'">'+UI.sym(st)+'</span>'+
+      '<span class="sn-name">'+U.esc(st.name)+'</span>'+
+      '<span class="sn-cost '+(cur?'':'spend')+'">'+costText+'</span></button>';
   });
-  return `<div class="ring-head"><span class="tag t-key n" title="자세 전환에는 시간이 들지 않습니다. 전환한 뒤 바로 기술을 사용할 수 있습니다.">자세 바꾸기</span></div>
-    <div class="ring-row">${nodes}</div>`;
+  return '<div class="ring-head"><strong>자세</strong>'+
+    '<span class="stance-spend-note">버튼을 누르는 즉시 기력이 소모됩니다 · 시간 소모 없음</span></div>'+
+    '<div class="ring-row">'+nodes+'</div>';
 };
 
 /* ---------- 전투: 기술 목록 ---------- */
 UI.techs = function(){
   const a=Battle.A(DB.meta.sides.SELF), foe=Battle.A(DB.meta.sides.FOE), st=Battle.st;
   const BR=DB.ui.blockReason;
-  const groups=DB.stances.map(x=>({st:x, ids:a.techs.filter(id=>DB.techs[id]&&DB.techs[id].stance===x.id)}))
-    .filter(g=>g.ids.length);
-  groups.sort((x,y)=> (y.st.id===a.stance?1:0)-(x.st.id===a.stance?1:0));
-
-  /* 가장 빨리 발동하면서 사거리에 드는 공격을 '유리한 수'로 표시한다 */
   const inc=st.queue.filter(q=>q.status==='pending'&&q.owner===DB.meta.sides.FOE
     &&(q.onHit||[]).some(e=>e.k==='damage')).sort((p,q)=>p.resolveAt-q.resolveAt)[0];
-  let bestId=null, bestScore=-1;
+  let bestId=null,bestScore=-1;
   a.techs.forEach(id=>{
     const d=DB.techs[id]; if(!d||!(d.onHit||[]).some(e=>e.k==='damage')) return;
     const tc=Battle.transitionCost(a,d.stance);
-    if(a.stamina < tc+Battle.effCost(a,d)) return;
+    if(a.stamina<tc+Battle.effCost(a,d)) return;
     const mv=(d.onPlay||[]).filter(e=>e.k==='move').reduce((x,e)=>x+e.v,0);
     const nd=U.clamp(st.distance+mv,DB.balance.distance.min,DB.balance.distance.max);
-    const rgB=Battle.effRange(a,d);
-    if(nd<rgB[0]||nd>rgB[1]) return;
+    const rg=Battle.effRange(a,d);
+    if(nd<rg[0]||nd>rg[1]) return;
     const keep=a.stance; a.stance=d.stance; const cast=Battle.castTimeOf(a,d); a.stance=keep;
-    if(inc && st.tick+cast > inc.resolveAt) return;          // 상대보다 늦으면 제외
+    if(inc&&st.tick+cast>inc.resolveAt) return;
     const raw=(d.onHit||[]).filter(e=>e.k==='damage').reduce((x,e)=>x+e.v,0);
     const est=raw*Battle.dealtMult(a,foe)*Battle.takenMult(foe)*Battle.lineMult(foe,d.line)
-              *DB.balance.damage.globalScale;
-    if(est>bestScore){ bestScore=est; bestId=id; }
+      *DB.balance.damage.globalScale;
+    if(est>bestScore){bestScore=est;bestId=id;}
   });
-
-  let h='';
-  groups.forEach(g=>{
-    const cur=g.st.id===a.stance;
-    const tc=Battle.transitionCost(a,g.st.id);
-    h+=`<div class="secthead" style="margin:${cur?'0':'12px'} 0 7px">
-      <span style="color:var(${g.st.color})">${UI.sym(g.st)}</span>
-      <span>${U.esc(g.st.name)}${cur?' · 지금 자세':` · 바꾸기 기력 ${tc}`}</span>
-      <span class="ln"></span></div><div class="techrow">`;
-    g.ids.forEach(id=>{
-      const d=DB.techs[id], need=tc+Battle.effCost(a,d);
-      let block='';
-      if(!Tut.allowTech(id)&&Tut.on) block=BR.locked;
-      else if(!Battle.awaitInput) block=BR.turn;
-      else if(a.stamina<need) block=U.fmt(BR.stamina,{need,have:Math.floor(a.stamina)});
-      const can=!block;
-      h+=UI.techCard(id,{ actor:a, mini:!cur, showMult:App.settings.showMultiplier, block,
-        good: id===bestId?'유리한 수':'',
-        cls:(can?'':'no')+(Battle.selected===id?' sel':'')+(cur?'':' mini')+(id===bestId?' best':'') });
-    });
-    h+=`</div>`;
+  const ids=a.techs.slice().sort((x,y)=>{
+    const xs=DB.techs[x].stance===a.stance?0:1, ys=DB.techs[y].stance===a.stance?0:1;
+    return xs-ys;
   });
-  return h;
+  let cards='';
+  ids.forEach(id=>{
+    const d=DB.techs[id], tc=Battle.transitionCost(a,d.stance), need=tc+Battle.effCost(a,d);
+    let block='';
+    if(!Tut.allowTech(id)&&Tut.on) block=BR.locked;
+    else if(!Battle.awaitInput) block=BR.turn;
+    else if(a.stamina<need) block=U.fmt(BR.stamina,{need,have:Math.floor(a.stamina)});
+    cards+=UI.techCard(id,{actor:a,showMult:App.settings.showMultiplier,block,
+      good:id===bestId?'유리한 수':'',
+      cls:(block?'no':'')+(Battle.selected===id?' sel':'')+(id===bestId?' best':'')});
+  });
+  return '<div class="tech-grid">'+cards+'</div>';
 };
 
 /* ---------- 전투: 지금 상황 요약 ---------- */
@@ -3292,6 +3365,21 @@ UI.renderBattleScene=function(){
       if(!badge){ badge=document.createElement('span'); badge.className='battle-actor-fallback'; el.prepend(badge); }
       badge.textContent=actor.name;
     }
+    let intent=el.querySelector(':scope > .battle-intent');
+    if(side===DB.meta.sides.FOE){
+      const queued=s.queue.filter(q=>q.status==='pending'&&q.owner===side)
+        .sort((a,b)=>a.resolveAt-b.resolveAt)[0];
+      if(queued){
+        if(!intent){ intent=document.createElement('div'); intent.className='battle-intent'; el.appendChild(intent); }
+        const def=DB.techs[queued.techId], remain=Math.max(0,queued.resolveAt-s.tick);
+        intent.innerHTML='<span class="intent-name">'+U.esc(queued.name)+'</span><b>'+remain+'틱</b>';
+        intent.style.setProperty('--intent-line','var('+(U.line(queued.line).css)+')');
+        intent.dataset.tooltip=def
+          ? def.text+' | '+U.line(def.line).name+' · 준비 '+Battle.castTimeOf(actor,def)+'틱 · 빈틈 '+
+            Battle.effRecovery(actor,def)+'틱 · 사거리 '+def.range[0]+'~'+def.range[1]
+          : queued.name;
+      }else if(intent) intent.remove();
+    }else if(intent) intent.remove();
     const panel=document.getElementById(side===DB.meta.sides.SELF?'selfPanel':'foePanel');
     if(panel&&panel.parentNode!==el) el.appendChild(panel);
   });

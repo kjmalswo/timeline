@@ -21,6 +21,13 @@ test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
   assert.match(html, /UI\.pixelGauge/);
   assert.match(html, /P:\{ hp:'#32d66b'/);
   assert.match(html, /E:\{ hp:'#ff4f57'/);
+  assert.match(html, /battle-intent/);
+  assert.match(html, /return '<div class="battle-clock">'/);
+  assert.match(html, /class="tech-grid"/);
+  assert.doesNotMatch(html, /techCard\(id,opt\)[\s\S]{0,4000}class="tc-text"/);
+  assert.match(html, /stance-spend-note/);
+  assert.match(html, /#screen-title \.menu \.btn\{/);
+  assert.match(html, /\.battle-intent\{[^}]*background:#182738/);
   assert.doesNotMatch(html, /const track=`<div class="track"/, '거리 트랙은 캐릭터 위치로 대체됩니다.');
   assert.match(html, /startPositions:\{P:30,E:70\}/);
   assert.match(html, /panel&&panel\.parentNode!==el/);
