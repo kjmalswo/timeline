@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -24,6 +24,7 @@ export {DB,U,Battle};
 
 await mkdir(resolve(root, 'src'), { recursive: true });
 await mkdir(resolve(root, 'dist'), { recursive: true });
+await cp(resolve(root, 'assets'), resolve(root, 'dist/assets'), { recursive: true });
 await writeFile(resolve(root, 'src/game-engine.generated.js'), generated);
 await writeFile(resolve(root, 'dist/index.html'), html);
 console.log('Cloudflare Worker 빌드 파일을 생성했습니다.');

@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
-  const [html, engine, worker] = await Promise.all([
+  const [html, engine, worker, battleAsset] = await Promise.all([
     readFile(new URL('../dist/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../src/game-engine.generated.js', import.meta.url), 'utf8'),
-    readFile(new URL('../src/worker.js', import.meta.url), 'utf8')
+    readFile(new URL('../src/worker.js', import.meta.url), 'utf8'),
+    readFile(new URL('../dist/assets/battle/standard/idle.png', import.meta.url))
   ]);
   assert.match(html, /혼자 테스트하는 임시방/);
   assert.match(html, /\/api\/rooms/);
@@ -19,6 +20,7 @@ test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
   assert.match(worker, /message\.type === 'start'/);
   assert.match(worker, /normalizeBuild/);
   assert.match(engine, /export \{DB,U,Battle\}/);
+  assert.equal(battleAsset.subarray(1, 4).toString(), 'PNG');
 });
 
 test('공유 엔진이 유효한 첫 행동을 처리한다', async () => {
