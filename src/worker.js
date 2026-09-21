@@ -474,7 +474,7 @@ export class GameRoom {
   async socketEnded(socket) {
     const attachment = socket.deserializeAttachment();
     const side = attachment?.side;
-    if (!side || !this.meta || this.meta.players[side]?.bot || this.meta.status === 'finished') return;
+    if (!side || !this.meta || !this.meta.players[side] || this.meta.players[side].bot || this.meta.status === 'finished') return;
     if (this.socketForSide(side)) return;
     this.meta.disconnectDeadlines[side] = Date.now() + CONFIG.disconnectGraceMs;
     this.meta.turn = null;
