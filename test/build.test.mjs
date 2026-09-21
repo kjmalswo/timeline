@@ -16,6 +16,8 @@ test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
   assert.match(html, /type:'start'/);
   assert.match(html, /DB\.visual/);
   assert.match(html, /battle-scene/);
+  assert.match(html, /\.battle-scene\{[^}]*height:clamp\(310px,43vh,430px\)/);
+  assert.match(html, /\.battle-scene-bg\{[^}]*z-index:0/);
   assert.match(html, /assets\/battle\/standard\/advance-1\.png/);
   assert.match(worker, /message\.type === 'start'/);
   assert.match(worker, /normalizeBuild/);
