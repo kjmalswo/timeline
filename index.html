@@ -721,8 +721,8 @@ body{min-width:0}
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V5.1', build:'CLOUDFLARE',
-    footer:'싱글플레이 · Cloudflare 서버 판정 1 대 1 PvP',
+    title:'THE TIMELINE', version:'V5.0', build:'CF',
+    footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
     sideLabel:{ P:'아군', E:'적군' }
@@ -751,18 +751,18 @@ const DB = {
        어긋나면 기력을 태워야 한다. 이것이 이 게임의 빌드 설계 축이다. */
     transition:{
       costPerStep:2, freeSelfLoop:true,
-      desc:'자세를 바꾼다. 시간은 흐르지 않고 기력만 소모하며, 먼 자세일수록 비용이 늘어난다.'
+      desc:'자세를 전환합니다. 시간은 흐르지 않고 기력만 소모하며, 먼 자세일수록 비용이 늘어납니다.'
     },
 
     basic:{
       wait:{ id:'wait', name:'대기', recovery:3, staminaGain:3, focusGain:1,
-             desc:'시간축을 3틱 넘긴다. 기력 3과 집중 1을 회복한다. 상대 예고가 그만큼 다가온다.' },
+             desc:'시간축을 3틱 넘깁니다. 기력 3과 집중 1을 회복합니다. 상대의 예고가 3틱 다가옵니다.' },
       approach:{ id:'approach', name:'접근', recovery:2, move:-1, staminaCost:1,
              escalationPerUse:0, escalationDecayTicks:0, escalationMax:0,
-             desc:'거리를 1 좁힌다. 기력 1을 소모하고 빈틈 2틱이 발생한다.' },
+             desc:'거리를 1만큼 좁힙니다. 기력 1을 소모하고 빈틈 2틱이 발생합니다.' },
       retreat:{ id:'retreat', name:'이탈', recovery:3, move:1, staminaCost:1,
              escalationPerUse:1, escalationDecayTicks:12, escalationMax:6,
-             desc:'거리를 1 벌린다. 접근보다 빈틈이 1틱 길고, 연속 이탈마다 기력 비용이 1씩 누적된다.' }
+             desc:'거리를 1만큼 벌립니다. 빈틈이 접근보다 1틱 길며, 연속으로 이탈할 때마다 기력 비용이 1씩 누적됩니다.' }
     },
 
     /* 몰아치기 — 자신이 유효한 피해를 내지 못한 시간이 길어지면 자신에게만 허점이 쌓인다.
@@ -772,7 +772,7 @@ const DB = {
       enabled:true, name:'압박', status:'exposed',
       idleTicksBeforeStart:12, stackEveryTicks:3, stacksPerApply:1, maxStacks:10,
       resetOn:{ damageDealt:true, attackResolvedInRange:true, statusDamage:true },
-      desc:'자신이 유효한 피해를 내지 못한 시간이 길어지면 허점이 쌓인다. 공격을 성공시키면 한 번에 사라진다.'
+      desc:'자신이 유효한 피해를 내지 못한 시간이 길어지면 허점이 쌓입니다. 공격을 성공시키면 한 번에 사라집니다.'
     },
 
     /* globalScale — 모든 피해에 곱해지는 단일 조정 계수.
@@ -786,16 +786,16 @@ const DB = {
 
   /* ---------- 공격 방향 ---------- */
   lines:{
-    high:{ id:'high', name:'윗선', short:'상', tag:'t-high', css:'--L-high',
-           desc:'위에서 내려오는 궤적. 낮게 버티는 자세를 정면으로 때린다.' },
-    mid:{ id:'mid', name:'가운데선', short:'중', tag:'t-mid', css:'--L-mid',
-           desc:'몸통을 향하는 직선 궤적. 몸을 비껴 선 자세를 파고든다.' },
-    low:{ id:'low', name:'아랫선', short:'하', tag:'t-low', css:'--L-low',
-           desc:'아래를 쓸어 올리는 궤적. 높이 든 자세의 빈 곳을 친다.' },
-    side:{ id:'side', name:'바깥선', short:'측', tag:'t-side', css:'--L-side',
-           desc:'바깥에서 감아 들어오는 궤적. 정면 막기를 우회한다.' },
-    none:{ id:'none', name:'방향 없음', short:'무', tag:'t-none', css:'--L-none',
-           desc:'공격 궤적이 없는 기술.' }
+    high:{ id:'high', name:'탑', short:'상', tag:'t-high', css:'--L-high',
+           desc:'위에서 내리꽂는 궤적입니다. 낮게 버티는 자세를 강하게 타격합니다.' },
+    mid:{ id:'mid', name:'미드', short:'중', tag:'t-mid', css:'--L-mid',
+           desc:'몸통을 향하는 직선 궤적입니다. 측면에 선 자세를 강하게 파고듭니다.' },
+    low:{ id:'low', name:'바텀', short:'하', tag:'t-low', css:'--L-low',
+           desc:'아래에서 위로 강하게 쓸어 올리는 궤적입니다. 높은 자세를 강하게 타격합니다.' },
+    side:{ id:'side', name:'사이드', short:'측', tag:'t-side', css:'--L-side',
+           desc:'측면에서 감아 때리는 궤적입니다. 정면 막기를 무력화합니다.' },
+    none:{ id:'none', name:'클린', short:'무', tag:'t-none', css:'--L-none',
+           desc:'궤적이 없는 기술.' }
   },
 
   /* ---------- 자세 ----------
@@ -805,27 +805,27 @@ const DB = {
   ------------------------------------------------------------------------ */
   stances:[
     { id:'mid', name:'중단', sym:'square', color:'--L-mid',
-      desc:'균형 자세. 어느 공격 방향에도 표준 피해를 받는다. 연계의 중심이 된다.',
+      desc:'밸런스 포지션입니다. 어느 공격 방향이든 같은 피해를 받습니다.',
       mod:{ dealt:1.00, taken:1.00, cast:1.00, staminaRegen:1.00 },
       guard:{ high:1.00, mid:1.00, low:1.00, side:1.00 } },
 
     { id:'high', name:'상단', sym:'up', color:'--L-high',
-      desc:'칼을 높이 든 자세. 위력이 높고 준비이 짧지만 아랫선에 크게 허점된다.',
+      desc:'높은 무게중심을 유지합니다. 위력이 높고 준비가 짧지만, 바텀에 약합니다.',
       mod:{ dealt:1.20, taken:1.00, cast:0.85, staminaRegen:0.80 },
       guard:{ high:0.75, mid:1.00, low:1.50, side:1.10 } },
 
     { id:'low', name:'하단', sym:'down', color:'--L-low',
-      desc:'낮게 버티는 자세. 기력 회복이 빠르고 단단하지만 윗선에 크게 허점된다.',
+      desc:'낮게 버티는 자세입니다. 기력 회복이 빠르고 단단하지만, 탑에 약합니다.',
       mod:{ dealt:0.90, taken:0.85, cast:1.10, staminaRegen:1.30 },
       guard:{ high:1.50, mid:1.00, low:0.75, side:1.05 } },
 
-    { id:'side', name:'측면', sym:'diag', color:'--L-side',
-      desc:'몸을 비껴 선 자세. 바깥선을 잘 흘리지만 가운데선이 그대로 들어온다.',
+    { id:'side', name:'측단', sym:'diag', color:'--L-side',
+      desc:'몸을 비껴 선 자세입니다. 사이드를 잘 흘리지만, 미드에게 약합니다.',
       mod:{ dealt:0.95, taken:0.95, cast:1.00, staminaRegen:1.00 },
       guard:{ high:1.05, mid:1.35, low:1.00, side:0.70 } },
 
     { id:'rear', name:'후방', sym:'ring', color:'--L-none',
-      desc:'거리를 둔 자세. 모든 공격 방향을 덜 맞고 기력이 빠르게 차지만 근접 기술을 쓸 수 없다.',
+      desc:'상대와의 거리를 유지합니다. 모든 공격 방향에 대해 피해를 덜 받고 기력 회복이 빠르지만, 근접 기술을 사용할 수 없습니다.',
       mod:{ dealt:0.90, taken:1.00, cast:1.00, staminaRegen:1.45 },
       guard:{ high:0.85, mid:0.85, low:0.85, side:0.85 } }
   ],
@@ -845,9 +845,9 @@ const DB = {
       perTickDamagePerStack:1, decayPerTick:1 },
     slow:{ name:'둔화', tag:'t-side', desc:'중첩당 준비 시간 +20%. 매 틱 1 감소.',
       castPerStack:0.20, decayPerTick:1 },
-    weak:{ name:'취약', tag:'t-side', desc:'중첩당 받는 피해 +12%. 매 틱 1 감소.',
+    weak:{ name:'피로', tag:'t-side', desc:'중첩당 받는 피해 +12%. 매 틱 1 감소.',
       takenPerStack:0.12, decayPerTick:1 },
-    exposed:{ name:'허점', tag:'t-dang', desc:'중첩당 받는 피해 +10%. 유효한 공격을 성공시키면 전부 사라진다.',
+    exposed:{ name:'약점', tag:'t-dang', desc:'중첩당 받는 피해 +10%. 유효한 공격을 성공시키면 전부 사라진다.',
       takenPerStack:0.10, decayPerTick:0 },
     power:{ name:'강화', tag:'t-warn', desc:'중첩당 주는 피해 +15%. 공격 발동 시 전량 소모.',
       dealtPerStack:0.15, decayPerTick:0, consumeOnHit:true },
