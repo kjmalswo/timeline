@@ -156,9 +156,30 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   image-rendering:pixelated;z-index:0;user-select:none;pointer-events:none}
 .battle-scene::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
   background:linear-gradient(180deg,rgba(255,255,251,.10),rgba(91,95,151,.08))}
-.battle-hud{position:absolute;inset:0 0 auto;z-index:4}
-.battle-hud .panel{background:color-mix(in srgb,var(--self-bg) 88%,transparent);backdrop-filter:blur(3px)}
-.battle-hud .panel.p-foe{background:color-mix(in srgb,var(--foe-bg) 88%,transparent)}
+.battle-hud{position:absolute;inset:0;z-index:4;pointer-events:none}
+.battle-scene .battle-hud .panel{position:absolute;bottom:calc(72px + clamp(150px,24vw,285px) - 10px);
+  left:50%;transform:translateX(-50%);width:clamp(150px,19vw,230px);min-width:0;padding:0;gap:4px;
+  overflow:visible;background:transparent;box-shadow:none;border:0;backdrop-filter:none;
+  transition:left 360ms var(--e)}
+.battle-scene .battle-hud .panel::before{display:none}
+.pixel-hud-head{display:flex;align-items:center;gap:5px;min-width:0;color:var(--p-deep);
+  font-size:.72em;font-weight:900;line-height:1.15;text-shadow:1px 1px 0 var(--p-white),-1px -1px 0 var(--p-white)}
+.pixel-hud-head .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pixel-hud-head .stance-mini{flex:none;color:var(--p-deep);font-size:.92em}
+.pixel-hud-head .value{margin-left:auto;flex:none;color:var(--p-deep)}
+.pixel-stat{display:grid;grid-template-columns:26px minmax(0,1fr);gap:4px;align-items:center}
+.pixel-stat .lab{font-size:.58em;font-weight:950;line-height:1;color:var(--p-deep);
+  text-shadow:1px 1px 0 var(--p-white)}
+.pixel-bar{display:grid;grid-template-columns:repeat(var(--pixel-count),minmax(2px,1fr));gap:2px;height:10px}
+.pixel-bar i{display:block;min-width:0;background:rgba(91,95,151,.24);
+  border:1px solid rgba(255,255,251,.72);box-shadow:1px 1px 0 rgba(91,95,151,.28)}
+.pixel-bar i.on{background:var(--pixel-on);border-color:color-mix(in srgb,var(--pixel-on) 76%,var(--p-white));
+  box-shadow:1px 1px 0 color-mix(in srgb,var(--pixel-on) 62%,var(--p-deep))}
+.pixel-bar.hp{height:13px}
+.pixel-hud-status{display:flex;justify-content:center;gap:3px;flex-wrap:wrap;min-height:0}
+.pixel-hud-status:empty{display:none}
+.pixel-hud-status .tag{font-size:.55em;padding:1px 5px;background:color-mix(in srgb,var(--p-white) 84%,transparent)}
+.pixel-hud-status .tag::before{width:3px;height:3px}
 .battle-actors{position:absolute;inset:0;z-index:2;pointer-events:none}
 .battle-actor{position:absolute;bottom:72px;left:50%;width:clamp(130px,22vw,260px);height:clamp(150px,24vw,285px);
   display:flex;align-items:flex-end;justify-content:center;transition:left 360ms var(--e)}
@@ -169,13 +190,17 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   box-shadow:3px 3px 8px rgba(91,95,151,.34);font-weight:850}
 .battle-actor.foe .battle-actor-fallback{background:var(--p-coral)}
 .battle-timeline{position:absolute;inset:auto 0 0;z-index:5;padding:4px 10px 9px}
-.battle-timeline .tl{background:color-mix(in srgb,var(--p-white) 86%,transparent);backdrop-filter:blur(4px)}
+.battle-timeline .tl{background:transparent;box-shadow:none;backdrop-filter:none}
 @media(max-width:760px){
   #screen-battle.active{grid-template-rows:auto auto minmax(0,1fr) auto}
   .battle-scene{height:clamp(340px,48vh,430px);min-height:340px;flex-basis:clamp(340px,48vh,430px);margin:8px 8px 6px}
   .battle-actor{bottom:90px;width:clamp(112px,34vw,176px);height:clamp(132px,39vw,205px)}
-  .battle-hud .panel{padding:7px 8px;gap:4px}
-  .battle-hud .st-row{display:none}
+  .battle-scene .battle-hud .panel{bottom:calc(90px + clamp(132px,39vw,205px) - 5px);
+    width:min(34vw,138px);gap:3px}
+  .pixel-hud-head{font-size:.64em}
+  .pixel-stat{grid-template-columns:20px minmax(0,1fr);gap:3px}
+  .pixel-bar{gap:1px;height:8px}.pixel-bar.hp{height:10px}
+  .pixel-hud-status{display:none}
   .battle-timeline{padding:3px 6px 6px}
   .battle-timeline .tl{padding:7px 8px 6px}
   .battle-timeline .tl-top{margin-bottom:6px}
@@ -187,7 +212,7 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   #screen-battle.active{grid-template-rows:auto auto minmax(0,1fr) auto}
   .battle-scene{height:270px;min-height:270px;flex-basis:270px}
   .battle-actor{bottom:62px;height:145px;width:145px}
-  .battle-hud .st-row,.battle-hud .duo{display:none}
+  .battle-scene .battle-hud .panel{bottom:196px;width:132px}
   .battle-timeline .track{display:none}
 }
 
@@ -811,7 +836,7 @@ body{
   <section id="screen-battle" class="screen">
     <div class="battle-scene nm" id="battleScene" aria-label="전투 장면">
       <img class="battle-scene-bg" id="battleSceneBg" alt="">
-      <div class="duobar battle-hud">
+      <div class="battle-hud">
         <div class="panel p-self" id="selfPanel"></div>
         <div class="panel p-foe" id="foePanel"></div>
       </div>
@@ -881,7 +906,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V6.0', build:'CF',
+    title:'THE TIMELINE', version:'V6.1', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1240,6 +1265,13 @@ DB.visual = {
     positions:{
       P:[34,30,26,22,18],
       E:[66,70,74,78,82]
+    },
+    hud:{
+      segments:{ hp:16, stamina:12, focus:6 },
+      colors:{
+        P:{ hp:'#32d66b', stamina:'#ffc145', focus:'#5b5f97' },
+        E:{ hp:'#ff4f57', stamina:'#ffc145', focus:'#5b5f97' }
+      }
     }
   },
   weapons:{
@@ -2914,44 +2946,38 @@ const UI = {
 };
 
 /* ---------- 전투: 패널 ---------- */
+UI.pixelGauge = function(kind,value,max,side){
+  const hud=DB.visual.scene.hud, count=hud.segments[kind];
+  const ratio=max>0?U.clamp(value/max,0,1):0;
+  const filled=Math.round(ratio*count), color=hud.colors[side][kind];
+  let cells='';
+  for(let i=0;i<count;i++) cells+='<i class="'+(i<filled?'on':'')+'"></i>';
+  return '<div class="pixel-bar '+kind+'" style="--pixel-count:'+count+';--pixel-on:'+color+'">'+cells+'</div>';
+};
+
 UI.panel = function(side){
   const a=Battle.A(side), s=Battle.st, isSelf=side===DB.meta.sides.SELF;
-  /* 선택한 기술이 가져갈 기력을 게이지 위에 빗금으로 미리 보여준다 */
-  let costBar='', costNote='';
+  let costNote='';
   if(isSelf && Battle.selected && DB.techs[Battle.selected]){
     const d=DB.techs[Battle.selected];
     const need=Battle.transitionCost(a,d.stance)+d.cost;
-    if(need>0 && a.staminaMax>0){
-      const use=Math.min(need,a.stamina);
-      const right=(a.stamina/a.staminaMax*100), w=(use/a.staminaMax*100);
-      costBar=`<span class="ghostcost" style="left:${(right-w).toFixed(1)}%;width:${w.toFixed(1)}%"></span>`;
-      costNote=` <span style="color:var(--dang)">− ${need}</span>`;
-    }
+    if(need>0) costNote=' · -'+need;
   }
   const sts=Object.keys(a.statuses).map(k=>
-    `<span class="tag ${DB.statuses[k].tag}" title="${U.esc(DB.statuses[k].desc)}">${U.esc(DB.statuses[k].name)} ${a.statuses[k]}</span>`).join('');
+    '<span class="tag '+DB.statuses[k].tag+'" title="'+U.esc(DB.statuses[k].desc)+'">'+
+    U.esc(DB.statuses[k].name)+' '+a.statuses[k]+'</span>').join('');
   const rx=s.reactions.filter(r=>r.owner===side).length
-    ? `<span class="tag t-acc">반응 대기</span>` : '';
-  const P=DB.balance.pressure, pr=Battle.pressureAmount(side);
-  const left=Math.max(0,P.idleTicksBeforeStart-Battle.pressureIdle(side));
-  const ptag = !P.enabled?'' : (pr>0
-    ? `<span class="tag t-dang" title="${U.esc(P.desc)}">약점 ${pr} · 받는 피해 +${Math.round(pr*DB.statuses.exposed.takenPerStack*100)}%</span>`
-    : `<span class="tag t-key n" title="${U.esc(P.desc)}">${U.esc(P.name)}까지 ${left}틱</span>`);
-  return `
-    <div class="pl-row">
-      <span class="tag ${isSelf?'t-acc':'t-high'}">${U.esc(a.name)}</span>
-      ${UI.stanceChip(a.stance)}
-      <span class="pl-hp">${a.hp} <small>/ ${a.hpMax}</small></span>
-    </div>
-    <div class="gauge g-hp ${isSelf?'self':''} big"><i style="width:${(a.hp/a.hpMax*100).toFixed(1)}%"></i></div>
-    <div class="duo">
-      <div><div class="bar-lab"><span>기력</span><b>${Math.floor(a.stamina)} / ${a.staminaMax}${costNote}</b></div>
-        <div class="gauge g-sta"><i style="width:${(a.stamina/a.staminaMax*100).toFixed(1)}%"></i>${costBar}</div></div>
-      <div><div class="bar-lab"><span>집중</span><b>${a.focus} / ${a.focusMax}</b></div>
-        <div class="gauge g-foc"><i style="width:${a.focusMax?(a.focus/a.focusMax*100).toFixed(1):0}%"></i></div></div>
-    </div>
-    <div class="st-row">${sts}${rx}${ptag}
-      <span class="tag t-key n">행동 가능 ${a.readyAt}틱</span></div>`;
+    ? '<span class="tag t-acc">반응 대기</span>' : '';
+  const pressure=Battle.pressureAmount(side);
+  const ptag=pressure>0?'<span class="tag t-dang">약점 '+pressure+'</span>':'';
+  return '<div class="pixel-hud-head">'+
+      '<span class="name">'+U.esc(a.name)+'</span>'+
+      '<span class="stance-mini">'+UI.sym(U.stance(a.stance))+' '+U.esc(U.stance(a.stance).name)+'</span>'+
+      '<span class="value">'+a.hp+'/'+a.hpMax+'</span></div>'+
+    '<div class="pixel-stat hp"><span class="lab">HP</span>'+UI.pixelGauge('hp',a.hp,a.hpMax,side)+'</div>'+
+    '<div class="pixel-stat"><span class="lab">기력</span>'+UI.pixelGauge('stamina',a.stamina,a.staminaMax,side)+'</div>'+
+    '<div class="pixel-stat"><span class="lab">집중</span>'+UI.pixelGauge('focus',a.focus,a.focusMax,side)+'</div>'+
+    '<div class="pixel-hud-status">'+sts+rx+ptag+'</div>';
 };
 
 /* ---------- 전투: 시간축 ---------- */
@@ -3226,7 +3252,10 @@ UI.renderBattleScene=function(){
       box.appendChild(el);
     }
     const positions=scene.positions[side]||scene.positions.P;
-    el.style.left=positions[U.clamp(s.distance,0,positions.length-1)]+'%';
+    const left=positions[U.clamp(s.distance,0,positions.length-1)]+'%';
+    el.style.left=left;
+    const panel=document.getElementById(side===DB.meta.sides.SELF?'selfPanel':'foePanel');
+    if(panel) panel.style.left=left;
     if(weapon){
       let img=el.querySelector('img');
       if(!img){ el.innerHTML='<img alt="">'; img=el.querySelector('img'); }
