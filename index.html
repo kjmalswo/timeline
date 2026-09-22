@@ -1480,7 +1480,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V7.9', build:'CF',
+    title:'THE TIMELINE', version:'V8.0', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1488,7 +1488,7 @@ const DB = {
   },
 
   balance:{
-    loop:{ maxIterations:900, aiDelayMs:400, aiDelayFastMs:90 },
+    loop:{ maxIterations:900, aiDelayMs:400, aiDelayFastMs:90, tickDelayMs:260, tickDelayFastMs:90 },
 
     /* 전투 제한 시간 — 도달 시 체력 비율이 높은 쪽이 판정승한다.
        앞선 쪽은 시간을 끌 수 있고 뒤진 쪽은 무리해서라도 피해를 내야 하므로,
@@ -1836,7 +1836,7 @@ DB.visual = {
   scene:{
     background:'assets/battle/grassland.png',
     alt:'푸른 하늘과 초원이 펼쳐진 전투장',
-    movementMs:540,
+    movementMs:600,
     zones:{ count:5, startPct:10, stepPct:20, contactOffsetPct:3, start:{P:1,E:3} },
     groundRatio:0.812,
     hud:{
@@ -1853,12 +1853,12 @@ DB.visual = {
       hud:{topPct:30,mobileTopPct:34,shortTopPct:32},
       motions:{
         idle:{ frameMs:0, loop:true, footOffsets:[0], frames:['assets/battle/standard/idle.png'] },
-        advance:{ frameMs:180, loop:false, scale:0.93, footOffsets:[3.45,4.42,6.77], frames:[
+        advance:{ frameMs:200, loop:false, scale:0.93, footOffsets:[3.45,4.42,6.77], frames:[
           'assets/battle/standard/advance-1.png',
           'assets/battle/standard/advance-2.png',
           'assets/battle/standard/advance-3.png'
         ]},
-        retreat:{ frameMs:180, loop:false, footOffsets:[3.87,0,0], frames:[
+        retreat:{ frameMs:200, loop:false, footOffsets:[3.87,0,0], frames:[
           'assets/battle/standard/retreat-1.png',
           'assets/battle/standard/retreat-2.png',
           'assets/battle/standard/retreat-3.png'
@@ -2845,14 +2845,34 @@ const Battle = {
       if(Battle.st!==s) return;
       if(s.over){ done(); return; }
       if(guard++>DB.balance.loop.maxIterations){ Battle.finishByTimeout(); done(); return; }
+      if(s.visual&&s.visual.seq!==UI.motionSeq) UI.renderBattle();
+      const motionWait=UI.motionRemaining();
+      if(motionWait>0){ setTimeout(step,motionWait); return; }
       const P=Battle.A(DB.meta.sides.SELF),E=Battle.A(DB.meta.sides.FOE);
       const active=(P.readyAt<=E.readyAt)?DB.meta.sides.SELF:DB.meta.sides.FOE;
-      Battle.advanceTo(Battle.A(active).readyAt);
+      const target=Battle.A(active).readyAt;
+      const hasPending=s.queue.some(q=>q.status==='pending'&&q.resolveAt>s.tick);
+      if(App.settings.animations&&hasPending&&s.tick<target){
+        Battle.advanceTo(s.tick+1);
+        UI.renderBattle();
+        if(s.over){ done(); return; }
+        const delay=App.settings.aiSpeed==='fast'
+          ? DB.balance.loop.tickDelayFastMs : DB.balance.loop.tickDelayMs;
+        setTimeout(step,delay);
+        return;
+      }
+      Battle.advanceTo(target);
       if(s.over){ done(); return; }
-      if(Battle.A(active).controller==='human'){ Battle.awaitInput=true; UI.renderBattle(); return; }
+      if(s.visual&&s.visual.seq!==UI.motionSeq) UI.renderBattle();
+      if(Battle.A(active).controller==='human'){
+        const readyMotionWait=UI.motionRemaining();
+        if(readyMotionWait>0){ setTimeout(step,readyMotionWait); return; }
+        Battle.awaitInput=true; UI.renderBattle(); return;
+      }
       UI.renderBattle();
       const d=App.settings.aiSpeed==='fast'?DB.balance.loop.aiDelayFastMs:DB.balance.loop.aiDelayMs;
-      setTimeout(()=>{ if(Battle.st!==s) return; AI.act(active); step(); }, App.settings.animations?d:0);
+      setTimeout(()=>{ if(Battle.st!==s) return; AI.act(active); step(); },
+        App.settings.animations?Math.max(d,UI.motionRemaining()):0);
     };
     step();
   },
@@ -3773,6 +3793,22 @@ UI.actions = function(){
 
 UI.motionSeq=-1;
 UI.motionTimers={};
+UI.motionPreloads=[];
+UI.preloadBattleFrames=function(){
+  Object.values(DB.visual.weapons).forEach(weapon=>
+    Object.values(weapon.motions).forEach(motion=>
+      motion.frames.forEach(src=>{
+        const image=new Image();
+        image.src=src;
+        UI.motionPreloads.push(image);
+      })));
+};
+UI.motionState=null;
+UI.motionRemaining=function(){
+  const state=UI.motionState, visual=Battle.st&&Battle.st.visual;
+  return App.settings.animations&&state&&state.battle===Battle.st&&visual&&visual.seq===state.seq
+    ? Math.max(0,state.endsAt-Date.now()) : 0;
+};
 UI.clearMotion=function(side){
   (UI.motionTimers[side]||[]).forEach(clearTimeout);
   UI.motionTimers[side]=[];
@@ -3908,9 +3944,12 @@ UI.playBattleMotion=function(){
   const target=event.coords&&event.coords[side];
   const from=event.fromCoords&&event.fromCoords[side];
   if(!App.settings.animations){
+    UI.motionState=null;
     if(target!=null)actorEl.style.left=target+'%';
     img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);img.style.setProperty('--foot-offset','0%');img.dataset.motion='idle';return;
   }
+  const duration=Math.max(scene.movementMs,motion.frames.length*motion.frameMs);
+  UI.motionState={battle:Battle.st,seq:event.seq,endsAt:Date.now()+duration};
   img.dataset.motion='playing';
   actorEl.style.transition='none';
   if(from!=null)actorEl.style.left=from+'%';
@@ -3923,7 +3962,6 @@ UI.playBattleMotion=function(){
   for(let index=1;index<motion.frames.length;index++){
     UI.motionTimers[side].push(setTimeout(()=>applyFrame(index),index*motion.frameMs));
   }
-  const duration=Math.max(scene.movementMs,motion.frames.length*motion.frameMs);
   UI.motionTimers[side].push(setTimeout(()=>{
     img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);img.style.setProperty('--foot-offset','0%');img.dataset.motion='idle';
   },duration));
@@ -4792,6 +4830,7 @@ UI.renderMulti = function(){
    ========================================================================================== */
 (function boot(){
   UI.applySettings();
+  UI.preloadBattleFrames();
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>UI.showScreen(b.dataset.nav));
   document.getElementById('setBack').onclick=()=>UI.showScreen(App.backTo);
   document.getElementById('cxBack').onclick=()=>UI.showScreen(App.backTo);
