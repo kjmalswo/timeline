@@ -997,13 +997,6 @@ body{
 }
 .battle-ground-marker.self{border-color:#57b9f0}
 .battle-ground-marker.foe{border-color:#ef87b3}
-.battle-distance-readout{
-  position:absolute;bottom:calc(var(--ground-bottom,18.8%) + 26px);
-  transform:translateX(-50%);padding:2px 6px;
-  color:#fff;background:#203e67;border:1px solid #80b9e7;border-radius:3px;
-  font-size:.59em;font-weight:900;line-height:1.2;white-space:nowrap;
-  transition:left var(--battle-move-ms,360ms) var(--e);
-}
 .battle-intents{
   position:absolute;left:50%;bottom:-7px;transform:translate(-50%,100%);z-index:8;
   display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -1081,7 +1074,6 @@ body{
   #screen-school .pick{flex-basis:min(250px,calc(100vw - 52px));width:min(250px,calc(100vw - 52px))}
   #screen-school .tech.deck-tech,#screen-school .tech.deck-tech.mini{min-height:220px}
   .combat-tooltip{min-height:140px;font-size:12px}
-  .battle-distance-readout{font-size:.52em}
 }
 
 
@@ -1153,7 +1145,6 @@ body{
 .battle-ground-marker{background:#203e67;border-color:#f9fcff;box-shadow:0 2px 6px rgba(23,48,86,.30)}
 .battle-ground-marker.self{border-color:#57b9f0}
 .battle-ground-marker.foe{border-color:#ef87b3}
-.battle-distance-readout{color:#fff;background:#203e67;border-color:#80b9e7}
 .ring{background:#edf5ff;border:1px solid #b7cce6;box-shadow:0 3px 10px rgba(37,73,118,.10)}
 .snode,.snode:nth-child(n){color:#243c5d;background:#fff;border:1px solid #c0d2e9;box-shadow:0 2px 5px rgba(47,77,124,.10)}
 .snode.cur{background:#e1ecff;border-color:#5c82d4;box-shadow:inset 0 1px 4px rgba(59,97,171,.16)}
@@ -1325,6 +1316,41 @@ body{
   .battle-scene .battle-actor{width:clamp(62px,18vw,105px);height:clamp(88px,28vw,145px)}
 }
 
+
+/* V7.7 전투 구역: 투명 유리 패널로 다섯 칸을 구분 */
+.battle-zones{gap:3px;padding:3px;box-sizing:border-box}
+.battle-zone,.battle-zone:nth-child(even),.battle-zone.between,.battle-zone.self,.battle-zone.foe,.battle-zone.self.foe{
+  padding:0;border:1px solid rgba(220,243,255,.56);border-radius:8px;
+  background:linear-gradient(155deg,rgba(255,255,255,.22),rgba(107,193,255,.08) 45%,rgba(24,87,183,.14));
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.46),inset -1px -1px 0 rgba(90,160,225,.16),0 1px 3px rgba(20,57,107,.12);
+  backdrop-filter:blur(3px) saturate(1.3);-webkit-backdrop-filter:blur(3px) saturate(1.3);
+}
+.battle-zone:last-child{border-right:1px solid rgba(220,243,255,.56)}
+.battle-zone.between{background:linear-gradient(155deg,rgba(255,255,255,.25),rgba(45,213,244,.17) 55%,rgba(36,125,226,.18))}
+.battle-zone.self{border-color:rgba(80,186,255,.8);background:linear-gradient(155deg,rgba(255,255,255,.3),rgba(25,148,255,.22));box-shadow:inset 0 -3px 0 #258eff,inset 1px 1px 0 rgba(255,255,255,.5)}
+.battle-zone.foe{border-color:rgba(255,116,181,.8);background:linear-gradient(155deg,rgba(255,255,255,.3),rgba(239,63,142,.22));box-shadow:inset 0 -3px 0 #ee3f8e,inset 1px 1px 0 rgba(255,255,255,.5)}
+.battle-zone.self.foe{border-color:rgba(180,121,255,.8);background:linear-gradient(155deg,rgba(255,255,255,.3),rgba(151,88,241,.23));box-shadow:inset 0 -3px 0 #9c5df0,inset 1px 1px 0 rgba(255,255,255,.5)}
+.battle-distance-strip{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:fit-content;max-width:100%;margin:0 auto 6px;padding:4px 13px;
+  color:#1c426c;background:linear-gradient(135deg,rgba(255,255,255,.86),rgba(207,231,255,.72));
+  border:1px solid #9dc8f2;border-radius:8px;box-shadow:0 2px 7px rgba(33,83,145,.12);
+  font-size:.78em;font-weight:850;line-height:1.2;white-space:nowrap;
+}
+.battle-distance-strip strong{color:#075ac0;font-size:1.12em}
+.distance-strip-type{padding-left:8px;border-left:1px solid #a9c7e5;color:#355f91}
+.pixel-stat.stamina{grid-template-columns:26px minmax(0,1fr) auto}
+.resource-meter{height:12px;overflow:hidden;border:1px solid #bdaf3b;border-radius:4px;background:#e6eaf0;box-shadow:inset 0 1px 2px rgba(20,44,82,.18)}
+.resource-meter i{display:block;height:100%;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.65);transition:width .2s ease}
+.resource-value{min-width:38px;color:#6a5100;font-size:.59em;font-weight:950;text-align:right;white-space:nowrap}
+.battle-clock{gap:9px;font-size:.78em}
+.battle-clock span{padding:4px 9px}
+.battle-clock b{font-size:1.18em}
+.tech-grid .rdots{align-self:flex-start;gap:4px;padding:3px 5px;background:#eaf3ff;border:1px solid #c5d9f4}
+.tech-grid .rdots i{width:10px;height:10px;flex:none;border:1px solid #a4bbd6;border-radius:2px;background:#c5d8ee}
+.tech-grid .rdots i.on{border-color:var(--card-accent);background:var(--card-accent)}
+.tech-grid .rdots i.cur{box-shadow:0 0 0 2px #eaf3ff,0 0 0 3px #174d91}
+@media(max-width:760px){.battle-clock{font-size:.67em}.battle-clock span{padding:3px 6px}.battle-distance-strip{font-size:.68em;padding:4px 10px}}
 </style>
 </head>
 <body>
@@ -1379,7 +1405,7 @@ body{
       <div class="battle-actors" id="battleActors" aria-hidden="true"></div>
       <div class="tlwrap battle-timeline"><div class="tl nm" id="tlBox"></div></div>
     </div>
-    <div class="ringwrap"><div class="ring nm" id="ringBox"></div></div>
+    <div class="ringwrap"><div class="battle-distance-strip" id="battleDistanceStrip" aria-live="polite"></div><div class="ring nm" id="ringBox"></div></div>
     <div class="techwrap">
       <div class="techcol"><div id="techBox"></div></div>
       <div class="side"><div class="log" id="logBox"></div></div>
@@ -1442,7 +1468,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V7.6', build:'CF',
+    title:'THE TIMELINE', version:'V7.7', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1802,7 +1828,7 @@ DB.visual = {
     zones:{ count:5, startPct:10, stepPct:20, contactOffsetPct:3, start:{P:1,E:3} },
     groundRatio:0.812,
     hud:{
-      segments:{ hp:16, stamina:12, focus:6 },
+      segments:{ hp:16, focus:6 },
       colors:{
         P:{ hp:'#43bca9', stamina:'#ffd43b', focus:'#ff873a' },
         E:{ hp:'#dc7097', stamina:'#ffd43b', focus:'#ff873a' }
@@ -3487,7 +3513,10 @@ const UI = {
       const m=Battle.lineMult(Battle.A(DB.meta.sides.FOE),d.line);
       mult='<span class="tc-mult '+(m>1.01?'up':(m<0.99?'dn':''))+'">'+m.toFixed(2)+'배</span>';
     }
-    const block=opt.block?'<div class="tc-block">'+U.esc(opt.block)+'</div>':'';
+    const rangeDots='<div class="rdots" role="img" aria-label="사거리 '+U.esc(range)+'; 현재 '+(s?s.distance+'칸':'거리 미정')+'">'+
+    D.labels.map((label,index)=>'<i class="'+(index>=rg[0]&&index<=rg[1]?'on ':'')+
+      (s&&s.distance===index?'cur':'')+'" title="'+index+'칸 · '+U.esc(label)+'"></i>').join('')+'</div>';
+  const block=opt.block?'<div class="tc-block">'+U.esc(opt.block)+'</div>':'';
     const good=opt.good?'<span class="tc-good">'+U.esc(opt.good)+'</span>':'';
 
     if(!opt.compact){
@@ -3517,7 +3546,7 @@ const UI = {
       '<div class="tc-meta"><span style="color:var('+U.stance(d.stance).color+')">'+
       UI.sym(U.stance(d.stance))+' '+U.esc(U.stance(d.stance).name)+'</span>'+
       '<span style="color:var('+ln.css+')">'+U.esc(ln.name)+'</span>'+mult+'</div>'+
-      '<div class="tc-quick"><span>준비 '+cast+'</span><span>빈틈 '+rec+'</span><span>'+U.esc(range)+'</span></div>'+
+      '<div class="tc-quick"><span>준비 '+cast+'</span><span>빈틈 '+rec+'</span><span>'+U.esc(range)+'</span></div>'+rangeDots+
       '<div class="tc-to">→ '+UI.sym(U.stance(d.to))+' '+U.esc(U.stance(d.to).name)+'</div>'+
       (tc?'<div class="tc-switch-cost">자세 전환 −'+tc+' 기력</div>':'')+good+block+'</div></div>';
   }
@@ -3531,6 +3560,14 @@ UI.pixelGauge = function(kind,value,max,side){
   let cells='';
   for(let i=0;i<count;i++) cells+='<i class="'+(i<filled?'on':'')+'"></i>';
   return '<div class="pixel-bar '+kind+'" style="--pixel-count:'+count+';--pixel-on:'+color+'">'+cells+'</div>';
+};
+
+UI.percentGauge = function(kind,value,max,side){
+  const ratio=max>0?U.clamp(value/max,0,1):0;
+  const color=DB.visual.scene.hud.colors[side][kind];
+  return '<div class="resource-meter" role="meter" aria-label="기력" aria-valuemin="0" aria-valuemax="'+max+'" aria-valuenow="'+value+'">'+
+    '<i style="width:'+(ratio*100).toFixed(1)+'%;background:'+color+'"></i></div>'+
+    '<b class="resource-value">'+(Math.round(value*10)/10)+' / '+max+'</b>';
 };
 
 UI.panel = function(side){
@@ -3553,7 +3590,7 @@ UI.panel = function(side){
       '<span class="stance-mini">'+UI.sym(U.stance(a.stance))+' '+U.esc(U.stance(a.stance).name)+'</span>'+
       '<span class="value">'+a.hp+'/'+a.hpMax+'</span></div>'+
     '<div class="pixel-stat hp"><span class="lab">HP</span>'+UI.pixelGauge('hp',a.hp,a.hpMax,side)+'</div>'+
-    '<div class="pixel-stat"><span class="lab">기력</span>'+UI.pixelGauge('stamina',a.stamina,a.staminaMax,side)+'</div>'+
+    '<div class="pixel-stat stamina"><span class="lab">기력</span>'+UI.percentGauge('stamina',a.stamina,a.staminaMax,side)+'</div>'+
     '<div class="pixel-stat"><span class="lab">집중</span>'+UI.pixelGauge('focus',a.focus,a.focusMax,side)+'</div>'+
     '<div class="pixel-hud-status">'+sts+rx+ptag+'</div>';
 };
@@ -3562,12 +3599,9 @@ UI.panel = function(side){
 UI.timeline = function(){
   const s=Battle.st, TK=DB.balance.tick;
   const left=Math.max(0,TK.maxTickGuard-s.tick);
-  const self=Battle.A(DB.meta.sides.SELF), foe=Battle.A(DB.meta.sides.FOE);
-  const lead=(self.hp/self.hpMax)>=(foe.hp/foe.hpMax)?'내가 우세':'상대가 우세';
   return '<div class="battle-clock">'+
     '<span>현재 <b>'+s.tick+'틱</b></span>'+
-    '<span class="'+(left<=TK.warnRemaining?'warn':'')+'">남은 시간 <b>'+left+'틱</b></span>'+
-    '<span>'+lead+'</span></div>';
+    '<span class="'+(left<=TK.warnRemaining?'warn':'')+'">남은 시간 <b>'+left+'틱</b></span></div>';
 };
 
 /* ---------- 전투: 자세 링 ---------- */
@@ -3762,11 +3796,9 @@ UI.renderBattleScene=function(){
     const grid=document.createElement('div'); grid.className='battle-zones';
     for(let index=0;index<scene.zones.count;index++){
       const zone=document.createElement('i'); zone.className='battle-zone';
-      zone.textContent=index+1; grid.appendChild(zone);
+      grid.appendChild(zone);
     }
     field.appendChild(grid);
-    const readout=document.createElement('span');
-    readout.className='battle-distance-readout'; field.appendChild(readout);
     box.prepend(field);
   }
   field.querySelectorAll('.battle-zone').forEach((zone,index)=>{
@@ -3775,9 +3807,8 @@ UI.renderBattleScene=function(){
       +(index===zones.E?' foe':'')
       +(index>zones.P&&index<zones.E?' between':'');
   });
-  const readout=field.querySelector('.battle-distance-readout');
-  readout.style.left=((coords.P+coords.E)/2)+'%';
-  readout.textContent=s.distance+'칸 · '+DB.balance.distance.labels[s.distance];
+  const readout=document.getElementById('battleDistanceStrip');
+  readout.innerHTML='<span class="distance-strip-label">현재 거리</span><strong>'+s.distance+'칸</strong><span class="distance-strip-type">'+U.esc(DB.balance.distance.labels[s.distance])+'</span>'; 
   field.setAttribute('aria-label','다섯 구역 중 나 '+(zones.P+1)+'구역, 적 '+(zones.E+1)+'구역 · 거리 '+s.distance+'칸');
 
   [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(side=>{
