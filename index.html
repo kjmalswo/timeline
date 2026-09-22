@@ -189,7 +189,6 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   display:flex;align-items:flex-end;justify-content:center;transform:translateX(-50%);transition:left var(--battle-move-ms,360ms) var(--e)}
 .battle-actor img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;
   image-rendering:pixelated;filter:drop-shadow(5px 8px 5px rgba(91,95,151,.34))}
-.battle-actor.foe img{transform:scaleX(-1)}
 .battle-actor-fallback{padding:9px 14px;border-radius:999px;color:var(--p-white);background:var(--p-deep);
   box-shadow:3px 3px 8px rgba(91,95,151,.34);font-weight:850}
 .battle-actor.foe .battle-actor-fallback{background:var(--p-coral)}
@@ -198,8 +197,8 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
   -webkit-text-stroke:1.2px #17141b;
   text-shadow:2px 3px 0 #17141b,-1px -1px 0 #17141b,0 5px 7px rgba(0,0,0,.55);
   animation:battleFloatRise 960ms ease-out forwards}
-.battle-actor.self .battle-float{left:76%}
-.battle-actor.foe .battle-float{left:24%}
+.battle-actor[data-fighter="p1"] .battle-float{left:76%}
+.battle-actor[data-fighter="p2"] .battle-float{left:24%}
 .battle-float.damage{color:#ff4863}
 .battle-float.miss{color:#ffe34b;font-size:clamp(17px,2.1vw,28px)}
 @keyframes battleFloatRise{
@@ -979,9 +978,6 @@ body{
 .battle-scene .battle-actor>img{
   transform:translateY(var(--foot-offset,0%)) scale(var(--frame-scale,1));
   transform-origin:center bottom;
-}
-.battle-scene .battle-actor.foe>img{
-  transform:translateY(var(--foot-offset,0%)) scale(var(--frame-scale,1)) scaleX(-1);
 }
 .battle-field-ruler{
   position:absolute;inset:0;z-index:3;pointer-events:none;
@@ -1855,6 +1851,13 @@ DB.visual = {
   scene:{
     background:'assets/battle/grassland.png',
     alt:'푸른 하늘과 초원이 펼쳐진 전투장',
+    backgrounds:[
+      {id:'grassland',src:'assets/battle/grassland.png',alt:'푸른 하늘과 초원이 펼쳐진 전투장',groundRatio:0.812},
+      {id:'city',src:'assets/battle/backgrounds/city.png',alt:'맑은 하늘 아래 펼쳐진 중세 도시 광장',groundRatio:0.748},
+      {id:'dock',src:'assets/battle/backgrounds/dock.png',alt:'푸른 바다와 배가 보이는 항구 부두',groundRatio:0.748},
+      {id:'desert',src:'assets/battle/backgrounds/desert.png',alt:'오아시스와 바위산이 보이는 사막',groundRatio:0.748},
+      {id:'alley',src:'assets/battle/backgrounds/alley.png',alt:'꽃과 석조 건물이 늘어선 마을 골목',groundRatio:0.748}
+    ],
     movementMs:600,
     zones:{ count:5, startPct:10, stepPct:20, contactOffsetPct:3, start:{P:1,E:3} },
     groundRatio:0.812,
@@ -1960,6 +1963,17 @@ DB.visual = {
   },
   fallbackMotion:'idle'
 };
+
+/* 2P와 싱글 적은 제공된 2남자 무기별 프레임을 사용한다. */
+DB.visual.fighters={p1:DB.visual.weapons,p2:{}};
+['standard','longblade','shortblade','greatblade','twinblade','polearm'].forEach(weaponId=>{
+  const source=DB.visual.weapons[weaponId];
+  DB.visual.fighters.p2[weaponId]=Object.assign({},source,{
+    motions:Object.fromEntries(Object.entries(source.motions).map(([motionId,motion])=>[
+      motionId,Object.assign({},motion,{frames:motion.frames.map(src=>'assets/battle/p2/'+weaponId+'/'+src.split('/').pop())})
+    ]))
+  });
+});
 
 
 /* ==========================================================================================
@@ -2488,6 +2502,8 @@ const Battle = {
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
       floatSeq:0, floatEvents:[],
+      backgroundId:DB.visual.scene.backgrounds[Math.floor(Math.random()*DB.visual.scene.backgrounds.length)].id,
+      viewRight:false,
       visualEvents:[], visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
         zones:Object.assign({},DB.visual.scene.zones.start),
         coords:Battle.zoneCoords(DB.visual.scene.zones.start)},
@@ -3906,8 +3922,11 @@ UI.motionTimers={};
 UI.motionPreloads=[];
 UI.preloadedFrames=new Set();
 UI.motionQueue=[];
-UI.preloadBattleFrames=function(weaponId=DB.weaponStart){
-  [DB.visual.weapons.standard,DB.visual.weapons[weaponId]].filter(Boolean).forEach(weapon=>
+UI.preloadBattleFrames=function(){
+  const weapons=Battle.st
+    ? [DB.meta.sides.SELF,DB.meta.sides.FOE].map(side=>UI.visualWeapon(side))
+    : [DB.visual.fighters.p1.standard,DB.visual.fighters.p2.standard];
+  weapons.filter(Boolean).forEach(weapon=>
     Object.values(weapon.motions).forEach(motion=>
       motion.frames.forEach(src=>{
         if(UI.preloadedFrames.has(src)) return;
@@ -3933,19 +3952,27 @@ UI.clearMotion=function(side){
   (UI.motionTimers[side]||[]).forEach(clearTimeout);
   UI.motionTimers[side]=[];
 };
+UI.visualFighterId=function(side){
+  return Battle.st&&Battle.st.viewRight
+    ? (side===DB.meta.sides.SELF?'p2':'p1')
+    : (side===DB.meta.sides.SELF?'p1':'p2');
+};
 UI.visualWeapon=function(side){
   const actor=Battle.A(side);
-  return side===DB.meta.sides.FOE ? DB.visual.weapons.standard
-    : DB.visual.weapons[actor.weapon]||DB.visual.weapons.standard;
+  const fighter=DB.visual.fighters[UI.visualFighterId(side)]||DB.visual.fighters.p1;
+  return fighter[actor.weapon]||fighter.standard;
 };
+UI.displayCoord=function(value){ return Battle.st&&Battle.st.viewRight?100-value:value; };
+UI.displayZone=function(value){ return Battle.st&&Battle.st.viewRight?DB.visual.scene.zones.count-1-value:value; };
 UI.renderBattleScene=function(){
   const s=Battle.st, scene=DB.visual.scene, event=s.visual||{};
-  UI.preloadBattleFrames(Battle.A(DB.meta.sides.SELF).weapon);
+  UI.preloadBattleFrames();
   const root=document.getElementById('battleScene');
   const bg=document.getElementById('battleSceneBg');
-  bg.src=scene.background; bg.alt=scene.alt;
+  const backdrop=scene.backgrounds.find(item=>item.id===s.backgroundId)||scene.backgrounds[0];
+  bg.src=backdrop.src; bg.alt=backdrop.alt;
   root.style.setProperty('--battle-move-ms',scene.movementMs+'ms');
-  root.style.setProperty('--ground-bottom',((1-scene.groundRatio)*100).toFixed(2)+'%');
+  root.style.setProperty('--ground-bottom',((1-backdrop.groundRatio)*100).toFixed(2)+'%');
   const box=document.getElementById('battleActors');
   const hadZones=!!event.zones;
   const zones=Battle.sceneZones(s.distance,event);
@@ -3959,6 +3986,8 @@ UI.renderBattleScene=function(){
     event.fromCoords=Battle.zoneCoords(from);
   }
   event.zones=zones; event.coords=coords;
+  const shownZones={P:UI.displayZone(zones.P),E:UI.displayZone(zones.E)};
+  const shownCoords={P:UI.displayCoord(coords.P),E:UI.displayCoord(coords.E)};
 
   let field=box.querySelector(':scope > .battle-field-ruler');
   if(!field){
@@ -3972,17 +4001,19 @@ UI.renderBattleScene=function(){
     box.prepend(field);
   }
   field.querySelectorAll('.battle-zone').forEach((zone,index)=>{
+    const low=Math.min(shownZones.P,shownZones.E), high=Math.max(shownZones.P,shownZones.E);
     zone.className='battle-zone'
-      +(index===zones.P?' self':'')
-      +(index===zones.E?' foe':'')
-      +(index>zones.P&&index<zones.E?' between':'');
+      +(index===shownZones.P?' self':'')
+      +(index===shownZones.E?' foe':'')
+      +(index>low&&index<high?' between':'');
   });
   const readout=document.getElementById('battleDistanceStrip');
   readout.innerHTML='<span class="distance-strip-label">현재 거리</span><strong>'+s.distance+'칸</strong><span class="distance-strip-type">'+U.esc(DB.balance.distance.labels[s.distance])+'</span>'; 
-  field.setAttribute('aria-label','다섯 구역 중 나 '+(zones.P+1)+'구역, 적 '+(zones.E+1)+'구역 · 거리 '+s.distance+'칸');
+  field.setAttribute('aria-label','다섯 구역 중 나 '+(shownZones.P+1)+'구역, 적 '+(shownZones.E+1)+'구역 · 거리 '+s.distance+'칸');
 
   [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(side=>{
     const actor=Battle.A(side), weapon=UI.visualWeapon(side);
+    const fighterId=UI.visualFighterId(side);
     let el=box.querySelector('[data-actor="'+side+'"]');
     if(!el){
       el=document.createElement('div');
@@ -3990,6 +4021,7 @@ UI.renderBattleScene=function(){
       el.className='battle-actor '+(side===DB.meta.sides.FOE?'foe':'self');
       box.appendChild(el);
     }
+    el.dataset.fighter=fighterId;
     let marker=el.querySelector(':scope > .battle-ground-marker');
     if(!marker){
       marker=document.createElement('span');
@@ -3998,14 +4030,14 @@ UI.renderBattleScene=function(){
       el.appendChild(marker);
     }
     const fresh=event.side===side&&event.seq!==UI.motionSeq&&event.fromCoords;
-    const target=coords[side];
+    const target=shownCoords[side];
     if(!(UI.motionState&&UI.motionState.side===side))
-      el.style.left=(fresh?event.fromCoords[side]:target)+'%';
+      el.style.left=(fresh?UI.displayCoord(event.fromCoords[side]):target)+'%';
     if(weapon){
       let img=el.querySelector(':scope > img');
       if(!img){ img=document.createElement('img'); img.alt=''; el.prepend(img); }
       const badge=el.querySelector(':scope > .battle-actor-fallback'); if(badge) badge.remove();
-      img.alt=actor.name+' '+(DB.weapons[actor.weapon]||weapon).name; img.dataset.weapon=actor.weapon;
+      img.alt=actor.name+' '+(DB.weapons[actor.weapon]||weapon).name; img.dataset.weapon=actor.weapon; img.dataset.fighter=fighterId;
       if(!img.src||img.dataset.motion!=='playing'){
         const idle=weapon.motions[DB.visual.fallbackMotion];
         img.src=idle.frames[0];
@@ -4062,8 +4094,8 @@ UI.startNextBattleMotion=function(){
     img.style.setProperty('--frame-scale',motion.scale||1);
     img.style.setProperty('--foot-offset',((motion.footOffsets&&motion.footOffsets[index])||0)+'%');
   };
-  const target=event.coords&&event.coords[side];
-  const from=event.fromCoords&&event.fromCoords[side];
+  const target=event.coords&&UI.displayCoord(event.coords[side]);
+  const from=event.fromCoords&&UI.displayCoord(event.fromCoords[side]);
   if(!App.settings.animations){
     if(target!=null)actorEl.style.left=target+'%';
     img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);
@@ -4103,7 +4135,6 @@ UI.playBattleMotion=function(){
   if(!unseen.length && visual.side && visual.seq>UI.motionSeq) unseen.push(visual);
   unseen.forEach(event=>{
     UI.motionSeq=event.seq;
-    if(event.side===DB.meta.sides.FOE && (event.motion==='attack'||event.motion==='hit')) return;
     UI.motionQueue.push(event);
   });
   if(visual.seq===0 && UI.motionSeq<0) UI.motionSeq=0;

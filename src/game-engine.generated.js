@@ -388,6 +388,13 @@ DB.visual = {
   scene:{
     background:'assets/battle/grassland.png',
     alt:'푸른 하늘과 초원이 펼쳐진 전투장',
+    backgrounds:[
+      {id:'grassland',src:'assets/battle/grassland.png',alt:'푸른 하늘과 초원이 펼쳐진 전투장',groundRatio:0.812},
+      {id:'city',src:'assets/battle/backgrounds/city.png',alt:'맑은 하늘 아래 펼쳐진 중세 도시 광장',groundRatio:0.748},
+      {id:'dock',src:'assets/battle/backgrounds/dock.png',alt:'푸른 바다와 배가 보이는 항구 부두',groundRatio:0.748},
+      {id:'desert',src:'assets/battle/backgrounds/desert.png',alt:'오아시스와 바위산이 보이는 사막',groundRatio:0.748},
+      {id:'alley',src:'assets/battle/backgrounds/alley.png',alt:'꽃과 석조 건물이 늘어선 마을 골목',groundRatio:0.748}
+    ],
     movementMs:600,
     zones:{ count:5, startPct:10, stepPct:20, contactOffsetPct:3, start:{P:1,E:3} },
     groundRatio:0.812,
@@ -493,6 +500,17 @@ DB.visual = {
   },
   fallbackMotion:'idle'
 };
+
+/* 2P와 싱글 적은 제공된 2남자 무기별 프레임을 사용한다. */
+DB.visual.fighters={p1:DB.visual.weapons,p2:{}};
+['standard','longblade','shortblade','greatblade','twinblade','polearm'].forEach(weaponId=>{
+  const source=DB.visual.weapons[weaponId];
+  DB.visual.fighters.p2[weaponId]=Object.assign({},source,{
+    motions:Object.fromEntries(Object.entries(source.motions).map(([motionId,motion])=>[
+      motionId,Object.assign({},motion,{frames:motion.frames.map(src=>'assets/battle/p2/'+weaponId+'/'+src.split('/').pop())})
+    ]))
+  });
+});
 
 
 /* ==========================================================================================
@@ -1021,6 +1039,8 @@ const Battle = {
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
       floatSeq:0, floatEvents:[],
+      backgroundId:DB.visual.scene.backgrounds[Math.floor(Math.random()*DB.visual.scene.backgrounds.length)].id,
+      viewRight:false,
       visualEvents:[], visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
         zones:Object.assign({},DB.visual.scene.zones.start),
         coords:Battle.zoneCoords(DB.visual.scene.zones.start)},

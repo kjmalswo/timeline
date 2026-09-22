@@ -246,6 +246,7 @@ export class GameRoom {
 
   stateForSide(side) {
     const view = structuredClone(this.game);
+    view.viewRight = side === 'E';
     if (side === 'P') return view;
     [view.actors.P, view.actors.E] = [view.actors.E, view.actors.P];
     view.actors.P.side = 'P';
@@ -348,6 +349,8 @@ export class GameRoom {
         E: this.actorFromPlayer('E', this.meta.players.E)
       },
       queue: [], reactions: [], log: [], seq: 0, floatSeq: 0, floatEvents: [], visualEvents: [],
+      backgroundId: DB.visual.scene.backgrounds[Math.floor(Math.random() * DB.visual.scene.backgrounds.length)].id,
+      viewRight: false,
       visual: { seq: 0, side: null, motion: DB.visual.fallbackMotion,
         zones: { ...DB.visual.scene.zones.start },
         coords: Battle.zoneCoords(DB.visual.scene.zones.start) },

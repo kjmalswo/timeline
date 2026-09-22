@@ -39,6 +39,40 @@ test('모든 1남자 무기에 대기·전진·후퇴·공격·피격 프레임�
   assert.equal(DB.visual.weapons.standard.motions.advance.scale, 0.89);
 });
 
+test('2남자 무기 프레임과 무작위 전투 배경이 모두 배포된다', async () => {
+  const expected = { idle: 1, advance: 3, retreat: 3, attack: 2, hit: 2 };
+  for (const weaponId of ['standard', 'longblade', 'shortblade', 'greatblade', 'twinblade', 'polearm']) {
+    const weapon = DB.visual.fighters.p2[weaponId];
+    assert.ok(weapon, `2남자 ${weaponId} 누락`);
+    for (const [motionId, count] of Object.entries(expected)) {
+      assert.equal(weapon.motions[motionId].frames.length, count);
+      for (const frame of weapon.motions[motionId].frames) {
+        assert.match(frame, new RegExp(`^assets/battle/p2/${weaponId}/`));
+        const png = await readFile(new URL(`../dist/${frame}`, import.meta.url));
+        assert.equal(png.subarray(1, 4).toString(), 'PNG', frame);
+      }
+    }
+  }
+  assert.notEqual(DB.visual.fighters.p2.greatblade, DB.visual.fighters.p2.standard);
+  assert.deepEqual(DB.visual.scene.backgrounds.map(item => item.id),
+    ['grassland', 'city', 'dock', 'desert', 'alley']);
+  for (const backdrop of DB.visual.scene.backgrounds) {
+    const png = await readFile(new URL(`../dist/${backdrop.src}`, import.meta.url));
+    assert.equal(png.subarray(1, 4).toString(), 'PNG', backdrop.src);
+  }
+});
+
+test('멀티 2P 시점은 오른쪽 배치를 유지하고 적 동작도 재생한다', async () => {
+  const [html, worker] = await Promise.all([
+    readFile(new URL('../dist/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../src/worker.js', import.meta.url), 'utf8')
+  ]);
+  assert.match(worker, /view\.viewRight = side === 'E'/);
+  assert.match(html, /UI\.displayCoord=function\(value\).*100-value/);
+  assert.doesNotMatch(html, /battle-actor\.foe>img[^}]*scaleX\(-1\)/);
+  assert.doesNotMatch(html, /event\.side===DB\.meta\.sides\.FOE &&/);
+});
+
 function makeActor(side) {
   const preset = DB.setup.presets[0];
   return Battle.makeActor(side, {
