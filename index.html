@@ -969,35 +969,38 @@ body{
   transform:translateY(var(--foot-offset,0%)) scale(var(--frame-scale,1)) scaleX(-1);
 }
 .battle-field-ruler{
-  position:absolute;left:0;right:0;bottom:calc(var(--ground-bottom,18.8%) + 16px);
-  height:38px;z-index:4;pointer-events:none;
+  position:absolute;inset:0;z-index:3;pointer-events:none;
 }
-.battle-ground-line{
-  position:absolute;bottom:4px;height:2px;background:#fff9e8;
-  box-shadow:1px 1px 0 #182738;transition:left var(--battle-move-ms,360ms) var(--e),width var(--battle-move-ms,360ms) var(--e);
+.battle-zones{
+  position:absolute;inset:0;display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
 }
-.battle-gap-cells{
-  position:absolute;bottom:3px;height:17px;display:flex;gap:2px;
-  transition:left var(--battle-move-ms,360ms) var(--e),width var(--battle-move-ms,360ms) var(--e);
+.battle-zone{
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:calc(var(--ground-bottom,18.8%) - 24px);
+  border-left:1px dashed rgba(135,202,250,.62);
+  background:linear-gradient(180deg,transparent 28%,rgba(69,156,238,.08) 100%);
+  color:#d9f2ff;font-size:.72em;font-style:normal;font-weight:950;
+  text-shadow:1px 1px 0 #183a67,-1px -1px 0 #183a67;
 }
-.battle-gap-cells i{
-  display:grid;place-items:center;flex:1;min-width:0;
-  color:#182738;background:#f4bf43;border:2px solid #75462b;
-  box-shadow:2px 2px 0 rgba(24,39,56,.5);
-  font-size:.65em;font-style:normal;font-weight:950;
-}
+.battle-zone:last-child{border-right:1px dashed rgba(135,202,250,.62)}
+.battle-zone:nth-child(even){background:linear-gradient(180deg,transparent 28%,rgba(63,120,230,.13) 100%)}
+.battle-zone.between{background:linear-gradient(180deg,transparent 25%,rgba(0,191,240,.23) 100%)}
+.battle-zone.self{background:linear-gradient(180deg,transparent 25%,rgba(21,114,255,.26) 100%);box-shadow:inset 0 -3px 0 #4db7ff}
+.battle-zone.foe{background:linear-gradient(180deg,transparent 25%,rgba(231,58,133,.25) 100%);box-shadow:inset 0 -3px 0 #ff69aa}
+.battle-zone.self.foe{background:linear-gradient(180deg,transparent 25%,rgba(132,87,246,.28) 100%);box-shadow:inset 0 -3px 0 #a67aff}
 .battle-ground-marker{
   position:absolute;left:50%;bottom:calc(8% - 10px);transform:translateX(-50%);
   width:24px;height:24px;display:grid;place-items:center;
-  color:#fff9e8;background:#263b50;border:2px solid #fff9e8;
-  box-shadow:2px 2px 0 #182738;font-size:.65em;font-weight:950;
-  z-index:9;
+  color:#fff;background:#203e67;border:2px solid #fff;
+  box-shadow:0 2px 6px rgba(23,48,86,.30);font-size:.65em;font-weight:950;z-index:9;
 }
-.battle-ground-marker.self{border-color:#4e9ee8}
-.battle-ground-marker.foe{border-color:#d95745}
+.battle-ground-marker.self{border-color:#57b9f0}
+.battle-ground-marker.foe{border-color:#ef87b3}
 .battle-distance-readout{
-  position:absolute;bottom:28px;transform:translateX(-50%);
-  padding:2px 5px;color:#fff9e8;background:#182738;border:1px solid #f4bf43;
+  position:absolute;bottom:calc(var(--ground-bottom,18.8%) + 26px);
+  transform:translateX(-50%);padding:2px 6px;
+  color:#fff;background:#203e67;border:1px solid #80b9e7;border-radius:3px;
   font-size:.59em;font-weight:900;line-height:1.2;white-space:nowrap;
   transition:left var(--battle-move-ms,360ms) var(--e);
 }
@@ -1251,26 +1254,75 @@ body{
   background:#eaf2ff;border:2px solid #4e72d6;
   box-shadow:0 0 0 3px #cbd9ff,0 6px 14px rgba(48,87,164,.17);
 }
-.battle-ground-line{
-  height:1px;background:repeating-linear-gradient(90deg,#b2dff5 0 5px,transparent 5px 8px);
-  box-shadow:0 1px 0 rgba(28,67,111,.55);
+
+/* V7.6 — 선명한 색상, 고정된 다섯 구역 */
+:root{
+  --bg:#e5f2ff;--sf:#f9fcff;--sf-2:#fff;
+  --ink:#102948;--ink-2:#234363;--ink-3:#3d5d7e;--ink-4:#647f9d;
+  --line:#9fc6e9;--acc:#285ce8;--acc-soft:#d8e7ff;
+  --self:#1674e8;--self-bg:#d9edff;--foe:#dd317d;--foe-bg:#ffe0ee;
+  --ok:#008eaa;--warn:#7a45db;--dang:#d5296e;
+  --L-high:#df307d;--L-mid:#1777e8;--L-low:#8547e8;
+  --L-side:#009eb6;--L-none:#577296;
+  --sh-d:rgba(24,85,159,.18);
 }
-.battle-gap-cells{
-  bottom:4px;height:12px;justify-content:space-around;align-items:center;gap:0;
+html,body,#app,#stage{background:#e5f2ff}
+body{
+  background-image:
+    radial-gradient(850px 520px at 8% 0%,rgba(101,192,255,.29),transparent 68%),
+    radial-gradient(800px 480px at 100% 100%,rgba(152,113,255,.19),transparent 68%);
 }
-.battle-gap-cells i{
-  flex:0 0 20px;width:20px;max-width:20px;height:11px;min-width:0;
-  color:#17456e;background:#d9efff;border:1px solid #6aa9d4;
-  border-radius:2px;box-shadow:0 1px 2px rgba(24,70,111,.22);
-  font-size:9px;font-weight:900;line-height:1;
+.nm,.card-box.nm,.nm-sm{border-color:#a9d1f1;box-shadow:0 6px 18px rgba(26,94,174,.14)}
+.btn.acc{background:#2863eb;border-color:#2052cc;color:#fff}
+.btn.acc:hover:not(:disabled){background:#1556e8}
+.btn.on{color:#174dc8;background:#dceaff}
+.tag.t-acc,.tag.t-ok{background:#d0f2ff;color:#007d9d}
+.tag.t-high,.tag.t-dang{background:#ffd6e9;color:#b91f64}
+.tag.t-low,.tag.t-warn{background:#eadcff;color:#6b34c2}
+.tag.t-side{background:#cff5f7;color:#067b91}
+.ring{background:#e7f3ff;border-color:#96c5ee}
+.snode.cur{background:#cae2ff;border-color:#2476ea}
+.tech.line-high{--card-accent:#df307d}
+.tech.line-mid{--card-accent:#1777e8}
+.tech.line-low{--card-accent:#8547e8}
+.tech.line-side{--card-accent:#009eb6}
+.tech.line-none{--card-accent:#577296}
+.tech-grid .tech.best{border-color:#00a6c2;background:linear-gradient(165deg,#fff,#dff9ff)}
+.tech-grid .tc-good{color:#006d84;background:#cbf5fa;border-color:#22bfd0}
+#screen-school .pick.on>.tech,
+#screen-school .pick.on>.tech.deck-tech,
+#screen-school .pick.on>.tech:not(.deck-tech){
+  border-color:#2863eb;background:linear-gradient(155deg,#fff,#d9e9ff);
+  box-shadow:0 0 0 3px #a9ccff,0 8px 18px rgba(23,92,193,.23);
 }
-.battle-distance-readout{
-  bottom:25px;padding:1px 4px;border-radius:2px;
-  font-size:.55em;line-height:1.15;
+#screen-school .pick.on::after,#screen-school .pick.on .cost{background:#205de0;border-color:#164bbd}
+.setup-points-help{
+  margin:0 0 13px;padding:10px 13px;color:#164268;background:#d9f0ff;
+  border:1px solid #86c9f0;border-left:4px solid #1979e8;border-radius:6px;
+  font-size:.84em;font-weight:700;line-height:1.55;
 }
+.lobby-deck{
+  margin:10px 0;padding:7px 10px;color:#143f70;background:#e1f1ff;
+  border:1px solid #92c6f2;border-radius:5px;font-size:.87em;font-weight:800;
+}
+.battle-scene .battle-actor{width:clamp(95px,15vw,190px);height:clamp(115px,21vw,235px)}
+.battle-zone{border-color:rgba(38,148,255,.68);background:linear-gradient(180deg,transparent 20%,rgba(24,127,242,.11))}
+.battle-zone:nth-child(even){background:linear-gradient(180deg,transparent 20%,rgba(101,74,235,.13))}
+.battle-zone.between{background:linear-gradient(180deg,transparent 20%,rgba(0,188,236,.25))}
+.battle-zone.self{background:linear-gradient(180deg,transparent 20%,rgba(18,113,255,.30));box-shadow:inset 0 -4px 0 #258eff}
+.battle-zone.foe{background:linear-gradient(180deg,transparent 20%,rgba(229,40,117,.28));box-shadow:inset 0 -4px 0 #ee3f8e}
+.battle-zone.self.foe{background:linear-gradient(180deg,transparent 20%,rgba(135,64,243,.30));box-shadow:inset 0 -4px 0 #9c5df0}
+.battle-ground-marker.self{border-color:#1f91ff}
+.battle-ground-marker.foe{border-color:#ee3e92}
 @media(max-width:760px){
-  .battle-gap-cells{height:12px}
-  .battle-gap-cells i{flex-basis:16px;width:16px;max-width:16px;height:10px;font-size:8px}
+  .battle-scene .battle-actor{width:clamp(62px,18vw,105px);height:clamp(88px,28vw,145px)}
+  .battle-zone{font-size:.62em}
+}
+@media(max-height:650px){
+  .battle-scene .battle-actor{width:clamp(70px,13vw,120px);height:clamp(90px,18vw,155px)}
+}
+@media(max-width:760px) and (max-height:650px){
+  .battle-scene .battle-actor{width:clamp(62px,18vw,105px);height:clamp(88px,28vw,145px)}
 }
 
 </style>
@@ -1390,7 +1442,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V7.5', build:'CF',
+    title:'THE TIMELINE', version:'V7.6', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1747,16 +1799,13 @@ DB.visual = {
     background:'assets/battle/grassland.png',
     alt:'푸른 하늘과 초원이 펼쳐진 전투장',
     movementMs:540,
-    moveStepPct:10,
-    minGapPct:20,
+    zones:{ count:5, startPct:10, stepPct:20, contactOffsetPct:3, start:{P:1,E:3} },
     groundRatio:0.812,
-    startPositions:{P:30,E:70},
-    bounds:{P:[6,82],E:[18,94]},
     hud:{
       segments:{ hp:16, stamina:12, focus:6 },
       colors:{
-        P:{ hp:'#43bca9', stamina:'#61a7ee', focus:'#a58be2' },
-        E:{ hp:'#dc7097', stamina:'#61a7ee', focus:'#a58be2' }
+        P:{ hp:'#43bca9', stamina:'#ffd43b', focus:'#ff873a' },
+        E:{ hp:'#dc7097', stamina:'#ffd43b', focus:'#ff873a' }
       }
     }
   },
@@ -2155,8 +2204,8 @@ DB.tutorial = {
   { t:'시간축 읽기', focus:'#tlBox',
     b:'모든 행동이 즉시 발동하는 것은 아닙니다. 기술을 사용하면 시간축에 예고가 표시되고, 정해진 틱이 지나면 발동합니다. 가운데 숫자는 현재 시간이며, 위쪽에는 상대의 예고, 아래쪽에는 내 예고가 표시됩니다. 세로 막대는 각 플레이어가 다시 행동할 수 있는 시점입니다.' },
 
-  { t:'사거리 확인하기', focus:'#tlBox .dist',
-    b:'오른쪽의 다섯 칸은 거리를 나타냅니다. 채워진 칸은 현재 거리이고, 옅게 표시된 칸은 선택한 기술이 닿는 범위입니다. 사거리는 기술을 선택할 때가 아니라 실제로 발동할 때 판정됩니다. 그전에 상대가 범위를 벗어나면 공격이 빗나갑니다.' },
+  { t:'사거리 확인하기', focus:'#battleActors .battle-zones',
+    b:'전장은 다섯 구역으로 나뉩니다. 나와 적의 발밑 표식이 현재 구역을 가리키고, 두 구역 번호의 차이가 거리 칸 수입니다. 접근과 이탈은 한 구역씩 이동하며, 기술의 사거리는 실제 발동 시점의 거리로 판정됩니다.' },
 
   { t:'자세 이해하기', focus:'#ringBox',
     b:'자세는 모두 다섯 가지입니다. 각 자세에 따라 사용할 수 있는 기술과 공격 방향별 피해 배율이 달라집니다. 자세 칸을 누르면 기력을 사용해 자세를 바꿀 수 있습니다. 자세 전환에는 시간이 들지 않으므로 전환한 뒤에도 바로 기술을 사용할 수 있습니다.' },
@@ -2313,7 +2362,8 @@ const Battle = {
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
       visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
-        coords:Object.assign({},DB.visual.scene.startPositions)},
+        zones:Object.assign({},DB.visual.scene.zones.start),
+        coords:Battle.zoneCoords(DB.visual.scene.zones.start)},
       over:false, winner:null, finished:false, onEnd, enemyId, tutorial:!!opt.tutorial };
     Battle.awaitInput=false; Battle.selected=null; Battle.empowered=false;
     Ann.clear();
@@ -2550,7 +2600,7 @@ const Battle = {
             Battle.log('strip',{side:ef.t==='foe'?lf:lm,st:DB.statuses[ef.s].name}, ef.t==='foe'?cf:cm); } break; }
         case 'move':{ const D=DB.balance.distance, b=s.distance;
           s.distance=U.clamp(s.distance+ef.v,D.min,D.max);
-          if(b!==s.distance) Battle.log('move',{v:D.labels[s.distance]},'n'); break; }
+          if(b!==s.distance){ Battle.log('move',{v:D.labels[s.distance]},'n'); Battle.visualAction(owner,'effect',null,s.distance-b); } break; }
         case 'stamina':{ const t=ef.t==='foe'?foe:me; t.stamina=U.clamp(t.stamina+ef.v,0,t.staminaMax); break; }
         case 'focus':{ const t=ef.t==='foe'?foe:me; t.focus=U.clamp(t.focus+ef.v,0,t.focusMax); break; }
         case 'delayQueue': case 'cancelQueue': case 'hasten':{
@@ -2611,33 +2661,43 @@ const Battle = {
   },
 
 
+  zoneCoords(zones){
+    const Z=DB.visual.scene.zones;
+    const p=Z.startPct+zones.P*Z.stepPct, e=Z.startPct+zones.E*Z.stepPct;
+    return zones.P===zones.E
+      ? {P:p-Z.contactOffsetPct,E:e+Z.contactOffsetPct}
+      : {P:p,E:e};
+  },
+  sceneZones(distance,visual){
+    const Z=DB.visual.scene.zones;
+    const raw=visual&&visual.zones&&Number.isFinite(visual.zones.P)
+      ? visual.zones.P
+      : Math.round(((visual&&visual.coords?visual.coords.P:Battle.zoneCoords(Z.start).P)-Z.startPct)/Z.stepPct);
+    const p=U.clamp(raw,0,Z.count-1-distance);
+    return {P:p,E:p+distance};
+  },
   visualAction(side, kind, id, move){
     if(!Battle.st||!DB.visual) return;
-    const scene=DB.visual.scene, current=Battle.st.visual||{seq:0};
+    const s=Battle.st, Z=DB.visual.scene.zones, current=s.visual||{seq:0};
     const map=DB.visual.actionMotion&&DB.visual.actionMotion[kind];
     const motion=map&&map[id];
-    const oldDistance=U.clamp(Battle.st.distance-(move||0),DB.balance.distance.min,DB.balance.distance.max);
-    const oldGap=scene.minGapPct+scene.moveStepPct*oldDistance;
-    const coords=Object.assign({
-      P:50-oldGap/2,
-      E:50+oldGap/2
-    },current.coords||{});
-    const fromCoords=Object.assign({},coords);
-    const gap=scene.minGapPct+scene.moveStepPct*Battle.st.distance;
-    const center=move
-      ? (side===DB.meta.sides.SELF?coords.E-gap/2:coords.P+gap/2)
-      : (coords.P+coords.E)/2;
-    const lo=Math.max(scene.bounds.P[0]+gap/2,scene.bounds.E[0]-gap/2);
-    const hi=Math.min(scene.bounds.P[1]+gap/2,scene.bounds.E[1]-gap/2);
-    const bounded=U.clamp(center,lo,hi);
-    coords.P=bounded-gap/2;
-    coords.E=bounded+gap/2;
-    Battle.st.visual={
+    const oldP=current.zones&&Number.isFinite(current.zones.P)
+      ? current.zones.P
+      : Math.round(((current.coords?current.coords.P:Battle.zoneCoords(Z.start).P)-Z.startPct)/Z.stepPct);
+    const oldE=current.zones&&Number.isFinite(current.zones.E)
+      ? current.zones.E
+      : Math.round(((current.coords?current.coords.E:Battle.zoneCoords(Z.start).E)-Z.startPct)/Z.stepPct);
+    const delta=move!=null?move:s.distance-(oldE-oldP);
+    const desiredP=side===DB.meta.sides.SELF?oldP-delta:oldE+delta-s.distance;
+    const zones={P:U.clamp(desiredP,0,Z.count-1-s.distance)};
+    zones.E=zones.P+s.distance;
+    s.visual={
       seq:(current.seq||0)+(motion?1:0),
       side:motion?side:current.side,
       motion:motion||current.motion||DB.visual.fallbackMotion,
-      fromCoords,
-      coords
+      fromCoords:Battle.zoneCoords({P:oldP,E:oldE}),
+      zones,
+      coords:Battle.zoneCoords(zones)
     };
   },
 
@@ -3229,6 +3289,19 @@ const UI = {
     const can=c=>left>=c;
     const ok = d.techs.length>=SU.minTechs && d.techs.length<=SU.maxTechs && left>=0;
 
+    const stats=`
+      <div class="card-box nm"><div class="h2">기본 능력치</div>
+        ${[['hp','체력',SU.step.hp,S.hpStep,SU.maxStep.hp,SU.base.hp],
+           ['stamina','기력',SU.step.stamina,S.staminaStep,SU.maxStep.stamina,SU.base.stamina],
+           ['focus','집중',SU.step.focus,S.focusStep,SU.maxStep.focus,SU.base.focus]]
+          .map(([k,nm,step,cost,mx,base])=>`<div class="stepper" style="margin-bottom:8px">
+            <span class="nm">${nm}</span>
+            <button class="btn xs" data-s="${k}" data-d="-1" ${d[k]<=0?'disabled':''}>-</button>
+            <span class="val">${base+d[k]*step}</span>
+            <button class="btn xs" data-s="${k}" data-d="1" ${(d[k]>=mx||!can(cost))?'disabled':''}>+</button>
+            <span class="hint">한 단계 +${step} · ${cost}점 · 최대 ${mx}단계 (현재 ${d[k]}단계)</span></div>`).join('')}
+      </div>`;
+
     let h=`<div class="ptbar">
       <span class="pt ${left<0?'over':''}">구성 점수 <b>${left}</b> <span class="dim">/ ${SU.points}</span></span>
       <span class="tag ${d.techs.length<SU.minTechs?'t-dang':'t-ok'}">기술 ${d.techs.length} / 최소 ${SU.minTechs}</span>
@@ -3238,6 +3311,8 @@ const UI = {
       <div style="flex:1"></div>
       <button class="btn sm" id="suReset">비우기</button>
       <button class="btn acc" id="suGo" ${ok?'':'disabled'}>이 구성으로 시작</button></div>
+      <p class="setup-points-help">구성 점수는 시작 덱의 예산입니다. 카드의 1점·2점은 선택할 때 쓰는 점수이며, 무기·기술·각인·연계·단련·기본 능력치가 모두 같은 예산을 사용합니다. 남은 점수가 0 이상이고 시작 기술을 ${SU.minTechs}장 이상 고르면 시작할 수 있습니다.</p>
+      ${stats}
 
       <div class="card-box nm"><div class="h2">추천 구성</div>
         <p class="dim" style="margin-bottom:10px">원하는 구성을 불러온 뒤 자유롭게 수정할 수 있습니다. 특정 추천 구성에 제한되지 않습니다.</p>
@@ -3287,18 +3362,7 @@ const UI = {
           const on=d.traits.indexOf(id)>=0, dis=!on&&!can(S.trait);
           return `<div class="pick ${on?'on':''} ${dis?'dis':''}" data-r="${id}">
             <span class="cost">${S.trait}점</span>${UI.optCard('trait',id)}</div>`;}).join('')}</div></div>
-
-      <div class="card-box nm"><div class="h2">기본 능력치</div>
-        ${[['hp','체력',SU.step.hp,S.hpStep,SU.maxStep.hp,SU.base.hp],
-           ['stamina','기력',SU.step.stamina,S.staminaStep,SU.maxStep.stamina,SU.base.stamina],
-           ['focus','집중',SU.step.focus,S.focusStep,SU.maxStep.focus,SU.base.focus]]
-          .map(([k,nm,step,cost,mx,base])=>`<div class="stepper" style="margin-bottom:8px">
-            <span class="nm">${nm}</span>
-            <button class="btn xs" data-s="${k}" data-d="-1" ${d[k]<=0?'disabled':''}>-</button>
-            <span class="val">${base+d[k]*step}</span>
-            <button class="btn xs" data-s="${k}" data-d="1" ${(d[k]>=mx||!can(cost))?'disabled':''}>+</button>
-            <span class="hint">한 단계 +${step} · ${cost}점 · 최대 ${mx}단계 (현재 ${d[k]}단계)</span></div>`).join('')}
-      </div>`;
+`;
 
     const schoolTitle=document.getElementById('schoolTitle');
     if(schoolTitle) schoolTitle.textContent=UI.setupContext==='multi'?'멀티플레이 덱 설정':'초기 빌드 구성';
@@ -3679,35 +3743,42 @@ UI.renderBattleScene=function(){
   root.style.setProperty('--battle-move-ms',scene.movementMs+'ms');
   root.style.setProperty('--ground-bottom',((1-scene.groundRatio)*100).toFixed(2)+'%');
   const box=document.getElementById('battleActors');
-  const gap=scene.minGapPct+scene.moveStepPct*s.distance;
-  const fallback={P:50-gap/2,E:50+gap/2};
-  const center=event.coords?(event.coords.P+event.coords.E)/2:50;
-  const coords={P:center-gap/2,E:center+gap/2};
+  const hadZones=!!event.zones;
+  const zones=Battle.sceneZones(s.distance,event);
+  const coords=Battle.zoneCoords(zones);
+  if(!hadZones&&event.fromCoords){
+    const Z=scene.zones;
+    const from={
+      P:U.clamp(Math.round((event.fromCoords.P-Z.startPct)/Z.stepPct),0,Z.count-1),
+      E:U.clamp(Math.round((event.fromCoords.E-Z.startPct)/Z.stepPct),0,Z.count-1)
+    };
+    event.fromCoords=Battle.zoneCoords(from);
+  }
+  event.zones=zones; event.coords=coords;
 
   let field=box.querySelector(':scope > .battle-field-ruler');
   if(!field){
     field=document.createElement('div'); field.className='battle-field-ruler';
-    field.innerHTML='<span class="battle-ground-line"></span>'+
-      '<span class="battle-gap-cells"></span>'+
-      '<span class="battle-distance-readout"></span>';
+    const grid=document.createElement('div'); grid.className='battle-zones';
+    for(let index=0;index<scene.zones.count;index++){
+      const zone=document.createElement('i'); zone.className='battle-zone';
+      zone.textContent=index+1; grid.appendChild(zone);
+    }
+    field.appendChild(grid);
+    const readout=document.createElement('span');
+    readout.className='battle-distance-readout'; field.appendChild(readout);
     box.prepend(field);
   }
-  const line=field.querySelector('.battle-ground-line');
-  line.style.left=coords.P+'%';
-  line.style.width=(coords.E-coords.P)+'%';
-  const cells=field.querySelector('.battle-gap-cells');
-  cells.style.left=(coords.P+scene.minGapPct/2)+'%';
-  cells.style.width=Math.max(0,coords.E-coords.P-scene.minGapPct)+'%';
-  if(cells.children.length!==s.distance){
-    cells.replaceChildren();
-    for(let index=1;index<=s.distance;index++){
-      const cell=document.createElement('i'); cell.textContent=index; cells.appendChild(cell);
-    }
-  }
+  field.querySelectorAll('.battle-zone').forEach((zone,index)=>{
+    zone.className='battle-zone'
+      +(index===zones.P?' self':'')
+      +(index===zones.E?' foe':'')
+      +(index>zones.P&&index<zones.E?' between':'');
+  });
   const readout=field.querySelector('.battle-distance-readout');
   readout.style.left=((coords.P+coords.E)/2)+'%';
   readout.textContent=s.distance+'칸 · '+DB.balance.distance.labels[s.distance];
-  field.setAttribute('aria-label','나와 적의 거리 '+s.distance+'칸');
+  field.setAttribute('aria-label','다섯 구역 중 나 '+(zones.P+1)+'구역, 적 '+(zones.E+1)+'구역 · 거리 '+s.distance+'칸');
 
   [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(side=>{
     const actor=Battle.A(side), weapon=UI.visualWeapon(side);
@@ -3726,7 +3797,7 @@ UI.renderBattleScene=function(){
       el.appendChild(marker);
     }
     const fresh=event.side===side&&event.seq!==UI.motionSeq&&event.fromCoords;
-    const target=coords[side]!=null?coords[side]:fallback[side];
+    const target=coords[side];
     el.style.left=(fresh?event.fromCoords[side]:target)+'%';
     if(weapon){
       let img=el.querySelector(':scope > img');
@@ -4419,7 +4490,7 @@ const Tut = {
    ========================================================================================== */
 const Net = {
   ws:null, token:'', connected:false, active:false, roomCode:'', roomStatus:'',
-  players:[], error:'', notice:'', reconnectTimer:null, connectionKey:'', lastPreset:'direct',
+  players:[], error:'', notice:'', reconnectTimer:null, connectionKey:'',
   customBuild:null, pendingCode:'', isHost:false,
 
   url(){ return `${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/${Net.roomCode}?token=${encodeURIComponent(Net.token)}`; },
@@ -4442,7 +4513,6 @@ const Net = {
   open(){
     try{ Net.token=sessionStorage.getItem('timeline_pvp_token')||''; }catch(e){}
     try{ Net.roomCode=sessionStorage.getItem('timeline_pvp_room')||''; }catch(e){}
-    try{ Net.lastPreset=localStorage.getItem('timeline_pvp_preset')||'direct'; }catch(e){}
     try{ Net.customBuild=JSON.parse(localStorage.getItem('timeline_pvp_build_v1')||'null'); }catch(e){ Net.customBuild=null; }
     try{ Net.pendingCode=Net.normalizeCode(new URL(location.href).searchParams.get('room')||''); }catch(e){}
     if(Net.roomCode&&Net.token) Net.connect(); else Net.health();
@@ -4501,9 +4571,8 @@ const Net = {
       return;
     }
   },
-  rememberPreset(id){ Net.lastPreset=id; try{ localStorage.setItem('timeline_pvp_preset',id); }catch(e){} },
   defaultBuild(){
-    const p=DB.setup.presets.find(x=>x.id===Net.lastPreset)||DB.setup.presets[0];
+    const p=DB.setup.presets[0];
     return {weapon:p.weapon,techs:p.techs.slice(),sigils:p.sigils.slice(),chains:p.chains.slice(),
       traits:[],hp:p.hp,stamina:p.stamina,focus:p.focus};
   },
@@ -4541,9 +4610,9 @@ const Net = {
   },
   formData(kind){
     const name=(document.getElementById(kind==='join'?'mpJoinName':'mpCreateName')||{}).value||'';
-    const preset=(document.getElementById(kind==='join'?'mpJoinPreset':'mpCreatePreset')||{}).value||Net.lastPreset;
+    const preset=DB.setup.presets[0].id;
     const code=kind==='join'?Net.normalizeCode((document.getElementById('mpCode')||{}).value||''):'';
-    Net.rememberPreset(preset); return {name:name.trim().slice(0,18),preset,build:Net.customBuild||null,code};
+    return {name:name.trim().slice(0,18),preset,build:Net.customBuild||null,code};
   },
   formFail(kind,msg){
     const el=document.getElementById(kind==='join'?'mpJoinError':'mpCreateError');
@@ -4621,6 +4690,7 @@ UI.renderMulti = function(){
       <div class="invite-actions"><button class="btn sm" id="mpCopyCode">코드 복사</button>
         <button class="btn sm acc" id="mpCopyLink">입장 링크 복사</button></div>
       <div class="lobby-players">${Net.players.map((p,i)=>`<div class="lobby-player"><b>${i+1}P</b> · ${U.esc(p.name)}${p.connected===false?' · 재접속 대기':''}</div>`).join('')}</div>
+      <p class="lobby-deck">입장 덱: ${Net.customBuild?'저장한 사용자 덱':'기본 직도류 덱'} · 내 덱 설정에서 변경할 수 있습니다.</p>
       <p class="lobby-notice" aria-live="polite">${U.esc(Net.notice||'')}</p>
       <p class="net-status ${Net.error?'bad':'ok'}">${U.esc(status)}</p>
       <div class="lobby-actions">${Net.isHost&&waiting?`<button class="btn acc" id="mpStart" ${ready?'':'disabled'}>게임 시작</button>`:''}
@@ -4632,9 +4702,9 @@ UI.renderMulti = function(){
     document.getElementById('mpLobbyDeck').onclick=()=>Net.editBuild();
     document.getElementById('mpLeave').onclick=()=>Net.leave(); return;
   }
-  const presetOpts=DB.setup.presets.map(p=>`<option value="${p.id}" ${p.id===Net.lastPreset?'selected':''}>${U.esc(p.name)} — ${U.esc(p.desc)}</option>`).join('');
   const deck=Net.customBuild;
-  const deckSummary=deck?`${deck.techs.length}개 기술 · ${U.esc(DB.weapons[deck.weapon].name)}`:'저장된 덱 없음';
+  const deckSummary=deck?`저장한 사용자 덱 · ${deck.techs.length}개 기술 · ${U.esc(DB.weapons[deck.weapon].name)}`:
+    `기본 덱 · ${U.esc(DB.setup.presets[0].name)} (덱을 저장하면 사용자 덱으로 대체)`;
   const pending=Net.pendingCode;
   b.innerHTML=`<div class="h2">1 대 1 PvP</div>
     <p class="muted">각 플레이어가 자신의 덱을 정한 뒤 입장합니다. 2P가 들어와도 자동 시작되지 않으며 방장이 직접 시작합니다.</p>
@@ -4642,7 +4712,6 @@ UI.renderMulti = function(){
       <div class="multi-panel create nm-in">
         <div class="multi-panel-head"><span>방 만들기</span><small>1P · 방장</small></div>
         <label for="mpCreateName">방장 이름</label><input id="mpCreateName" maxlength="18" autocomplete="nickname" placeholder="방장 이름">
-        <label for="mpCreatePreset">저장된 덱이 없을 때 기본 구성</label><select id="mpCreatePreset">${presetOpts}</select>
         <div class="form-error" id="mpCreateError" role="alert"></div>
         <button class="btn wide acc" id="mpCreate">방 만들기</button>
         <button class="btn wide" id="mpTest" style="margin-top:9px">혼자 테스트하는 임시방</button>
@@ -4651,12 +4720,11 @@ UI.renderMulti = function(){
         <div class="multi-panel-head" style="justify-content:center">내 덱</div>
         <p class="dim">${deckSummary}</p>
         <button class="btn acc" id="mpDeck">덱 직접 설정</button>
-        <p class="dim">설정한 덱은 이 브라우저에 저장되어 다음 접속에도 사용됩니다.</p>
+        <p class="dim">추천 구성 버튼은 덱 편집 화면에서 초안을 불러옵니다. 방 입장에는 위에 표시된 덱이 사용됩니다.</p>
       </div>
       <div class="multi-panel join nm-in">
         <div class="multi-panel-head"><span>코드 또는 링크로 입장</span><small>2P · 참가자</small></div>
         <label for="mpJoinName">참가자 이름</label><input id="mpJoinName" maxlength="18" autocomplete="nickname" placeholder="참가자 이름">
-        <label for="mpJoinPreset">저장된 덱이 없을 때 기본 구성</label><select id="mpJoinPreset">${presetOpts}</select>
         <label for="mpCode">6자리 방 코드</label><input id="mpCode" value="${U.esc(pending)}" maxlength="6" autocapitalize="characters" placeholder="ABC123">
         <div class="form-error" id="mpJoinError" role="alert"></div>
         <button class="btn wide" id="mpJoin">방에 입장</button>
