@@ -969,24 +969,37 @@ body{
   transform:translateY(var(--foot-offset,0%)) scale(var(--frame-scale,1)) scaleX(-1);
 }
 .battle-field-ruler{
-  position:absolute;left:50%;bottom:calc(var(--ground-bottom,18.8%) - 13px);
-  transform:translateX(-50%);width:min(430px,60%);height:20px;z-index:3;
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
-  pointer-events:none;
+  position:absolute;left:0;right:0;bottom:var(--ground-bottom,18.8%);
+  height:38px;z-index:4;pointer-events:none;
 }
-.battle-field-ruler i{
-  display:flex;align-items:center;justify-content:center;min-width:0;
-  color:#263b50;background:#f6edcf;border:1px solid #75462b;
-  box-shadow:1px 1px 0 rgba(24,39,56,.45);
-  font-size:.54em;font-style:normal;font-weight:900;white-space:nowrap;
+.battle-ground-line{
+  position:absolute;bottom:4px;height:2px;background:#fff9e8;
+  box-shadow:1px 1px 0 #182738;transition:left var(--battle-move-ms,360ms) var(--e),width var(--battle-move-ms,360ms) var(--e);
 }
-.battle-field-ruler i.active{
-  color:#fff9e8;background:#263b50;border-color:#f4bf43;
+.battle-gap-cells{
+  position:absolute;bottom:3px;height:17px;display:flex;gap:2px;
+  transition:left var(--battle-move-ms,360ms) var(--e),width var(--battle-move-ms,360ms) var(--e);
 }
+.battle-gap-cells i{
+  display:grid;place-items:center;flex:1;min-width:0;
+  color:#182738;background:#f4bf43;border:2px solid #75462b;
+  box-shadow:2px 2px 0 rgba(24,39,56,.5);
+  font-size:.65em;font-style:normal;font-weight:950;
+}
+.battle-ground-marker{
+  position:absolute;bottom:0;transform:translateX(-50%);
+  width:24px;height:24px;display:grid;place-items:center;
+  color:#fff9e8;background:#263b50;border:2px solid #fff9e8;
+  box-shadow:2px 2px 0 #182738;font-size:.65em;font-weight:950;
+  transition:left var(--battle-move-ms,360ms) var(--e);
+}
+.battle-ground-marker.self{border-color:#4e9ee8}
+.battle-ground-marker.foe{border-color:#d95745}
 .battle-distance-readout{
-  position:absolute;left:50%;bottom:calc(100% + 3px);transform:translateX(-50%);
+  position:absolute;bottom:28px;transform:translateX(-50%);
   padding:2px 5px;color:#fff9e8;background:#182738;border:1px solid #f4bf43;
   font-size:.59em;font-weight:900;line-height:1.2;white-space:nowrap;
+  transition:left var(--battle-move-ms,360ms) var(--e);
 }
 .battle-intents{
   position:absolute;left:50%;bottom:-7px;transform:translate(-50%,100%);z-index:8;
@@ -1002,8 +1015,9 @@ body{
 .battle-scene .battle-intents>.battle-intent.foe{--intent-side:#d95745}
 .battle-scene .battle-intents>.battle-intent .intent-name{color:var(--intent-side)}
 @media(max-width:760px){
-  .battle-field-ruler{width:min(310px,76%)}
-  .battle-field-ruler i{font-size:.47em}
+  .battle-gap-cells{height:15px}
+  .battle-gap-cells i{font-size:.56em}
+  .battle-ground-marker{width:20px;height:20px;font-size:.57em}
   .battle-scene .battle-intents>.battle-intent{max-width:min(145px,38vw);font-size:.61em}
 }
 .combat-tooltip{
@@ -1184,7 +1198,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V7.2', build:'CF',
+    title:'THE TIMELINE', version:'V7.3', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -3481,15 +3495,31 @@ UI.renderBattleScene=function(){
   let field=box.querySelector(':scope > .battle-field-ruler');
   if(!field){
     field=document.createElement('div'); field.className='battle-field-ruler';
-    DB.balance.distance.labels.forEach((label,index)=>{
-      const mark=document.createElement('i'); mark.textContent=index+' · '+label; field.appendChild(mark);
-    });
-    const readout=document.createElement('span'); readout.className='battle-distance-readout'; field.appendChild(readout);
+    field.innerHTML='<span class="battle-ground-line"></span>'+
+      '<span class="battle-gap-cells"></span>'+
+      '<span class="battle-ground-marker self">나</span>'+
+      '<span class="battle-ground-marker foe">적</span>'+
+      '<span class="battle-distance-readout"></span>';
     box.prepend(field);
   }
+  const line=field.querySelector('.battle-ground-line');
+  line.style.left=coords.P+'%';
+  line.style.width=(coords.E-coords.P)+'%';
+  const cells=field.querySelector('.battle-gap-cells');
+  cells.style.left=(coords.P+scene.minGapPct/2)+'%';
+  cells.style.width=Math.max(0,coords.E-coords.P-scene.minGapPct)+'%';
+  if(cells.children.length!==s.distance){
+    cells.replaceChildren();
+    for(let index=1;index<=s.distance;index++){
+      const cell=document.createElement('i'); cell.textContent=index; cells.appendChild(cell);
+    }
+  }
+  field.querySelector('.battle-ground-marker.self').style.left=coords.P+'%';
+  field.querySelector('.battle-ground-marker.foe').style.left=coords.E+'%';
   const readout=field.querySelector('.battle-distance-readout');
-  field.querySelectorAll('i').forEach((mark,index)=>mark.classList.toggle('active',index===s.distance));
+  readout.style.left=((coords.P+coords.E)/2)+'%';
   readout.textContent=s.distance+'칸 · '+DB.balance.distance.labels[s.distance];
+  field.setAttribute('aria-label','나와 적의 거리 '+s.distance+'칸');
 
   [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(side=>{
     const actor=Battle.A(side), weapon=UI.visualWeapon(side);
