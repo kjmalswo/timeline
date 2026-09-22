@@ -82,3 +82,10 @@ test('이동과 공격·피격 동작이 순서대로 기록된다', () => {
   assert.deepEqual(Battle.st.visualEvents.slice(-2).map(event => event.seq),
     [2, 3]);
 });
+
+test('거리 제한이 없는 기술은 무기 사거리 보정에도 모든 칸에서 사용된다', () => {
+  for (const tech of Object.values(DB.techs).filter(t => t.range[0] === 0 && t.range[1] === 4)) {
+    assert.deepEqual(Battle.effRange({ mods: { rangeMin: 1, rangeMax: -1 } }, tech), [0, 4], tech.id);
+  }
+  assert.deepEqual(Battle.effRange({ mods: { rangeMax: 1 } }, DB.techs.pierce), [1, 3]);
+});

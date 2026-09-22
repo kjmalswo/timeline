@@ -1053,6 +1053,7 @@ const Battle = {
   effCost(a,def){ return Math.max(DB.balance.clamp.minCost, def.cost + Battle.mod(a,'cost')); },
   effRange(a,def){
     const D=DB.balance.distance;
+    if(def.range[0]===D.min&&def.range[1]===D.max) return [D.min,D.max];
     let lo=U.clamp(def.range[0]+Battle.mod(a,'rangeMin'),D.min,D.max);
     let hi=U.clamp(def.range[1]+Battle.mod(a,'rangeMax'),D.min,D.max);
     if(hi<lo) hi=lo;

@@ -1344,6 +1344,10 @@ body{
 .tech-grid .rdots i{width:10px;height:10px;flex:none;border:1px solid #a4bbd6;border-radius:2px;background:#c5d8ee}
 .tech-grid .rdots i.on{border-color:var(--card-accent);background:var(--card-accent)}
 .tech-grid .rdots i.cur{box-shadow:0 0 0 2px #eaf3ff,0 0 0 3px #174d91}
+.tech-grid .range-meter{width:100%}
+.tech-grid .range-ends{display:flex;justify-content:space-between;gap:4px;margin-bottom:3px;color:#38536f;font-size:.6em;font-weight:800}
+.tech-grid .rdots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-self:stretch;width:100%;gap:4px}
+.tech-grid .rdots i{width:auto}
 @media(max-width:760px){.battle-clock{font-size:.67em}.battle-clock span{padding:3px 6px}.battle-distance-strip{font-size:.68em;padding:4px 10px}}
 .ring-head strong{font-size:.9em}
 .stance-spend-note{font-size:.72em;line-height:1.25}
@@ -2501,6 +2505,7 @@ const Battle = {
   effCost(a,def){ return Math.max(DB.balance.clamp.minCost, def.cost + Battle.mod(a,'cost')); },
   effRange(a,def){
     const D=DB.balance.distance;
+    if(def.range[0]===D.min&&def.range[1]===D.max) return [D.min,D.max];
     let lo=U.clamp(def.range[0]+Battle.mod(a,'rangeMin'),D.min,D.max);
     let hi=U.clamp(def.range[1]+Battle.mod(a,'rangeMax'),D.min,D.max);
     if(hi<lo) hi=lo;
@@ -3621,15 +3626,16 @@ const UI = {
       const m=Battle.lineMult(Battle.A(DB.meta.sides.FOE),d.line);
       mult='<span class="tc-mult '+(m>1.01?'up':(m<0.99?'dn':''))+'">'+m.toFixed(2)+'배</span>';
     }
-    const rangeDots='<div class="rdots" role="img" aria-label="사거리 '+U.esc(range)+'; 현재 '+(s?s.distance+'칸':'거리 미정')+'">'+
+    const rangeDots='<div class="range-meter"><div class="range-ends"><span>0칸 · 가까움</span><span>4칸 · 멂</span></div>'+
+      '<div class="rdots" role="img" aria-label="왼쪽 0칸 가까움, 오른쪽 4칸 멂; 사용 가능 '+U.esc(range)+'; 현재 '+(s?s.distance+'칸':'거리 미정')+'">'+
     D.labels.map((label,index)=>'<i class="'+(index>=rg[0]&&index<=rg[1]?'on ':'')+
-      (s&&s.distance===index?'cur':'')+'" title="'+index+'칸 · '+U.esc(label)+'"></i>').join('')+'</div>';
+      (s&&s.distance===index?'cur':'')+'" title="'+index+'칸 · '+U.esc(label)+'"></i>').join('')+'</div></div>';
   const block=opt.block?'<div class="tc-block">'+U.esc(opt.block)+'</div>':'';
     const good=opt.good?'<span class="tc-good">'+U.esc(opt.good)+'</span>':'';
 
     if(!opt.compact){
       const empower=d.empower?'<div class="tc-emp">집중 '+d.empower.focus+' — '+U.esc(d.empower.text)+'</div>':'';
-      return '<div class="tech deck-tech line-'+d.line+' '+(opt.cls||'')+'" data-tech="'+id+'">'+
+      return '<div class="tech deck-tech line-'+d.line+' '+(opt.cls||'')+'" data-tech="'+id+'" '+(opt.attrs||'')+'>'+
         '<div class="tc-line" style="background:var('+ln.css+')"></div><div class="tc-body">'+
         '<div class="tc-top"><div style="flex:1"><div class="tc-name">'+U.esc(d.name)+'</div>'+
         '<div class="tc-sub"><span style="color:var('+ln.css+')">'+U.esc(ln.name)+'</span>'+
@@ -3647,7 +3653,7 @@ const UI = {
     if(d.empower) tip+=' | 강화: 집중 '+d.empower.focus+' · '+d.empower.text;
     if(opt.block) tip+=' | '+opt.block;
     return '<div class="tech line-'+d.line+' '+(opt.cls||'')+'" data-tech="'+id+
-      '" data-combat-tip="'+U.esc(tip)+'" tabindex="0">'+
+      '" '+(opt.attrs||'')+' data-combat-tip="'+U.esc(tip)+'" tabindex="0">'+
       '<div class="tc-line" style="background:var('+ln.css+')"></div>'+
       '<div class="tc-body"><div class="tc-top"><div class="tc-name">'+U.esc(d.name)+'</div>'+
       '<div class="tc-cost" title="총 기력 비용">'+total+'</div></div>'+
