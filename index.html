@@ -1317,19 +1317,13 @@ body{
 }
 
 
-/* V7.7 전투 구역: 투명 유리 패널로 다섯 칸을 구분 */
-.battle-zones{gap:3px;padding:3px;box-sizing:border-box}
+/* V7.8 전투 구역: 네 개의 얇은 실선으로 다섯 칸을 구분 */
+.battle-zones{gap:0;padding:0}
 .battle-zone,.battle-zone:nth-child(even),.battle-zone.between,.battle-zone.self,.battle-zone.foe,.battle-zone.self.foe{
-  padding:0;border:1px solid rgba(220,243,255,.56);border-radius:8px;
-  background:linear-gradient(155deg,rgba(255,255,255,.22),rgba(107,193,255,.08) 45%,rgba(24,87,183,.14));
-  box-shadow:inset 1px 1px 0 rgba(255,255,255,.46),inset -1px -1px 0 rgba(90,160,225,.16),0 1px 3px rgba(20,57,107,.12);
-  backdrop-filter:blur(3px) saturate(1.3);-webkit-backdrop-filter:blur(3px) saturate(1.3);
+  padding:0;border:0;border-right:1px solid rgba(48,111,169,.5);border-radius:0;
+  background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;
 }
-.battle-zone:last-child{border-right:1px solid rgba(220,243,255,.56)}
-.battle-zone.between{background:linear-gradient(155deg,rgba(255,255,255,.25),rgba(45,213,244,.17) 55%,rgba(36,125,226,.18))}
-.battle-zone.self{border-color:rgba(80,186,255,.8);background:linear-gradient(155deg,rgba(255,255,255,.3),rgba(25,148,255,.22));box-shadow:inset 0 -3px 0 #258eff,inset 1px 1px 0 rgba(255,255,255,.5)}
-.battle-zone.foe{border-color:rgba(255,116,181,.8);background:linear-gradient(155deg,rgba(255,255,255,.3),rgba(239,63,142,.22));box-shadow:inset 0 -3px 0 #ee3f8e,inset 1px 1px 0 rgba(255,255,255,.5)}
-.battle-zone.self.foe{border-color:rgba(180,121,255,.8);background:linear-gradient(155deg,rgba(255,255,255,.3),rgba(151,88,241,.23));box-shadow:inset 0 -3px 0 #9c5df0,inset 1px 1px 0 rgba(255,255,255,.5)}
+.battle-zones .battle-zone:last-child{border-right:0}
 .battle-distance-strip{
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:fit-content;max-width:100%;margin:0 auto 6px;padding:4px 13px;
@@ -1351,6 +1345,24 @@ body{
 .tech-grid .rdots i.on{border-color:var(--card-accent);background:var(--card-accent)}
 .tech-grid .rdots i.cur{box-shadow:0 0 0 2px #eaf3ff,0 0 0 3px #174d91}
 @media(max-width:760px){.battle-clock{font-size:.67em}.battle-clock span{padding:3px 6px}.battle-distance-strip{font-size:.68em;padding:4px 10px}}
+.ring-head strong{font-size:.9em}
+.stance-spend-note{font-size:.72em;line-height:1.25}
+.sn-name{font-size:.85em}
+.sn-cost{font-size:.7em}
+.sn-thr{font-size:.65em}
+.battle-scene .battle-actor .panel.hit{animation:hudHit 360ms var(--e)}
+@keyframes hudHit{
+  0%,100%{transform:translate(-50%,-100%)}
+  22%{transform:translate(calc(-50% - 5px),-100%)}
+  48%{transform:translate(calc(-50% + 4px),-100%)}
+  74%{transform:translate(calc(-50% - 2px),-100%)}
+}
+@media(max-width:760px){
+  .ring-head strong{font-size:.82em}
+  .stance-spend-note{font-size:.66em}
+  .sn-name{font-size:.76em}
+  .sn-cost{font-size:.64em}
+}
 </style>
 </head>
 <body>
@@ -1468,7 +1480,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V7.7', build:'CF',
+    title:'THE TIMELINE', version:'V7.8', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
