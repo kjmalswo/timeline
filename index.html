@@ -1480,7 +1480,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V8.0', build:'CF',
+    title:'THE TIMELINE', version:'V8.1', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1853,22 +1853,91 @@ DB.visual = {
       hud:{topPct:30,mobileTopPct:34,shortTopPct:32},
       motions:{
         idle:{ frameMs:0, loop:true, footOffsets:[0], frames:['assets/battle/standard/idle.png'] },
-        advance:{ frameMs:200, loop:false, scale:0.93, footOffsets:[3.45,4.42,6.77], frames:[
+        advance:{ frameMs:200, loop:false, scale:0.89, footOffsets:[3.45,4.42,6.77], frames:[
           'assets/battle/standard/advance-1.png',
           'assets/battle/standard/advance-2.png',
           'assets/battle/standard/advance-3.png'
         ]},
-        retreat:{ frameMs:200, loop:false, footOffsets:[3.87,0,0], frames:[
+        retreat:{ frameMs:200, loop:false, scale:0.89, footOffsets:[3.87,0,0], frames:[
           'assets/battle/standard/retreat-1.png',
           'assets/battle/standard/retreat-2.png',
           'assets/battle/standard/retreat-3.png'
-        ]}
+        ]},
+        attack:{ frameMs:300, loop:false, scale:0.89, footOffsets:[0,3.59], frames:[
+          'assets/battle/standard/attack-1.png','assets/battle/standard/attack-2.png'] },
+        hit:{ frameMs:300, loop:false, scale:0.89, footOffsets:[4.70,3.59], frames:[
+          'assets/battle/standard/hit-1.png','assets/battle/standard/hit-2.png'] }
+      }
+    },
+    longblade:{
+      name:'장검', hud:{topPct:30,mobileTopPct:34,shortTopPct:32}, motions:{
+        idle:{frameMs:0,loop:true,footOffsets:[0],frames:['assets/battle/longblade/idle.png']},
+        advance:{frameMs:200,loop:false,scale:0.89,footOffsets:[0,2.21,5.66],frames:[
+          'assets/battle/longblade/advance-1.png','assets/battle/longblade/advance-2.png','assets/battle/longblade/advance-3.png']},
+        retreat:{frameMs:200,loop:false,scale:0.89,footOffsets:[2.35,4.14,4.28],frames:[
+          'assets/battle/longblade/retreat-1.png','assets/battle/longblade/retreat-2.png','assets/battle/longblade/retreat-3.png']},
+        attack:{frameMs:300,loop:false,scale:0.89,footOffsets:[0,0],frames:[
+          'assets/battle/longblade/attack-1.png','assets/battle/longblade/attack-2.png']},
+        hit:{frameMs:300,loop:false,scale:0.89,footOffsets:[1.66,2.07],frames:[
+          'assets/battle/longblade/hit-1.png','assets/battle/longblade/hit-2.png']}
+      }
+    },
+    shortblade:{
+      name:'단검', hud:{topPct:30,mobileTopPct:34,shortTopPct:32}, motions:{
+        idle:{frameMs:0,loop:true,footOffsets:[1.35],frames:['assets/battle/shortblade/idle.png']},
+        advance:{frameMs:200,loop:false,scale:0.89,footOffsets:[3.87,2.90,4.14],frames:[
+          'assets/battle/shortblade/advance-1.png','assets/battle/shortblade/advance-2.png','assets/battle/shortblade/advance-3.png']},
+        retreat:{frameMs:200,loop:false,scale:0.89,footOffsets:[0,0,2.49],frames:[
+          'assets/battle/shortblade/retreat-1.png','assets/battle/shortblade/retreat-2.png','assets/battle/shortblade/retreat-3.png']},
+        attack:{frameMs:300,loop:false,scale:0.89,footOffsets:[0,0],frames:[
+          'assets/battle/shortblade/attack-1.png','assets/battle/shortblade/attack-2.png']},
+        hit:{frameMs:300,loop:false,scale:0.89,footOffsets:[1.80,1.80],frames:[
+          'assets/battle/shortblade/hit-1.png','assets/battle/shortblade/hit-2.png']}
+      }
+    },
+    greatblade:{
+      name:'대검', hud:{topPct:30,mobileTopPct:34,shortTopPct:32}, motions:{
+        idle:{frameMs:0,loop:true,footOffsets:[0],frames:['assets/battle/greatblade/idle.png']},
+        advance:{frameMs:200,loop:false,scale:0.89,footOffsets:[2.21,2.62,0],frames:[
+          'assets/battle/greatblade/advance-1.png','assets/battle/greatblade/advance-2.png','assets/battle/greatblade/advance-3.png']},
+        retreat:{frameMs:200,loop:false,scale:0.89,footOffsets:[8.98,5.25,5.25],frames:[
+          'assets/battle/greatblade/retreat-1.png','assets/battle/greatblade/retreat-2.png','assets/battle/greatblade/retreat-3.png']},
+        attack:{frameMs:300,loop:false,scale:0.89,footOffsets:[0,0],frames:[
+          'assets/battle/greatblade/attack-1.png','assets/battle/greatblade/attack-2.png']},
+        hit:{frameMs:300,loop:false,scale:0.89,footOffsets:[0,0],frames:[
+          'assets/battle/greatblade/hit-1.png','assets/battle/greatblade/hit-2.png']}
+      }
+    },
+    twinblade:{
+      name:'쌍검', hud:{topPct:30,mobileTopPct:34,shortTopPct:32}, motions:{
+        idle:{frameMs:0,loop:true,footOffsets:[2.70],frames:['assets/battle/twinblade/idle.png']},
+        advance:{frameMs:200,loop:false,scale:0.89,footOffsets:[4.01,3.04,4.56],frames:[
+          'assets/battle/twinblade/advance-1.png','assets/battle/twinblade/advance-2.png','assets/battle/twinblade/advance-3.png']},
+        retreat:{frameMs:200,loop:false,scale:0.89,footOffsets:[2.90,0,1.93],frames:[
+          'assets/battle/twinblade/retreat-1.png','assets/battle/twinblade/retreat-2.png','assets/battle/twinblade/retreat-3.png']},
+        attack:{frameMs:300,loop:false,scale:0.89,footOffsets:[2.07,1.80],frames:[
+          'assets/battle/twinblade/attack-1.png','assets/battle/twinblade/attack-2.png']},
+        hit:{frameMs:300,loop:false,scale:0.89,footOffsets:[2.76,2.07],frames:[
+          'assets/battle/twinblade/hit-1.png','assets/battle/twinblade/hit-2.png']}
+      }
+    },
+    polearm:{
+      name:'장병기', hud:{topPct:30,mobileTopPct:34,shortTopPct:32}, motions:{
+        idle:{frameMs:0,loop:true,footOffsets:[0],frames:['assets/battle/polearm/idle.png']},
+        advance:{frameMs:200,loop:false,scale:0.89,footOffsets:[2.62,3.18,3.45],frames:[
+          'assets/battle/polearm/advance-1.png','assets/battle/polearm/advance-2.png','assets/battle/polearm/advance-3.png']},
+        retreat:{frameMs:200,loop:false,scale:0.89,footOffsets:[2.76,0,0],frames:[
+          'assets/battle/polearm/retreat-1.png','assets/battle/polearm/retreat-2.png','assets/battle/polearm/retreat-3.png']},
+        attack:{frameMs:300,loop:false,scale:0.89,footOffsets:[2.55,4.47],frames:[
+          'assets/battle/polearm/attack-1.png','assets/battle/polearm/attack-2.png']},
+        hit:{frameMs:300,loop:false,scale:0.89,footOffsets:[3.31,0],frames:[
+          'assets/battle/polearm/hit-1.png','assets/battle/polearm/hit-2.png']}
       }
     }
   },
   actionMotion:{
     basic:{ approach:'advance', retreat:'retreat' },
-    tech:{}
+    attack:{damage:'attack'}, impact:{damage:'hit'}
   },
   fallbackMotion:'idle'
 };
@@ -2399,7 +2468,7 @@ const Battle = {
 
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
-      visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
+      visualEvents:[], visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
         zones:Object.assign({},DB.visual.scene.zones.start),
         coords:Battle.zoneCoords(DB.visual.scene.zones.start)},
       over:false, winner:null, finished:false, onEnd, enemyId, tutorial:!!opt.tutorial };
@@ -2684,6 +2753,7 @@ const Battle = {
     Battle.log('damage',{side:lbl,v:dmg},cls);
     if(dmg>0) Battle.announce('damage',{v:dmg,extra:s.lastMultNote||''},target.side);
     s.lastMultNote='';
+    if(dmg>0) Battle.visualAction(target.side,'impact','damage');
     UI.flash(target.side);
     Battle.checkEnd();
   },
@@ -2737,6 +2807,11 @@ const Battle = {
       zones,
       coords:Battle.zoneCoords(zones)
     };
+    if(motion){
+      if(!s.visualEvents) s.visualEvents=[];
+      s.visualEvents.push(s.visual);
+      if(s.visualEvents.length>24) s.visualEvents.shift();
+    }
   },
 
   useTech(side, techId, empowered){
@@ -2752,6 +2827,7 @@ const Battle = {
     const onHit  = emp&&def.empower.onHit ?def.empower.onHit :(def.onHit||[]);
     if(onPlay.length) Battle.applyEffects(side,onPlay,null);
     if(s.over) return true;
+    if(onHit.some(effect=>effect.k==='damage')) Battle.visualAction(side,'attack','damage');
 
     const name=def.name+(emp?' (강화)':'');
     if(onHit.length){
@@ -2767,7 +2843,6 @@ const Battle = {
     a.stance=def.to;
     a.readyAt=s.tick+Battle.recoveryOf(a,def);
     Battle.fireChains(side, fromStance, def.to);
-    Battle.visualAction(side,'tech',techId);
     return true;
   },
 
@@ -2840,7 +2915,8 @@ const Battle = {
 
   loop(){
     const s=Battle.st; let guard=0;
-    const done=()=>{ UI.renderBattle(); setTimeout(()=>Battle.finish(s), DB.balance.loop.aiDelayMs); };
+    const done=()=>{ UI.renderBattle(); setTimeout(()=>Battle.finish(s),
+      Math.max(DB.balance.loop.aiDelayMs,UI.motionRemaining())); };
     const step=()=>{
       if(Battle.st!==s) return;
       if(s.over){ done(); return; }
@@ -3794,10 +3870,14 @@ UI.actions = function(){
 UI.motionSeq=-1;
 UI.motionTimers={};
 UI.motionPreloads=[];
-UI.preloadBattleFrames=function(){
-  Object.values(DB.visual.weapons).forEach(weapon=>
+UI.preloadedFrames=new Set();
+UI.motionQueue=[];
+UI.preloadBattleFrames=function(weaponId=DB.weaponStart){
+  [DB.visual.weapons.standard,DB.visual.weapons[weaponId]].filter(Boolean).forEach(weapon=>
     Object.values(weapon.motions).forEach(motion=>
       motion.frames.forEach(src=>{
+        if(UI.preloadedFrames.has(src)) return;
+        UI.preloadedFrames.add(src);
         const image=new Image();
         image.src=src;
         UI.motionPreloads.push(image);
@@ -3805,9 +3885,15 @@ UI.preloadBattleFrames=function(){
 };
 UI.motionState=null;
 UI.motionRemaining=function(){
-  const state=UI.motionState, visual=Battle.st&&Battle.st.visual;
-  return App.settings.animations&&state&&state.battle===Battle.st&&visual&&visual.seq===state.seq
-    ? Math.max(0,state.endsAt-Date.now()) : 0;
+  if(!App.settings.animations) return 0;
+  const state=UI.motionState;
+  let remaining=state?Math.max(0,state.endsAt-Date.now()):0;
+  UI.motionQueue.forEach(event=>{
+    const weapon=UI.visualWeapon(event.side);
+    const motion=weapon&&weapon.motions[event.motion];
+    if(motion) remaining+=Math.max(DB.visual.scene.movementMs,motion.frames.length*motion.frameMs);
+  });
+  return remaining;
 };
 UI.clearMotion=function(side){
   (UI.motionTimers[side]||[]).forEach(clearTimeout);
@@ -3815,10 +3901,12 @@ UI.clearMotion=function(side){
 };
 UI.visualWeapon=function(side){
   const actor=Battle.A(side);
-  return DB.visual.weapons[actor.weapon]||null;
+  return side===DB.meta.sides.FOE ? DB.visual.weapons.standard
+    : DB.visual.weapons[actor.weapon]||DB.visual.weapons.standard;
 };
 UI.renderBattleScene=function(){
   const s=Battle.st, scene=DB.visual.scene, event=s.visual||{};
+  UI.preloadBattleFrames(Battle.A(DB.meta.sides.SELF).weapon);
   const root=document.getElementById('battleScene');
   const bg=document.getElementById('battleSceneBg');
   bg.src=scene.background; bg.alt=scene.alt;
@@ -3877,12 +3965,13 @@ UI.renderBattleScene=function(){
     }
     const fresh=event.side===side&&event.seq!==UI.motionSeq&&event.fromCoords;
     const target=coords[side];
-    el.style.left=(fresh?event.fromCoords[side]:target)+'%';
+    if(!(UI.motionState&&UI.motionState.side===side))
+      el.style.left=(fresh?event.fromCoords[side]:target)+'%';
     if(weapon){
       let img=el.querySelector(':scope > img');
       if(!img){ img=document.createElement('img'); img.alt=''; el.prepend(img); }
       const badge=el.querySelector(':scope > .battle-actor-fallback'); if(badge) badge.remove();
-      img.alt=actor.name+' '+weapon.name; img.dataset.weapon=actor.weapon;
+      img.alt=actor.name+' '+(DB.weapons[actor.weapon]||weapon).name; img.dataset.weapon=actor.weapon;
       if(!img.src||img.dataset.motion!=='playing'){
         const idle=weapon.motions[DB.visual.fallbackMotion];
         img.src=idle.frames[0];
@@ -3923,18 +4012,16 @@ UI.renderBattleScene=function(){
   });
 };
 
-UI.playBattleMotion=function(){
-  const event=Battle.st.visual;
+UI.startNextBattleMotion=function(){
+  if(UI.motionState) return;
+  const event=UI.motionQueue.shift();
   if(!event) return;
-  if(!event.side){if(event.seq===0)UI.motionSeq=0;return;}
-  if(event.seq===UI.motionSeq)return;
-  UI.motionSeq=event.seq;
   const side=event.side, weapon=UI.visualWeapon(side), motion=weapon&&weapon.motions[event.motion];
-  if(!motion)return;
+  if(!motion){ UI.startNextBattleMotion(); return; }
   UI.clearMotion(side);
   const actorEl=document.querySelector('#battleActors [data-actor="'+side+'"]');
   const img=actorEl&&actorEl.querySelector(':scope > img');
-  if(!actorEl||!img)return;
+  if(!actorEl||!img){ UI.startNextBattleMotion(); return; }
   const idle=weapon.motions[DB.visual.fallbackMotion], scene=DB.visual.scene;
   const applyFrame=index=>{
     img.src=motion.frames[index];
@@ -3944,12 +4031,14 @@ UI.playBattleMotion=function(){
   const target=event.coords&&event.coords[side];
   const from=event.fromCoords&&event.fromCoords[side];
   if(!App.settings.animations){
-    UI.motionState=null;
     if(target!=null)actorEl.style.left=target+'%';
-    img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);img.style.setProperty('--foot-offset','0%');img.dataset.motion='idle';return;
+    img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);
+    img.style.setProperty('--foot-offset',(idle.footOffsets&&idle.footOffsets[0]||0)+'%');
+    img.dataset.motion='idle'; UI.startNextBattleMotion(); return;
   }
   const duration=Math.max(scene.movementMs,motion.frames.length*motion.frameMs);
-  UI.motionState={battle:Battle.st,seq:event.seq,endsAt:Date.now()+duration};
+  const state={side,seq:event.seq,endsAt:Date.now()+duration};
+  UI.motionState=state;
   img.dataset.motion='playing';
   actorEl.style.transition='none';
   if(from!=null)actorEl.style.left=from+'%';
@@ -3963,8 +4052,28 @@ UI.playBattleMotion=function(){
     UI.motionTimers[side].push(setTimeout(()=>applyFrame(index),index*motion.frameMs));
   }
   UI.motionTimers[side].push(setTimeout(()=>{
-    img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);img.style.setProperty('--foot-offset','0%');img.dataset.motion='idle';
+    if(UI.motionState!==state) return;
+    img.src=idle.frames[0];img.style.setProperty('--frame-scale',idle.scale||1);
+    img.style.setProperty('--foot-offset',(idle.footOffsets&&idle.footOffsets[0]||0)+'%');
+    img.dataset.motion='idle'; UI.motionState=null; UI.startNextBattleMotion();
   },duration));
+};
+UI.playBattleMotion=function(){
+  const s=Battle.st, visual=s&&s.visual;
+  if(!visual) return;
+  if(visual.seq<UI.motionSeq){
+    [DB.meta.sides.SELF,DB.meta.sides.FOE].forEach(UI.clearMotion);
+    UI.motionState=null; UI.motionQueue=[]; UI.motionSeq=-1;
+  }
+  const unseen=(s.visualEvents||[]).filter(event=>event.seq>UI.motionSeq);
+  if(!unseen.length && visual.side && visual.seq>UI.motionSeq) unseen.push(visual);
+  unseen.forEach(event=>{
+    UI.motionSeq=event.seq;
+    if(event.side===DB.meta.sides.FOE && (event.motion==='attack'||event.motion==='hit')) return;
+    UI.motionQueue.push(event);
+  });
+  if(visual.seq===0 && UI.motionSeq<0) UI.motionSeq=0;
+  UI.startNextBattleMotion();
 };
 
 UI.bindCombatTips=function(){

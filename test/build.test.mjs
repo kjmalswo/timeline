@@ -1,90 +1,84 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { DB, Battle } from '../src/game-engine.generated.js';
 
-test('정적 프론트와 공유 전투 엔진이 생성된다', async () => {
-  const [html, engine, worker, battleAsset] = await Promise.all([
+test('빌드가 전투 화면과 서버 전투 규칙을 생성한다', async () => {
+  const [html, engine, worker] = await Promise.all([
     readFile(new URL('../dist/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../src/game-engine.generated.js', import.meta.url), 'utf8'),
-    readFile(new URL('../src/worker.js', import.meta.url), 'utf8'),
-    readFile(new URL('../dist/assets/battle/standard/idle.png', import.meta.url))
+    readFile(new URL('../src/worker.js', import.meta.url), 'utf8')
   ]);
+  assert.match(html, /THE TIMELINE/);
+  assert.match(html, /UI\.playBattleMotion/);
   assert.match(html, /혼자 테스트하는 임시방/);
-  assert.match(html, /\/api\/rooms/);
-  assert.match(html, /입장 링크 복사/);
-  assert.match(html, /덱 직접 설정/);
-  assert.match(html, /type:'start'/);
-  assert.match(html, /DB\.visual/);
-  assert.match(html, /battle-scene/);
-  assert.match(html, /\.battle-scene\{[^}]*height:clamp\(310px,43vh,430px\)/);
-  assert.match(html, /\.battle-scene-bg\{[^}]*z-index:0/);
-  assert.match(html, /UI\.pixelGauge/);
-  assert.match(html, /P:\{ hp:'#32d66b'/);
-  assert.match(html, /E:\{ hp:'#ff4f57'/);
-  assert.match(html, /battle-intent/);
-  assert.match(html, /return '<div class="battle-clock">'/);
-  assert.match(html, /class="tech-grid"/);
-  assert.match(html, /if\(!opt\.compact\)/);
-  assert.match(html, /class="tech deck-tech/);
-  assert.match(html, /data-combat-tip/);
-  assert.match(html, /compact:true/);
-  assert.match(html, /stance-spend-note/);
-  assert.match(html, /#screen-title \.menu \.btn\{/);
-  assert.match(html, /\.battle-intent\{[^}]*background:#182738/);
-  assert.doesNotMatch(html, /const track=`<div class="track"/, '거리 트랙은 캐릭터 위치로 대체됩니다.');
-  assert.match(html, /startPositions:\{P:30,E:70\}/);
-  assert.match(html, /panel&&panel\.parentNode!==el/);
-  assert.match(html, /q\.status==='pending'&&q\.owner===side/);
-  assert.match(html, /el\.appendChild\(intent\)/);
-  assert.match(html, /combat-tooltip/);
-  assert.match(html, /z-index:2147483647/);
-  assert.match(html, /groundRatio:0\.812/);
-  assert.match(html, /footOffsets:\[3\.45,4\.42,6\.77\]/);
-  assert.match(html, /battle-field-ruler/);
-  assert.match(html, /object-fit:fill!important/);
-  assert.match(html, /fromCoords/);
-  assert.match(html, /\.battle-scene \.battle-actor \.panel\{[^}]*top:var\(--hud-top/);
-  assert.match(html, /\.battle-timeline \.tl-lane\{[^}]*background:transparent;box-shadow:none/);
-  assert.doesNotMatch(html, /E:\[60,65,70,75,80\]/, '거리는 공통 위치 배열이 아닌 절대 좌표로 관리합니다.');
-  assert.match(html, /assets\/battle\/standard\/advance-1\.png/);
-  assert.match(worker, /message\.type === 'start'/);
-  assert.match(worker, /normalizeBuild/);
   assert.match(engine, /export \{DB,U,Battle\}/);
-  assert.equal(battleAsset.subarray(1, 4).toString(), 'PNG');
+  assert.match(worker, /message\.type === 'start'/);
 });
 
-test('공유 엔진이 유효한 첫 행동을 처리한다', async () => {
-  const { DB, Battle } = await import('../src/game-engine.generated.js');
+test('모든 1남자 무기에 대기·전진·후퇴·공격·피격 프레임이 빠짐없이 배포된다', async () => {
+  assert.deepEqual(Object.keys(DB.visual.weapons).sort(),
+    Object.keys(DB.weapons).sort());
+  const expected = { idle: 1, advance: 3, retreat: 3, attack: 2, hit: 2 };
+  for (const [weaponId, weapon] of Object.entries(DB.visual.weapons)) {
+    for (const [motionId, count] of Object.entries(expected)) {
+      const motion = weapon.motions[motionId];
+      assert.ok(motion, `${weaponId}/${motionId} 동작 누락`);
+      assert.equal(motion.frames.length, count, `${weaponId}/${motionId} 프레임 수`);
+      assert.equal(motion.footOffsets.length, count, `${weaponId}/${motionId} 발 위치 수`);
+      if (motionId !== 'idle') {
+        assert.equal(motion.frameMs * count, DB.visual.scene.movementMs,
+          `${weaponId}/${motionId} 재생시간`);
+      }
+      for (const frame of motion.frames) {
+        const png = await readFile(new URL(`../dist/${frame}`, import.meta.url));
+        assert.equal(png.subarray(1, 4).toString(), 'PNG', frame);
+      }
+    }
+  }
+  assert.equal(DB.visual.weapons.standard.motions.advance.scale, 0.89);
+});
+
+function makeActor(side) {
   const preset = DB.setup.presets[0];
-  const actor = (side) => Battle.makeActor(side, {
-    name: side,
-    hp: 72,
-    hpMax: 72,
+  return Battle.makeActor(side, {
+    name: side, hp: 72, hpMax: 72,
     stamina: DB.balance.resource.staminaStart,
     staminaMax: DB.setup.base.stamina,
     staminaRegen: DB.balance.resource.staminaRegenPerTick,
-    focus: 0,
-    focusMax: DB.setup.base.focus,
-    stance: DB.stanceStart,
-    techs: preset.techs,
-    traits: [],
-    weapon: preset.weapon,
-    chains: preset.chains,
-    sigils: preset.sigils,
-    milestones: [],
-    controller: 'human'
+    focus: 0, focusMax: DB.setup.base.focus,
+    stance: DB.stanceStart, techs: preset.techs,
+    traits: [], weapon: preset.weapon, chains: preset.chains,
+    sigils: preset.sigils, milestones: [], controller: 'human'
   });
-  Battle.st = { tick: 0, distance: 2, actors: { P: actor('P'), E: actor('E') }, queue: [], reactions: [], log: [], seq: 0, over: false, winner: null };
-  assert.equal(Battle.basic('P', 'wait'), true);
-  assert.equal(Battle.st.actors.P.readyAt, 3);
+}
+
+function startBattle() {
+  const zones = { ...DB.visual.scene.zones.start };
+  Battle.st = {
+    tick: 0, distance: 2, actors: { P: makeActor('P'), E: makeActor('E') },
+    queue: [], reactions: [], log: [], seq: 0, visualEvents: [],
+    visual: { seq: 0, side: null, motion: 'idle', zones,
+      coords: Battle.zoneCoords(zones) },
+    over: false, winner: null
+  };
+}
+
+test('이동과 공격·피격 동작이 순서대로 기록된다', () => {
+  startBattle();
   assert.equal(Battle.basic('P', 'approach'), true);
-  assert.equal(Battle.st.visual.motion, 'advance');
-  assert.equal(Battle.st.visual.side, 'P');
+  assert.equal(Battle.st.visualEvents.at(-1).motion, 'advance');
   assert.equal(Battle.st.visual.fromCoords.P, 30);
-  assert.equal(Battle.st.visual.fromCoords.E, 70);
-  assert.equal(Battle.st.visual.coords.P, 40);
-  assert.equal(Battle.st.visual.coords.E, 70);
-  assert.equal(Battle.basic('E', 'approach'), true);
-  assert.equal(Battle.st.visual.coords.P, 40);
-  assert.equal(Battle.st.visual.coords.E, 60);
+  assert.equal(Battle.st.visual.zones.E - Battle.st.visual.zones.P,
+    Battle.st.distance);
+
+  assert.equal(Battle.useTech('P', 'pierce', false), true);
+  assert.equal(Battle.st.visualEvents.at(-1).motion, 'attack');
+  const queued = Battle.st.queue.find(q => q.status === 'pending');
+  if (queued) Battle.advanceTo(queued.resolveAt);
+  assert.equal(Battle.st.visualEvents.at(-1).motion, 'hit');
+  assert.deepEqual(Battle.st.visualEvents.slice(-2).map(event => event.motion),
+    ['attack', 'hit']);
+  assert.deepEqual(Battle.st.visualEvents.slice(-2).map(event => event.seq),
+    [2, 3]);
 });

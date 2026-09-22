@@ -256,6 +256,16 @@ export class GameRoom {
       if (entry.cls === 's') entry.cls = 'f';
       else if (entry.cls === 'f') entry.cls = 's';
     });
+    const count = DB.visual.scene.zones.count;
+    const mirrorVisual = (visual) => {
+      if (!visual) return;
+      visual.side = swapSide(visual.side);
+      if (visual.coords) visual.coords = { P: 100 - visual.coords.E, E: 100 - visual.coords.P };
+      if (visual.fromCoords) visual.fromCoords = { P: 100 - visual.fromCoords.E, E: 100 - visual.fromCoords.P };
+      if (visual.zones) visual.zones = { P: count - 1 - visual.zones.E, E: count - 1 - visual.zones.P };
+    };
+    mirrorVisual(view.visual);
+    (view.visualEvents || []).forEach(mirrorVisual);
     view.winner = swapSide(view.winner);
     return view;
   }
@@ -336,9 +346,10 @@ export class GameRoom {
         P: this.actorFromPlayer('P', this.meta.players.P),
         E: this.actorFromPlayer('E', this.meta.players.E)
       },
-      queue: [], reactions: [], log: [], seq: 0,
+      queue: [], reactions: [], log: [], seq: 0, visualEvents: [],
       visual: { seq: 0, side: null, motion: DB.visual.fallbackMotion,
-        coords: { ...DB.visual.scene.startPositions } },
+        zones: { ...DB.visual.scene.zones.start },
+        coords: Battle.zoneCoords(DB.visual.scene.zones.start) },
       over: false, winner: null, finished: false, tutorial: false
     };
     for (const side of ['P', 'E']) {
