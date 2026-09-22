@@ -1020,6 +1020,7 @@ const Battle = {
 
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
+      floatSeq:0, floatEvents:[],
       visualEvents:[], visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
         zones:Object.assign({},DB.visual.scene.zones.start),
         coords:Battle.zoneCoords(DB.visual.scene.zones.start)},
@@ -1181,6 +1182,7 @@ const Battle = {
       if(s.distance<q.range[0]||s.distance>q.range[1]){
         Battle.log('miss',{side:lbl,tech:q.name,dist:DB.balance.distance.labels[s.distance]},'n');
         Battle.announce('miss',{tech:q.name,dist:DB.balance.distance.labels[s.distance]},q.owner);
+        Battle.combatFloat(Battle.other(q.owner),'miss');
         return;
       }
     }
@@ -1301,10 +1303,12 @@ const Battle = {
     if(!pierce){ const g=Battle.stacks(target,'guard');
       if(g>0){ const u=Math.min(g,dmg); Battle.addStatus(target,'guard',-u); dmg-=u; } }
     dmg=Math.max(DB.balance.damage.minimum,U.floor(dmg));
+    const hpBefore=target.hp;
     target.hp=Math.max(0,target.hp-dmg);
     if(dmg>0) Battle.markActivity('damageDealt', fromSide||Battle.other(target.side));
     Battle.log('damage',{side:lbl,v:dmg},cls);
     if(dmg>0) Battle.announce('damage',{v:dmg,extra:s.lastMultNote||''},target.side);
+    if(hpBefore>target.hp) Battle.combatFloat(target.side,'damage',hpBefore-target.hp);
     s.lastMultNote='';
     if(dmg>0) Battle.visualAction(target.side,'impact','damage');
     UI.flash(target.side);
@@ -1336,6 +1340,14 @@ const Battle = {
       : Math.round(((visual&&visual.coords?visual.coords.P:Battle.zoneCoords(Z.start).P)-Z.startPct)/Z.stepPct);
     const p=U.clamp(raw,0,Z.count-1-distance);
     return {P:p,E:p+distance};
+  },
+  combatFloat(side,kind,value){
+    const s=Battle.st;
+    if(!s) return;
+    if(!s.floatEvents) s.floatEvents=[];
+    s.floatSeq=(s.floatSeq||0)+1;
+    s.floatEvents.push({seq:s.floatSeq,side,kind,value});
+    if(s.floatEvents.length>24) s.floatEvents.shift();
   },
   visualAction(side, kind, id, move){
     if(!Battle.st||!DB.visual) return;

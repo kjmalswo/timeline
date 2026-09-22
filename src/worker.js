@@ -266,6 +266,7 @@ export class GameRoom {
     };
     mirrorVisual(view.visual);
     (view.visualEvents || []).forEach(mirrorVisual);
+    (view.floatEvents || []).forEach((event) => { event.side = swapSide(event.side); });
     view.winner = swapSide(view.winner);
     return view;
   }
@@ -346,7 +347,7 @@ export class GameRoom {
         P: this.actorFromPlayer('P', this.meta.players.P),
         E: this.actorFromPlayer('E', this.meta.players.E)
       },
-      queue: [], reactions: [], log: [], seq: 0, visualEvents: [],
+      queue: [], reactions: [], log: [], seq: 0, floatSeq: 0, floatEvents: [], visualEvents: [],
       visual: { seq: 0, side: null, motion: DB.visual.fallbackMotion,
         zones: { ...DB.visual.scene.zones.start },
         coords: Battle.zoneCoords(DB.visual.scene.zones.start) },

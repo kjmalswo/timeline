@@ -57,7 +57,7 @@ function startBattle() {
   const zones = { ...DB.visual.scene.zones.start };
   Battle.st = {
     tick: 0, distance: 2, actors: { P: makeActor('P'), E: makeActor('E') },
-    queue: [], reactions: [], log: [], seq: 0, visualEvents: [],
+    queue: [], reactions: [], log: [], seq: 0, floatSeq: 0, floatEvents: [], visualEvents: [],
     visual: { seq: 0, side: null, motion: 'idle', zones,
       coords: Battle.zoneCoords(zones) },
     over: false, winner: null
@@ -88,4 +88,30 @@ test('거리 제한이 없는 기술은 무기 사거리 보정에도 모든 칸
     assert.deepEqual(Battle.effRange({ mods: { rangeMin: 1, rangeMax: -1 } }, tech), [0, 4], tech.id);
   }
   assert.deepEqual(Battle.effRange({ mods: { rangeMax: 1 } }, DB.techs.pierce), [1, 3]);
+});
+
+test('실제 체력 피해와 사거리 밖 빗나감이 피격 캐릭터에 연결된다', () => {
+  startBattle();
+  const foe = Battle.A('E');
+  foe.statuses.guard = 4;
+  Battle.dealDamage(foe, 11, false, 'P');
+  assert.equal(foe.hp, 65);
+  assert.deepEqual({ ...Battle.st.floatEvents[0] },
+    { seq: 1, side: 'E', kind: 'damage', value: 7 });
+
+  Battle.st.distance = 4;
+  Battle.resolveEntry({ status: 'pending', owner: 'P', name: '찌르기',
+    range: [1, 2], onHit: [{ k: 'damage', v: 7 }] });
+  assert.deepEqual({ ...Battle.st.floatEvents[1] },
+    { seq: 2, side: 'E', kind: 'miss', value: undefined });
+
+  foe.statuses.guard = 100;
+  Battle.dealDamage(foe, 5, false, 'P');
+  assert.equal(Battle.st.floatEvents.length, 2, '체력 피해가 없으면 숫자를 띄우지 않는다');
+
+  startBattle();
+  const lowHpFoe = Battle.A('E');
+  lowHpFoe.hp = 3;
+  Battle.dealDamage(lowHpFoe, 99, true, 'P');
+  assert.equal(Battle.st.floatEvents[0].value, 3, '남은 체력을 초과한 피해는 실제 감소량만 표시한다');
 });

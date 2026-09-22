@@ -193,6 +193,21 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .battle-actor-fallback{padding:9px 14px;border-radius:999px;color:var(--p-white);background:var(--p-deep);
   box-shadow:3px 3px 8px rgba(91,95,151,.34);font-weight:850}
 .battle-actor.foe .battle-actor-fallback{background:var(--p-coral)}
+.battle-float{position:absolute;top:36%;z-index:12;pointer-events:none;white-space:nowrap;
+  font-weight:1000;font-size:clamp(21px,2.7vw,36px);line-height:1;letter-spacing:.02em;
+  -webkit-text-stroke:1.2px #17141b;
+  text-shadow:2px 3px 0 #17141b,-1px -1px 0 #17141b,0 5px 7px rgba(0,0,0,.55);
+  animation:battleFloatRise 960ms ease-out forwards}
+.battle-actor.self .battle-float{left:76%}
+.battle-actor.foe .battle-float{left:24%}
+.battle-float.damage{color:#ff4863}
+.battle-float.miss{color:#ffe34b;font-size:clamp(17px,2.1vw,28px)}
+@keyframes battleFloatRise{
+  0%{opacity:0;transform:translate(-50%,12px) scale(.72)}
+  16%{opacity:1;transform:translate(-50%,0) scale(1.12)}
+  45%{opacity:1;transform:translate(-50%,-18px) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-56px) scale(1)}
+}
 .battle-timeline{position:absolute;left:50%;right:auto;bottom:4px;z-index:5;width:min(760px,80%);
   transform:translateX(-50%);padding:0}
 .battle-timeline .tl{padding:0;background:transparent;box-shadow:none;backdrop-filter:none}
@@ -2472,6 +2487,7 @@ const Battle = {
 
     Battle.st={ tick:DB.balance.tick.start, distance:DB.balance.distance.start,
       actors:{P,E}, queue:[], reactions:[], log:[], seq:0,
+      floatSeq:0, floatEvents:[],
       visualEvents:[], visual:{seq:0,side:null,motion:DB.visual.fallbackMotion,
         zones:Object.assign({},DB.visual.scene.zones.start),
         coords:Battle.zoneCoords(DB.visual.scene.zones.start)},
@@ -2633,6 +2649,7 @@ const Battle = {
       if(s.distance<q.range[0]||s.distance>q.range[1]){
         Battle.log('miss',{side:lbl,tech:q.name,dist:DB.balance.distance.labels[s.distance]},'n');
         Battle.announce('miss',{tech:q.name,dist:DB.balance.distance.labels[s.distance]},q.owner);
+        Battle.combatFloat(Battle.other(q.owner),'miss');
         return;
       }
     }
@@ -2753,10 +2770,12 @@ const Battle = {
     if(!pierce){ const g=Battle.stacks(target,'guard');
       if(g>0){ const u=Math.min(g,dmg); Battle.addStatus(target,'guard',-u); dmg-=u; } }
     dmg=Math.max(DB.balance.damage.minimum,U.floor(dmg));
+    const hpBefore=target.hp;
     target.hp=Math.max(0,target.hp-dmg);
     if(dmg>0) Battle.markActivity('damageDealt', fromSide||Battle.other(target.side));
     Battle.log('damage',{side:lbl,v:dmg},cls);
     if(dmg>0) Battle.announce('damage',{v:dmg,extra:s.lastMultNote||''},target.side);
+    if(hpBefore>target.hp) Battle.combatFloat(target.side,'damage',hpBefore-target.hp);
     s.lastMultNote='';
     if(dmg>0) Battle.visualAction(target.side,'impact','damage');
     UI.flash(target.side);
@@ -2788,6 +2807,14 @@ const Battle = {
       : Math.round(((visual&&visual.coords?visual.coords.P:Battle.zoneCoords(Z.start).P)-Z.startPct)/Z.stepPct);
     const p=U.clamp(raw,0,Z.count-1-distance);
     return {P:p,E:p+distance};
+  },
+  combatFloat(side,kind,value){
+    const s=Battle.st;
+    if(!s) return;
+    if(!s.floatEvents) s.floatEvents=[];
+    s.floatSeq=(s.floatSeq||0)+1;
+    s.floatEvents.push({seq:s.floatSeq,side,kind,value});
+    if(s.floatEvents.length>24) s.floatEvents.shift();
   },
   visualAction(side, kind, id, move){
     if(!Battle.st||!DB.visual) return;
@@ -3874,6 +3901,7 @@ UI.actions = function(){
 
 
 UI.motionSeq=-1;
+UI.floatSeq=-1;
 UI.motionTimers={};
 UI.motionPreloads=[];
 UI.preloadedFrames=new Set();
@@ -4082,6 +4110,27 @@ UI.playBattleMotion=function(){
   UI.startNextBattleMotion();
 };
 
+UI.playCombatFloats=function(){
+  const s=Battle.st;
+  if(!s) return;
+  if((s.floatSeq||0)<UI.floatSeq){
+    UI.floatSeq=0;
+    document.querySelectorAll('#battleActors .battle-float').forEach(el=>el.remove());
+  }
+  (s.floatEvents||[]).filter(event=>event.seq>UI.floatSeq).forEach(event=>{
+    UI.floatSeq=event.seq;
+    const actor=document.querySelector('#battleActors [data-actor="'+event.side+'"]');
+    if(!actor) return;
+    const float=document.createElement('span');
+    float.className='battle-float '+event.kind;
+    float.textContent=event.kind==='miss'?'빗나감!':String(event.value);
+    float.style.top=(36-Math.min(actor.querySelectorAll(':scope > .battle-float').length,3)*12)+'%';
+    actor.appendChild(float);
+    float.addEventListener('animationend',()=>float.remove(),{once:true});
+    setTimeout(()=>float.remove(),1100);
+  });
+};
+
 UI.bindCombatTips=function(){
   let tip=document.getElementById('combatTooltip');
   if(!tip){tip=document.createElement('div');tip.id='combatTooltip';tip.className='combat-tooltip';document.body.appendChild(tip);}
@@ -4109,6 +4158,7 @@ UI.renderBattle = function(){
   document.getElementById('tlBox').innerHTML=UI.timeline();
   UI.renderBattleScene();
   UI.playBattleMotion();
+  UI.playCombatFloats();
   document.getElementById('ringBox').innerHTML=UI.ring();
   document.getElementById('techBox').innerHTML=UI.techs();
   document.getElementById('briefBox').innerHTML=UI.brief();
