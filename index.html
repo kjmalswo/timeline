@@ -186,7 +186,7 @@ ul.bul li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;heig
 .pixel-hud-status .tag::before{width:3px;height:3px}
 .battle-actors{position:absolute;inset:0;z-index:2;pointer-events:none}
 .battle-actor{position:absolute;bottom:72px;left:50%;width:clamp(130px,22vw,260px);height:clamp(150px,24vw,285px);
-  display:flex;align-items:flex-end;justify-content:center;transition:left var(--battle-move-ms,360ms) var(--e)}
+  display:flex;align-items:flex-end;justify-content:center;transform:translateX(-50%);transition:left var(--battle-move-ms,360ms) var(--e)}
 .battle-actor img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;
   image-rendering:pixelated;filter:drop-shadow(5px 8px 5px rgba(91,95,151,.34))}
 .battle-actor.foe img{transform:scaleX(-1)}
@@ -969,7 +969,7 @@ body{
   transform:translateY(var(--foot-offset,0%)) scale(var(--frame-scale,1)) scaleX(-1);
 }
 .battle-field-ruler{
-  position:absolute;left:0;right:0;bottom:var(--ground-bottom,18.8%);
+  position:absolute;left:0;right:0;bottom:calc(var(--ground-bottom,18.8%) + 16px);
   height:38px;z-index:4;pointer-events:none;
 }
 .battle-ground-line{
@@ -987,11 +987,11 @@ body{
   font-size:.65em;font-style:normal;font-weight:950;
 }
 .battle-ground-marker{
-  position:absolute;bottom:0;transform:translateX(-50%);
+  position:absolute;left:50%;bottom:calc(8% - 10px);transform:translateX(-50%);
   width:24px;height:24px;display:grid;place-items:center;
   color:#fff9e8;background:#263b50;border:2px solid #fff9e8;
   box-shadow:2px 2px 0 #182738;font-size:.65em;font-weight:950;
-  transition:left var(--battle-move-ms,360ms) var(--e);
+  z-index:9;
 }
 .battle-ground-marker.self{border-color:#4e9ee8}
 .battle-ground-marker.foe{border-color:#d95745}
@@ -1079,6 +1079,150 @@ body{
   #screen-school .tech.deck-tech,#screen-school .tech.deck-tech.mini{min-height:220px}
   .combat-tooltip{min-height:140px;font-size:12px}
   .battle-distance-readout{font-size:.52em}
+}
+
+
+/* V7.4 — 선명한 쿨톤 UI와 전투 정보 가독성 */
+:root{
+  --p-soft:#dbe9f8;--p-deep:#203756;--p-yellow:#6979df;
+  --p-white:#f9fcff;--p-coral:#bf4f81;
+  --rpg-sky:#69b7e9;--rpg-grass:#65a8a7;--rpg-forest:#307e87;
+  --rpg-leather:#627da5;--rpg-night:#142846;
+  --bg:#eaf3ff;--sf:#f5f9ff;--sf-2:#fff;
+  --ink:#172a46;--ink-2:#314761;--ink-3:#526783;--ink-4:#7287a2;
+  --line:#b7cbe4;--acc:#465fd0;--acc-soft:#dce5ff;
+  --self:#2768bb;--self-bg:#e0f0ff;--foe:#bd4b7c;--foe-bg:#fde8f1;
+  --sh-d:rgba(41,73,119,.16);--sh-l:#fff;
+  --ok:#087e88;--warn:#785cb9;--dang:#bb426e;
+  --L-high:#bf4f81;--L-mid:#3979cb;--L-low:#7862c4;
+  --L-side:#158797;--L-none:#60738e;
+  --c-hp:#c45082;--c-hp2:#e583a6;
+  --c-sta:#4d75d2;--c-sta2:#96b8ed;
+  --c-foc:#7969ca;--c-foc2:#b3a6e8;--c-time:#3b5a91;
+}
+html,body,#app,#stage{background:#eaf3ff}
+body{
+  color:var(--ink);line-height:1.55;
+  background-image:
+    radial-gradient(900px 540px at 10% 0%,rgba(193,225,255,.66),transparent 68%),
+    radial-gradient(780px 460px at 100% 100%,rgba(222,211,255,.45),transparent 70%);
+  background-size:auto;
+}
+.nm,.card-box.nm,.nm-sm{
+  color:var(--ink);background:#f8fbff;border:1px solid #bdd0e8;border-radius:9px;
+  box-shadow:0 5px 16px rgba(46,80,127,.11),inset 0 1px 0 #fff;
+}
+.nm-in{
+  background:#eaf2ff;border:1px solid #c2d4eb;border-radius:7px;
+  box-shadow:inset 0 2px 5px rgba(42,76,124,.10);
+}
+.btn{
+  color:#203756;background:linear-gradient(180deg,#fff,#e7f0ff);
+  border:1px solid #a9c0df;border-radius:7px;
+  box-shadow:0 3px 0 rgba(67,103,155,.17);
+}
+.btn:hover:not(:disabled){background:#f2f7ff;box-shadow:0 2px 0 rgba(67,103,155,.18)}
+.btn:active:not(:disabled),.btn.on{
+  color:#244baa;background:#dce8ff;box-shadow:inset 0 2px 4px rgba(55,90,148,.17);
+}
+.btn.acc{color:#fff;background:#506ad5;border-color:#465fc1}
+.btn.dang{color:#fff;background:#bf4f81;border-color:#a74370}
+.tag{color:#2f4969;background:#eef5ff;border:1px solid #bfd1eb;box-shadow:none}
+.tag.t-high,.tag.t-dang{background:#ffe2ee}
+.tag.t-low,.tag.t-warn{background:#eee7ff}
+.tag.t-mid,.tag.t-acc,.tag.t-ok{background:#dff0ff}
+.tag.t-side{background:#d9f4f2}
+#screen-title .menu .btn{
+  color:#203756;background:linear-gradient(145deg,#fff,#eaf2ff);
+  border-color:#bdd0ea;box-shadow:0 6px 16px rgba(38,73,120,.15);
+}
+#screen-title .menu .btn:hover:not(:disabled){
+  background:#f3f8ff;box-shadow:0 4px 12px rgba(38,73,120,.18);
+}
+.battle-scene{border-color:#a9c5df;background:#ecf6ff}
+.battle-scene .battle-actor{z-index:5}
+.battle-clock span{color:#f8fbff;background:#244369;border-color:#8fb4de;box-shadow:0 2px 5px rgba(17,38,71,.25)}
+.battle-clock .warn{color:#fff;background:#765ba4}
+.battle-intent{color:#f9fcff;background:#1d385b;text-shadow:none;box-shadow:0 4px 10px rgba(21,48,87,.25)}
+.battle-intent b{color:#aee7ff}
+.battle-ground-line{background:#dbeeff;box-shadow:0 1px 0 #2c547f}
+.battle-gap-cells i{color:#153a62;background:#b8e8fb;border-color:#3986bd;box-shadow:0 2px 5px rgba(31,84,132,.25)}
+.battle-ground-marker{background:#203e67;border-color:#f9fcff;box-shadow:0 2px 6px rgba(23,48,86,.30)}
+.battle-ground-marker.self{border-color:#57b9f0}
+.battle-ground-marker.foe{border-color:#ef87b3}
+.battle-distance-readout{color:#fff;background:#203e67;border-color:#80b9e7}
+.ring{background:#edf5ff;border:1px solid #b7cce6;box-shadow:0 3px 10px rgba(37,73,118,.10)}
+.snode,.snode:nth-child(n){color:#243c5d;background:#fff;border:1px solid #c0d2e9;box-shadow:0 2px 5px rgba(47,77,124,.10)}
+.snode.cur{background:#e1ecff;border-color:#5c82d4;box-shadow:inset 0 1px 4px rgba(59,97,171,.16)}
+.stance-spend-note{background:#dfeaff;color:#325180}
+.tech,.tech.mini{background:#fbfdff;border-color:#bfd1e8;box-shadow:0 4px 11px rgba(39,76,122,.12)}
+#screen-school .tech.deck-tech,#screen-school .tech.deck-tech.mini,
+#screen-school .pick>.tech:not(.deck-tech){
+  color:#1d3455;background:#fbfdff;border-color:#b9cfe8;
+  box-shadow:0 5px 13px rgba(39,76,122,.13);
+}
+#screen-school .deck-tech .tc-name,#screen-school .pick>.tech:not(.deck-tech) .tc-name{color:#1a2f50}
+#screen-school .deck-tech .tc-text,#screen-school .pick>.tech:not(.deck-tech) .tc-text{
+  color:#304860;background:#f3f8ff;border-color:#c5d7ed;
+}
+#screen-school .deck-tech .tc-emp{color:#4b437f;background:#eeeaff;border-color:#c9c0ed}
+#screen-school .deck-tech .costline{color:#365487}
+.tc-cost{background:#365487;color:#fff;box-shadow:none}
+.tc-quick span{background:#edf4ff;border-color:#cfddf0}
+.techwrap{grid-template-columns:minmax(0,1fr) 204px}
+.tech-grid{grid-template-columns:repeat(auto-fill,minmax(130px,158px));gap:8px;justify-content:start}
+.tech-grid .tech,.tech-grid .tech.mini{
+  min-height:90px;max-width:158px;color:#1d3455;background:#fbfdff;
+  border:1px solid color-mix(in srgb,var(--card-accent) 42%,#cad9ef);
+  border-radius:9px;box-shadow:0 4px 11px rgba(39,76,122,.12);
+}
+.tech.line-high{--card-accent:#bf4f81}
+.tech.line-mid{--card-accent:#3979cb}
+.tech.line-low{--card-accent:#7862c4}
+.tech.line-side{--card-accent:#158797}
+.tech.line-none{--card-accent:#60738e}
+.tech-grid .tech.best{
+  border-color:#42a0ae;
+  background:linear-gradient(165deg,#fff 0%,#eefcff 100%);
+  box-shadow:0 0 0 2px rgba(61,172,187,.18),0 5px 12px rgba(39,76,122,.13);
+}
+.tech-grid .tech.sel{border-color:#526bce;box-shadow:0 0 0 2px #b8c9ff,0 5px 12px rgba(39,76,122,.16)}
+.tech-grid .tech:hover:not(.no){transform:translateY(-2px);box-shadow:0 7px 14px rgba(39,76,122,.18)}
+.tech-grid .tc-line{height:4px;border-radius:8px 8px 0 0}
+.tech-grid .tc-body{padding:7px 8px;gap:5px}
+.tech-grid .tc-name{color:#1a2f50;font-size:.87em;font-weight:900;line-height:1.2}
+.tech-grid .tc-cost{color:#fff;background:#365487;box-shadow:none;border-radius:5px}
+.tech-grid .tc-meta,.tech-grid .tc-quick{color:#38536f;font-size:.69em;font-weight:800;line-height:1.25}
+.tech-grid .tc-quick span{color:#35516f;background:#edf4ff;border:1px solid #cfddf0;border-radius:4px;padding:2px 4px}
+.tech-grid .tc-to{color:#3d5571;font-size:.64em}
+.tech-grid .tc-switch-cost{color:#a84a75;font-size:.62em}
+.tech-grid .tc-mult{color:#365487;background:#e7f0ff;border-radius:4px}
+.tech-grid .tc-good{
+  position:static;display:inline-flex;align-items:center;align-self:flex-start;gap:5px;
+  padding:3px 7px;color:#096b78;background:#dff7f7;border:1px solid #72cbd0;
+  border-radius:999px;box-shadow:0 1px 3px rgba(20,112,125,.12);
+  font-size:.73em;font-weight:950;line-height:1.1;
+}
+.tech-grid .tc-good::before{content:"";width:6px;height:6px;flex:none;background:#19a1ad;transform:rotate(45deg)}
+.tech-grid .tc-block{background:#76536d;color:#fff}
+.brief,.log,.proj,.turnbar,.modal-box,.multi-panel,.mapnode{
+  color:var(--ink);background:#f8fbff;border-color:#c0d2ea;
+  box-shadow:0 4px 12px rgba(39,76,122,.10);
+}
+.log{background:#f5f9ff}
+.modal{background:rgba(20,38,68,.60)}
+.modal-box{background:#f8fbff}
+.mapnode:nth-child(3n+1){background:#e4f4ff}
+.mapnode:nth-child(3n+2){background:#eceaff}
+.mapnode:nth-child(3n){background:#e2f6f3}
+.ann-item{color:#1b3554;background:#f5faff;border-color:#a9c6e2;box-shadow:0 4px 12px rgba(27,65,108,.17)}
+.ann-item .who{background:#244369;border-color:#7fa9d4}
+.combat-tooltip,[data-tooltip]::after{background:#203756;border-color:#7bb8e4;color:#f8fbff}
+@media(max-width:1100px){.techwrap{grid-template-columns:1fr}}
+@media(max-width:430px){
+  .tech-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tech-grid .tech,.tech-grid .tech.mini{max-width:none}
+  .tech-grid .tc-name{font-size:.82em}
 }
 
 </style>
@@ -1198,7 +1342,7 @@ body{
 const DB = {
 
   meta:{
-    title:'THE TIMELINE', version:'V7.3', build:'CF',
+    title:'THE TIMELINE', version:'V7.4', build:'CF',
     footer:'싱글플레이 · PvP 멀티플레이',
     storageKey:'tld_save_v11',
     sides:{ SELF:'P', FOE:'E' },
@@ -1563,8 +1707,8 @@ DB.visual = {
     hud:{
       segments:{ hp:16, stamina:12, focus:6 },
       colors:{
-        P:{ hp:'#32d66b', stamina:'#ffc145', focus:'#5b5f97' },
-        E:{ hp:'#ff4f57', stamina:'#ffc145', focus:'#5b5f97' }
+        P:{ hp:'#43bca9', stamina:'#61a7ee', focus:'#a58be2' },
+        E:{ hp:'#dc7097', stamina:'#61a7ee', focus:'#a58be2' }
       }
     }
   },
@@ -3497,8 +3641,6 @@ UI.renderBattleScene=function(){
     field=document.createElement('div'); field.className='battle-field-ruler';
     field.innerHTML='<span class="battle-ground-line"></span>'+
       '<span class="battle-gap-cells"></span>'+
-      '<span class="battle-ground-marker self">나</span>'+
-      '<span class="battle-ground-marker foe">적</span>'+
       '<span class="battle-distance-readout"></span>';
     box.prepend(field);
   }
@@ -3514,8 +3656,6 @@ UI.renderBattleScene=function(){
       const cell=document.createElement('i'); cell.textContent=index; cells.appendChild(cell);
     }
   }
-  field.querySelector('.battle-ground-marker.self').style.left=coords.P+'%';
-  field.querySelector('.battle-ground-marker.foe').style.left=coords.E+'%';
   const readout=field.querySelector('.battle-distance-readout');
   readout.style.left=((coords.P+coords.E)/2)+'%';
   readout.textContent=s.distance+'칸 · '+DB.balance.distance.labels[s.distance];
@@ -3529,6 +3669,13 @@ UI.renderBattleScene=function(){
       el.dataset.actor=side;
       el.className='battle-actor '+(side===DB.meta.sides.FOE?'foe':'self');
       box.appendChild(el);
+    }
+    let marker=el.querySelector(':scope > .battle-ground-marker');
+    if(!marker){
+      marker=document.createElement('span');
+      marker.className='battle-ground-marker '+(side===DB.meta.sides.SELF?'self':'foe');
+      marker.textContent=side===DB.meta.sides.SELF?'나':'적';
+      el.appendChild(marker);
     }
     const fresh=event.side===side&&event.seq!==UI.motionSeq&&event.fromCoords;
     const target=coords[side]!=null?coords[side]:fallback[side];
