@@ -1,94 +1,20 @@
-# THE TIMELINE V4.1 — Cloudflare 1 대 1 PvP
+# THE TIMELINE — 턴제 거리 결투
 
-싱글플레이 HTML과 서버 판정형 1 대 1 PvP를 한 GitHub 저장소에서 관리하고 Cloudflare Workers에 함께 배포하는 프로젝트입니다.
+싱글플레이와 1 대 1 PvP가 같은 무기, 카드, Peak 룬 구성을 사용하는 브라우저 게임입니다. Cloudflare Worker가 정적 화면을 제공하고 Durable Object가 PvP 방과 라운드 결과를 판정합니다.
 
-- 프론트엔드: Worker Static Assets
-- API와 WebSocket: Cloudflare Worker
-- 방 상태와 실시간 연결: Durable Objects
-- 자동 검증: GitHub Actions
+## 실행과 배포
 
-## 저장소 구조
+Node.js 20 이상에서 `npm ci`, `npm run check`, `npm run dev` 순서로 로컬 확인이 가능합니다. Cloudflare 연결 배포의 빌드 명령은 `npm ci && npm run build`, 배포 명령은 `npx wrangler deploy`입니다. 설정은 `wrangler.jsonc`에 있습니다.
 
-```text
-.
-├── index.html
-├── src/
-│   ├── worker.js
-│   └── game-engine.generated.js
-├── scripts/build.mjs
-├── test/build.test.mjs
-├── .github/workflows/ci.yml
-├── wrangler.jsonc
-├── package.json
-└── package-lock.json
-```
+`index.html`의 무기·카드·Peak 정의가 원본입니다. `npm run build`는 이 정의에서 `src/turn-rules.generated.js`를 만들고, 화면과 이미지 자산을 `dist/`에 복사합니다. 생성 파일은 직접 수정하지 않습니다.
 
-`index.html`의 DB와 `Battle` 코어가 전투 규칙의 단일 원천입니다. `npm run build`가 이 부분을 Worker용 모듈로 생성하므로 프론트와 백엔드 수치를 따로 고칠 필요가 없습니다.
+## 게임 규칙
 
-## 로컬 실행
+- 각 무기는 카드 8장의 기본 덱을 제공합니다. 시작 전에 카드를 교체하고 Peak 룬을 최대 3개까지 선택할 수 있습니다.
+- 한 라운드에 양쪽이 카드 한 장씩 선택합니다. 속도가 높은 카드부터 이동, 방어, 공격을 처리합니다.
+- 공격은 카드 사거리 안에서만 적중합니다. 방어 카드는 해당 라운드의 피해를 줄입니다.
+- 싱글플레이는 상대 카드를 먼저 예고합니다. PvP에서는 선택한 카드를 양쪽 모두 제출한 뒤 공개합니다.
+- 싱글플레이의 진행 중 결투는 브라우저 로컬 저장소에서 이어할 수 있습니다.
 
-Node.js 20 이상이 필요합니다.
+PvP는 `POST /api/rooms`, `POST /api/rooms/:code/join`, `GET /ws/:code?token=...`를 사용합니다. 방 생성·입장 시 무기, 카드 8장, Peak 선택을 서버가 검증합니다.
 
-```bash
-npm ci
-npm run dev
-```
-
-Wrangler가 표시한 로컬 주소를 엽니다. 실제 1 대 1 확인은 창 두 개를 사용하고, 혼자 확인할 때는 `혼자 테스트하는 임시방`을 선택합니다.
-
-```bash
-npm run check
-```
-
-## GitHub에 업로드
-
-GitHub에서 빈 저장소를 만든 다음 이 프로젝트 폴더에서 실행합니다.
-
-```bash
-git init
-git add .
-git commit -m "Add Cloudflare multiplayer deployment"
-git branch -M main
-git remote add origin https://github.com/YOUR_NAME/YOUR_REPOSITORY.git
-git push -u origin main
-```
-
-이미 Git 저장소라면 `git init`과 `git remote add`는 생략합니다. `node_modules`, 로컬 Wrangler 데이터와 `dist`는 `.gitignore`에 포함되어 있습니다.
-
-## Cloudflare에서 GitHub 연결 배포
-
-1. Cloudflare 대시보드에서 **Workers & Pages → Create application → Import a repository**로 이동합니다.
-2. GitHub 계정을 연결하고 이 저장소를 선택합니다.
-3. 프로젝트 설정을 다음처럼 입력합니다.
-
-| 항목 | 값 |
-| --- | --- |
-| Root directory | `/` |
-| Build command | `npm ci && npm run build` |
-| Deploy command | `npx wrangler deploy` |
-| Non-production branch deploy command | `npx wrangler versions upload` |
-
-4. 저장 후 배포합니다. `wrangler.jsonc`가 Worker, 정적 파일, `GAME_ROOMS` Durable Object와 SQLite 저장소를 선언합니다.
-5. 배포된 `workers.dev` 주소에서 멀티플레이 방을 생성해 확인합니다.
-
-이후 `main` 브랜치에 푸시할 때마다 Cloudflare가 자동으로 새 버전을 빌드하고 배포합니다. Durable Object가 포함된 Worker는 PR Preview URL 생성에 제한이 있을 수 있습니다.
-
-## CLI로 직접 배포할 때
-
-```bash
-npx wrangler login
-npm run deploy
-```
-
-Cloudflare 계정에서 Durable Objects 사용 권한이 필요합니다. 커스텀 도메인은 배포 후 Worker의 **Settings → Domains & Routes**에서 연결합니다.
-
-## 멀티플레이 동작
-
-- `POST /api/rooms`: 방 또는 봇 임시방 생성
-- `POST /api/rooms/:code/join`: 6자리 코드로 참가
-- `GET /ws/:code?token=...`: 방별 WebSocket 연결
-- 방별 Durable Object가 행동권, 피해, 거리, 상태 효과와 승패를 최종 판정
-- 연결 종료 후 30초 동안 같은 탭의 세션 토큰으로 재접속 가능
-- 대기방은 30분, 종료된 방은 5분 뒤 자동 정리
-
-세션 토큰은 URL 쿼리에 전달되므로 외부 분석 로그를 사용한다면 쿼리 문자열을 마스킹하는 것이 좋습니다.

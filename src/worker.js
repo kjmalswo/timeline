@@ -1,159 +1,143 @@
-import { DB, Battle, U } from './game-engine.generated.js';
+import { W, C, PEAKS } from './turn-rules.generated.js';
 
-const CONFIG = {
-  roomCodeLength: 6,
-  roomAlphabet: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
-  maxNameLength: 18,
-  maxMessageBytes: 8192,
-  rateWindowMs: 10_000,
-  maxMessagesPerWindow: 35,
-  disconnectGraceMs: 30_000,
-  waitingTtlMs: 30 * 60_000,
-  finishedTtlMs: 5 * 60_000,
-  botDelayMs: 450
-};
-
-const json = (value, status = 200) => new Response(JSON.stringify(value), {
-  status,
-  headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
+const other = side => side === 'P' ? 'E' : 'P';
+const json = (body, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
 });
+const fail = (message, status = 400) => json({ message }, status);
 
-const errorResponse = (message, status = 400) => json({ message }, status);
-
-function cleanName(value) {
-  return String(value || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, CONFIG.maxNameLength);
+function validBuild(value) {
+  if (!value || !W[value.weapon] || !Array.isArray(value.deck) || value.deck.length !== 8 ||
+      value.deck.some(id => typeof id !== 'string' || !C[id]) ||
+      !Array.isArray(value.peaks) || value.peaks.length > 3 ||
+      new Set(value.peaks).size !== value.peaks.length) return null;
+  const all = PEAKS.flatMap(branch => branch.items);
+  if (value.peaks.some(id => !all.some(peak => peak.id === id))) return null;
+  if (value.peaks.some(id => { const peak = all.find(item => item.id === id); return peak.req && !value.peaks.includes(peak.req); })) return null;
+  return { weapon: value.weapon, deck: value.deck.slice(), peaks: value.peaks.slice() };
 }
 
-function validPreset(id) {
-  return DB.setup.presets.some((preset) => preset.id === id) ? id : DB.setup.presets[0].id;
+function bonuses(build) {
+  const out = { hp: 0, power: 0, guard: 0, move: 0, early: 0, finish: 0 };
+  PEAKS.flatMap(branch => branch.items).filter(item => build.peaks.includes(item.id))
+    .forEach(item => Object.entries(item.mod).forEach(([key, value]) => { out[key] += value; }));
+  return out;
 }
 
-function normalizeBuild(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const uniqueIds = (items, table) => {
-    if (!Array.isArray(items) || items.some((id) => typeof id !== 'string' || !table[id])) return null;
-    const unique = [...new Set(items)];
-    return unique.length === items.length ? unique : null;
+function cardFor(id, build, round) {
+  const card = { ...C[id] }, mod = bonuses(build), weapon = W[build.weapon];
+  if (card.dmg) card.dmg += weapon.power + mod.power;
+  if (card.block) card.block += weapon.guard + mod.guard;
+  if (card.move) card.move += Math.sign(card.move) * mod.move;
+  if (round <= 3) card.speed += mod.early;
+  return card;
+}
+
+function newGame(players) {
+  const make = side => {
+    const build = players[side].build, weapon = W[build.weapon], hp = weapon.hp + bonuses(build).hp;
+    return { hp, max: hp, weapon: build.weapon, block: 0, keep: 0 };
   };
-  const weapon = typeof value.weapon === 'string' && DB.weapons[value.weapon] ? value.weapon : null;
-  const techs = uniqueIds(value.techs, DB.techs);
-  const sigils = uniqueIds(value.sigils, DB.sigils);
-  const chains = uniqueIds(value.chains, DB.chains);
-  const traits = uniqueIds(value.traits, DB.traits);
-  const hp = Number(value.hp);
-  const stamina = Number(value.stamina);
-  const focus = Number(value.focus);
-  if (!weapon || !techs || !sigils || !chains || !traits) return null;
-  if (![hp, stamina, focus].every(Number.isInteger)) return null;
-  const setup = DB.setup;
-  if (techs.length < setup.minTechs || techs.length > setup.maxTechs ||
-      sigils.length > DB.sigilSlots || chains.length > DB.chainSlots ||
-      hp < 0 || hp > setup.maxStep.hp || stamina < 0 || stamina > setup.maxStep.stamina ||
-      focus < 0 || focus > setup.maxStep.focus) return null;
-  const perStance = {};
-  for (const id of techs) {
-    const stance = DB.techs[id].stance;
-    perStance[stance] = (perStance[stance] || 0) + 1;
-    if (perStance[stance] > DB.balance.slots.perStanceBase) return null;
+  return { version: 2, round: 1, distance: clamp(Math.round((W[players.P.build.weapon].start + W[players.E.build.weapon].start) / 2), 1, 8),
+    actors: { P: make('P'), E: make('E') }, picks: { P: null, E: null },
+    events: [], seq: 0, log: '양쪽이 카드를 선택하면 라운드가 진행됩니다.', over: false, winner: null };
+}
+
+function resolveRound(game, players) {
+  const cards = Object.fromEntries(['P', 'E'].map(side => [side, cardFor(game.picks[side], players[side].build, game.round)]));
+  const order = cards.P.speed >= cards.E.speed ? ['P', 'E'] : ['E', 'P'];
+  game.actors.P.block = game.actors.E.block = 0;
+  game.actors.P.keep = game.actors.E.keep = 0;
+  const events = [];
+  for (const side of order) {
+    if (game.actors.P.hp <= 0 || game.actors.E.hp <= 0) break;
+    const card = cards[side], actor = game.actors[side], target = game.actors[other(side)];
+    actor.block = card.block || 0;
+    actor.keep = card.keep || 0;
+    if (card.set) game.distance = card.set;
+    if (card.move) game.distance = clamp(game.distance + card.move, 1, 8);
+    if ((card.set || card.move < 0) && target.keep) {
+      game.distance = clamp(game.distance + target.keep, 1, 8);
+      target.keep = 0;
+    }
+    let damage = 0, hit = false;
+    if (card.dmg && game.distance >= card.range[0] && game.distance <= card.range[1]) {
+      hit = true;
+      let raw = card.dmg;
+      const finish = bonuses(players[side].build).finish;
+      if (finish && target.hp <= target.max * .4) raw += finish;
+      damage = Math.min(target.hp, Math.max(0, raw - target.block));
+      target.hp -= damage;
+    }
+    events.push({ side, id: game.picks[side], damage, hit, distance: game.distance });
   }
-  const techCost = (id) => {
-    const tier = DB.techs[id].tier;
-    return tier === 'rare' ? setup.cost.techRare : tier === 'common' ? setup.cost.techCommon : setup.cost.techBase;
-  };
-  const spent = (setup.cost.weapon[weapon] || 0) + techs.reduce((sum, id) => sum + techCost(id), 0) +
-    sigils.length * setup.cost.sigil + chains.length * setup.cost.chain + traits.length * setup.cost.trait +
-    hp * setup.cost.hpStep + stamina * setup.cost.staminaStep + focus * setup.cost.focusStep;
-  if (spent > setup.points) return null;
-  return { weapon, techs, sigils, chains, traits, hp, stamina, focus };
+  game.events = events;
+  game.seq += 1;
+  game.log = events.map(event => `${players[event.side].name}: ${C[event.id].name}${event.hit ? ` (${event.damage} 피해)` : C[event.id].dmg ? ' (빗나감)' : ''}`).join(' · ');
+  game.picks = { P: null, E: null };
+  if (game.actors.P.hp <= 0 || game.actors.E.hp <= 0) {
+    game.over = true;
+    game.winner = game.actors.P.hp > 0 ? 'P' : 'E';
+  } else game.round += 1;
 }
 
-function makeToken() {
-  return `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll('-', '');
-}
-
-function makeRoomCode() {
-  const bytes = crypto.getRandomValues(new Uint8Array(CONFIG.roomCodeLength));
-  return [...bytes].map((value) => CONFIG.roomAlphabet[value % CONFIG.roomAlphabet.length]).join('');
-}
-
-function swapSide(side) {
-  return side === 'P' ? 'E' : side === 'E' ? 'P' : side;
-}
-
-async function readJson(request) {
-  const size = Number(request.headers.get('content-length') || 0);
-  if (size > CONFIG.maxMessageBytes) throw new Error('요청 내용이 너무 큽니다.');
-  return request.json();
+function roomCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return [...bytes].map(value => letters[value % letters.length]).join('');
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/health') return json({ ok: true, service: 'the-timeline-pvp' });
-
+    if (url.pathname === '/api/health') return json({ ok: true, rules: 'turn-duel-v2' });
     if (request.method === 'POST' && url.pathname === '/api/rooms') {
       let body;
-      try { body = await readJson(request); } catch (error) { return errorResponse(error.message); }
-      const name = cleanName(body.name);
-      if (!name) return errorResponse('표시 이름을 입력해 주세요.');
-      const build = body.build == null ? null : normalizeBuild(body.build);
-      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않습니다.');
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const code = makeRoomCode();
-        const id = env.GAME_ROOMS.idFromName(code);
+      try { body = await request.json(); } catch { return fail('요청 형식이 올바르지 않습니다.'); }
+      const name = String(body.name || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 18);
+      const build = validBuild(body.build);
+      if (!name || !build) return fail('이름과 8장 덱 구성을 확인해 주세요.');
+      for (let i = 0; i < 20; i++) {
+        const code = roomCode(), id = env.GAME_ROOMS.idFromName(code);
         const response = await env.GAME_ROOMS.get(id).fetch('https://room.internal/create', {
-          method: 'POST', body: JSON.stringify({ code, name, preset: validPreset(body.preset), build, test: body.test === true })
+          method: 'POST', body: JSON.stringify({ code, name, build, test: body.test === true })
         });
-        if (response.status === 409) continue;
-        return response;
+        if (response.status !== 409) return response;
       }
-      return errorResponse('방 코드를 만들 수 없습니다. 잠시 후 다시 시도해 주세요.', 503);
+      return fail('방 코드를 만들 수 없습니다.', 503);
     }
-
     const join = url.pathname.match(/^\/api\/rooms\/([A-Z2-9]{6})\/join$/);
     if (request.method === 'POST' && join) {
       let body;
-      try { body = await readJson(request); } catch (error) { return errorResponse(error.message); }
-      const name = cleanName(body.name);
-      if (!name) return errorResponse('표시 이름을 입력해 주세요.');
-      const build = body.build == null ? null : normalizeBuild(body.build);
-      if (body.build != null && !build) return errorResponse('덱 구성이 올바르지 않습니다.');
-      const code = join[1];
-      const id = env.GAME_ROOMS.idFromName(code);
+      try { body = await request.json(); } catch { return fail('요청 형식이 올바르지 않습니다.'); }
+      const name = String(body.name || '').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 18);
+      const build = validBuild(body.build);
+      if (!name || !build) return fail('이름과 8장 덱 구성을 확인해 주세요.');
+      const id = env.GAME_ROOMS.idFromName(join[1]);
       return env.GAME_ROOMS.get(id).fetch('https://room.internal/join', {
-        method: 'POST', body: JSON.stringify({ code, name, preset: validPreset(body.preset), build })
+        method: 'POST', body: JSON.stringify({ name, build })
       });
     }
-
     const socket = url.pathname.match(/^\/ws\/([A-Z2-9]{6})$/);
     if (socket) {
-      if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return errorResponse('WebSocket 연결이 필요합니다.', 426);
-      const id = env.GAME_ROOMS.idFromName(socket[1]);
-      return env.GAME_ROOMS.get(id).fetch(request);
+      if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return fail('WebSocket 연결이 필요합니다.', 426);
+      return env.GAME_ROOMS.get(env.GAME_ROOMS.idFromName(socket[1])).fetch(request);
     }
-
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return errorResponse('요청한 경로를 찾을 수 없습니다.', 404);
-    // Always resolve the site root explicitly. This prevents a Worker/static
-    // asset deployment from treating the Worker source as a downloadable file.
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      const indexUrl = new URL('/index.html', request.url);
-      return env.ASSETS.fetch(new Request(indexUrl, request));
-    }
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return fail('경로를 찾을 수 없습니다.', 404);
+    if (url.pathname === '/' || url.pathname === '/index.html')
+      return env.ASSETS.fetch(new Request(new URL('/index.html', request.url), request));
     return env.ASSETS.fetch(request);
   }
 };
 
 export class GameRoom {
-  constructor(ctx, env) {
+  constructor(ctx) {
     this.ctx = ctx;
-    this.env = env;
     this.meta = null;
     this.game = null;
-    this.ready = this.ctx.blockConcurrencyWhile(async () => {
-      [this.meta, this.game] = await Promise.all([
-        this.ctx.storage.get('meta'),
-        this.ctx.storage.get('game')
-      ]);
+    this.ready = ctx.blockConcurrencyWhile(async () => {
+      [this.meta, this.game] = await Promise.all([ctx.storage.get('meta'), ctx.storage.get('game')]);
     });
   }
 
@@ -163,416 +147,151 @@ export class GameRoom {
     if (url.hostname === 'room.internal' && url.pathname === '/create') return this.create(await request.json());
     if (url.hostname === 'room.internal' && url.pathname === '/join') return this.join(await request.json());
     if (url.pathname.startsWith('/ws/')) return this.connect(request);
-    return errorResponse('요청한 방 정보를 찾을 수 없습니다.', 404);
+    return fail('방을 찾을 수 없습니다.', 404);
+  }
+
+  async save() {
+    await Promise.all([this.ctx.storage.put('meta', this.meta), this.ctx.storage.put('game', this.game)]);
   }
 
   async create(body) {
-    if (this.meta) return errorResponse('이미 사용 중인 방 코드입니다.', 409);
-    const token = makeToken();
-    this.meta = {
-      code: body.code,
-      status: 'waiting',
-      reason: '',
-      players: {
-        P: { token, name: body.name, preset: validPreset(body.preset), build: body.build || null, bot: false }
-      },
-      disconnectDeadlines: {},
-      waitingExpiresAt: Date.now() + CONFIG.waitingTtlMs,
-      cleanupAt: 0,
-      botDueAt: 0,
-      turn: null
-    };
+    if (this.meta) return fail('이미 사용 중인 코드입니다.', 409);
+    const token = crypto.randomUUID() + crypto.randomUUID();
+    this.meta = { code: body.code, status: 'waiting', expires: Date.now() + 30 * 60_000,
+      players: { P: { name: body.name, token, build: body.build, bot: false } } };
     if (body.test) {
-      this.meta.players.E = { token: '', name: '테스트 봇', preset: 'counterblade', bot: true };
-      this.startGame();
+      const build = { weapon: 'standard', deck: W.standard.deck.slice(), peaks: [] };
+      this.meta.players.E = { name: '테스트 봇', token: '', build, bot: true };
+      this.start();
     }
-    await this.persist();
-    await this.scheduleAlarm();
-    return json({ code: this.meta.code, token, status: this.meta.status }, 201);
+    await this.save();
+    await this.ctx.storage.setAlarm(this.meta.expires);
+    return json({ code: body.code, token, status: this.meta.status }, 201);
   }
 
   async join(body) {
-    if (!this.meta || this.meta.status !== 'waiting' || this.meta.players.E) return errorResponse('입장할 수 있는 방을 찾지 못했습니다.', 404);
-    const token = makeToken();
-    this.meta.players.E = { token, name: body.name, preset: validPreset(body.preset), build: body.build || null, bot: false };
-    await this.persist();
-    await this.scheduleAlarm();
-    this.broadcastRoom(`${body.name}님이 입장했습니다.`);
+    if (!this.meta || this.meta.status !== 'waiting' || this.meta.players.E) return fail('입장할 수 없는 방입니다.', 404);
+    const token = crypto.randomUUID() + crypto.randomUUID();
+    this.meta.players.E = { name: body.name, token, build: body.build, bot: false };
+    await this.save();
+    this.broadcast();
     return json({ code: this.meta.code, token, status: this.meta.status });
   }
 
-  async connect(request) {
-    if (!this.meta) return errorResponse('방이 만료되었거나 존재하지 않습니다.', 404);
-    const token = new URL(request.url).searchParams.get('token') || '';
-    const side = ['P', 'E'].find((candidate) => this.meta.players[candidate]?.token === token);
-    if (!side) return errorResponse('방 접속 정보가 올바르지 않습니다.', 403);
+  socket(side) {
+    return this.ctx.getWebSockets(side).find(socket => socket.readyState === 1);
+  }
 
-    const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair);
-    const previous = this.socketForSide(side);
-    if (previous) previous.close(4001, '다른 연결에서 재접속함');
+  connected(side) {
+    return Boolean(this.meta.players[side]?.bot || this.socket(side));
+  }
+
+  async connect(request) {
+    if (!this.meta) return fail('방이 만료되었습니다.', 404);
+    const token = new URL(request.url).searchParams.get('token');
+    const side = ['P', 'E'].find(item => this.meta.players[item]?.token === token);
+    if (!side || !token) return fail('방 접속 정보가 올바르지 않습니다.', 403);
+    const pair = new WebSocketPair(), [client, server] = Object.values(pair);
+    const previous = this.socket(side);
+    if (previous) previous.close(4001, '새 연결');
     this.ctx.acceptWebSocket(server, [side]);
-    server.serializeAttachment({ side, token, rateStarted: Date.now(), rateCount: 0 });
-    delete this.meta.disconnectDeadlines[side];
-    await this.persist();
-    await this.advanceGame();
+    server.serializeAttachment({ side, token });
+    this.broadcast();
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  socketForSide(side) {
-    return this.ctx.getWebSockets(side).find((socket) => socket.readyState === 1);
+  send(side, message) {
+    try { this.socket(side)?.send(JSON.stringify(message)); } catch {}
   }
 
-  isConnected(side) {
-    const player = this.meta?.players?.[side];
-    return Boolean(player && (player.bot || this.socketForSide(side)));
-  }
-
-  allConnected() {
-    return ['P', 'E'].every((side) => this.isConnected(side));
-  }
-
-  send(socket, payload) {
-    try { if (socket?.readyState === 1) socket.send(JSON.stringify(payload)); } catch (error) {}
-  }
-
-  roomPlayers() {
-    return ['P', 'E'].map((side) => this.meta.players[side]).filter(Boolean).map((player, index) => ({
-      name: player.name,
-      connected: player.bot || this.isConnected(index === 0 ? 'P' : 'E'),
-      bot: player.bot
+  players() {
+    return ['P', 'E'].filter(side => this.meta.players[side]).map(side => ({
+      name: this.meta.players[side].name, connected: this.connected(side), bot: this.meta.players[side].bot
     }));
   }
 
-  stateForSide(side) {
-    const view = structuredClone(this.game);
-    view.viewRight = side === 'E';
-    if (side === 'P') return view;
-    [view.actors.P, view.actors.E] = [view.actors.E, view.actors.P];
-    view.actors.P.side = 'P';
-    view.actors.E.side = 'E';
-    view.queue.forEach((entry) => { entry.owner = swapSide(entry.owner); });
-    view.reactions.forEach((entry) => { entry.owner = swapSide(entry.owner); });
-    view.log.forEach((entry) => {
-      if (entry.cls === 's') entry.cls = 'f';
-      else if (entry.cls === 'f') entry.cls = 's';
-    });
-    const count = DB.visual.scene.zones.count;
-    const mirrorVisual = (visual) => {
-      if (!visual) return;
-      visual.side = swapSide(visual.side);
-      if (visual.coords) visual.coords = { P: 100 - visual.coords.E, E: 100 - visual.coords.P };
-      if (visual.fromCoords) visual.fromCoords = { P: 100 - visual.fromCoords.E, E: 100 - visual.fromCoords.P };
-      if (visual.zones) visual.zones = { P: count - 1 - visual.zones.E, E: count - 1 - visual.zones.P };
-    };
-    mirrorVisual(view.visual);
-    (view.visualEvents || []).forEach(mirrorVisual);
-    (view.floatEvents || []).forEach((event) => { event.side = swapSide(event.side); });
-    view.winner = swapSide(view.winner);
-    return view;
+  stateFor(side) {
+    const game = this.game, mine = game.actors[side], foe = game.actors[other(side)];
+    return { round: game.round, distance: game.distance,
+      p: { hp: mine.hp, max: mine.max, weapon: mine.weapon },
+      e: { hp: foe.hp, max: foe.max, weapon: foe.weapon },
+      ready: Boolean(game.picks[side]), opponentReady: Boolean(game.picks[other(side)]),
+      seq: game.seq, events: game.events.map(event => ({ ...event, side: event.side === side ? 'p' : 'e' })),
+      log: game.log, over: game.over, winner: game.winner ? (game.winner === side ? 'p' : 'e') : null };
   }
 
-  broadcastRoom(notice = '') {
+  broadcast() {
     for (const side of ['P', 'E']) {
       const player = this.meta.players[side];
       if (!player || player.bot) continue;
-      this.send(this.socketForSide(side), {
-        type: 'room', code: this.meta.code, status: this.meta.status, players: this.roomPlayers(),
-        youAreHost: side === 'P', notice
-      });
+      this.send(side, { type: this.game ? 'state' : 'room', code: this.meta.code,
+        status: this.meta.status, players: this.players(), isHost: side === 'P',
+        build: player.build, you: player.name, opponent: this.meta.players[other(side)]?.name || '상대',
+        state: this.game?.version === 2 ? this.stateFor(side) : null });
     }
   }
 
-  broadcastState() {
-    if (!this.game) return this.broadcastRoom();
-    const paused = !this.allConnected();
-    for (const side of ['P', 'E']) {
-      const player = this.meta.players[side];
-      if (!player || player.bot) continue;
-      const opponent = this.meta.players[swapSide(side)];
-      this.send(this.socketForSide(side), {
-        type: 'state',
-        code: this.meta.code,
-        status: this.meta.status,
-        state: this.stateForSide(side),
-        yourTurn: !paused && this.meta.turn === side,
-        paused,
-        reason: this.meta.reason,
-        you: player.name,
-        opponent: opponent?.name || '상대',
-        players: this.roomPlayers()
-      });
-    }
-  }
-
-  withGame(callback) {
-    const previous = Battle.st;
-    Battle.st = this.game;
-    try { return callback(); } finally { Battle.st = previous; }
-  }
-
-  actorFromPlayer(side, player) {
-    const preset = DB.setup.presets.find((item) => item.id === player.preset) || DB.setup.presets[0];
-    const build = player.build || { ...preset, traits: [] };
-    const hp = DB.setup.base.hp + build.hp * DB.setup.step.hp;
-    const actor = Battle.makeActor(side, {
-      name: player.name,
-      hp,
-      hpMax: hp,
-      stamina: DB.balance.resource.staminaStart,
-      staminaMax: DB.setup.base.stamina + build.stamina * DB.setup.step.stamina,
-      staminaRegen: DB.balance.resource.staminaRegenPerTick,
-      focus: 0,
-      focusMax: DB.setup.base.focus + build.focus * DB.setup.step.focus,
-      stance: DB.stanceStart,
-      techs: build.techs,
-      traits: build.traits || [],
-      weapon: build.weapon,
-      chains: build.chains,
-      sigils: build.sigils,
-      milestones: [],
-      controller: player.bot ? 'bot' : 'human'
-    });
-    actor.staminaRegen += Battle.traitSum(actor, 'staminaRegen');
-    actor.stamina = U.clamp(actor.stamina, 0, actor.staminaMax);
-    return actor;
-  }
-
-  startGame() {
+  start() {
     this.meta.status = 'playing';
-    this.meta.waitingExpiresAt = 0;
-    this.game = {
-      tick: DB.balance.tick.start,
-      distance: DB.balance.distance.start,
-      actors: {
-        P: this.actorFromPlayer('P', this.meta.players.P),
-        E: this.actorFromPlayer('E', this.meta.players.E)
-      },
-      queue: [], reactions: [], log: [], seq: 0, floatSeq: 0, floatEvents: [], visualEvents: [],
-      backgroundId: DB.visual.scene.backgrounds[Math.floor(Math.random() * DB.visual.scene.backgrounds.length)].id,
-      viewRight: false,
-      visual: { seq: 0, side: null, motion: DB.visual.fallbackMotion,
-        zones: { ...DB.visual.scene.zones.start },
-        coords: Battle.zoneCoords(DB.visual.scene.zones.start) },
-      over: false, winner: null, finished: false, tutorial: false
-    };
-    for (const side of ['P', 'E']) {
-      if (!this.meta.players[side].bot && !this.isConnected(side)) {
-        this.meta.disconnectDeadlines[side] = Date.now() + CONFIG.disconnectGraceMs;
-      }
-    }
-    this.withGame(() => Battle.log('start', { foe: this.meta.players.E.name }, 'n'));
-  }
-
-  currentSide() {
-    return this.game.actors.P.readyAt <= this.game.actors.E.readyAt ? 'P' : 'E';
-  }
-
-  async advanceGame() {
-    if (!this.game) { this.broadcastRoom(); return; }
-    if (this.game.over) { await this.finish(this.meta.reason || 'battle'); return; }
-    if (!this.allConnected()) {
-      this.meta.turn = null;
-      await this.persist();
-      this.broadcastState();
-      return;
-    }
-    const side = this.currentSide();
-    this.withGame(() => Battle.advanceTo(this.game.actors[side].readyAt));
-    if (this.game.over) { await this.finish('battle'); return; }
-    this.meta.turn = side;
-    if (this.meta.players[side].bot) this.meta.botDueAt = Date.now() + CONFIG.botDelayMs;
-    await this.persist();
-    await this.scheduleAlarm();
-    this.broadcastState();
-  }
-
-  async botAct(side) {
-    if (!this.game || this.game.over || this.meta.turn !== side) return;
-    this.withGame(() => {
-      const actor = Battle.A(side);
-      const damage = (tech) => (tech.onHit || []).filter((effect) => effect.k === 'damage')
-        .reduce((sum, effect) => sum + effect.v, 0);
-      const options = actor.techs.map((id) => DB.techs[id]).filter(Boolean).filter((tech) => {
-        const need = Battle.transitionCost(actor, tech.stance) + Battle.effCost(actor, tech);
-        const range = Battle.effRange(actor, tech);
-        return actor.stamina >= need && this.game.distance >= range[0] && this.game.distance <= range[1]
-          && damage(tech) > 0;
-      }).sort((a, b) => damage(b) - damage(a));
-      let acted = options.length ? Battle.useTech(side, options[0].id, false) : false;
-      if (!acted) {
-        const basic = DB.balance.basic;
-        if (this.game.distance > 1 && actor.stamina >= Battle.moveCost(actor, basic.approach)) acted = Battle.basic(side, basic.approach.id);
-        if (!acted) Battle.basic(side, basic.wait.id);
-      }
-    });
-    this.meta.botDueAt = 0;
-    this.meta.turn = null;
-    await this.advanceGame();
-  }
-
-  async handleBuild(side, build, socket) {
-    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '대기방에서만 덱을 변경할 수 있습니다.' });
-    const normalized = normalizeBuild(build);
-    if (!normalized) return this.send(socket, { type: 'error', message: '덱 구성이 올바르지 않습니다.' });
-    this.meta.players[side].build = normalized;
-    await this.persist();
-    this.broadcastRoom(`${this.meta.players[side].name}님이 덱을 변경했습니다.`);
-  }
-
-  async handleStart(side, socket) {
-    if (side !== 'P') return this.send(socket, { type: 'error', message: '방장만 게임을 시작할 수 있습니다.' });
-    if (this.meta.status !== 'waiting' || this.game) return this.send(socket, { type: 'error', message: '이미 시작했거나 현재 시작할 수 없는 방입니다.' });
-    if (!this.meta.players.E) return this.send(socket, { type: 'error', message: '상대가 입장한 뒤 시작할 수 있습니다.' });
-    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '두 플레이어의 연결 상태를 확인해 주세요.' });
-    this.startGame();
-    await this.advanceGame();
-  }
-
-  async handleAction(side, action, socket) {
-    if (!this.game || this.meta.status !== 'playing' || this.game.over) return this.send(socket, { type: 'error', message: '진행 중인 전투가 없습니다.' });
-    if (!this.allConnected()) return this.send(socket, { type: 'error', message: '상대의 재접속을 기다리고 있습니다.' });
-    if (this.meta.turn !== side) return this.send(socket, { type: 'error', message: '현재 행동권이 없습니다.' });
-    if (!action || typeof action.kind !== 'string' || typeof action.id !== 'string') return this.send(socket, { type: 'error', message: '올바르지 않은 행동 요청입니다.' });
-
-    let ok = false;
-    this.withGame(() => {
-      if (action.kind === 'stance') {
-        if (!DB.stances.some((stance) => stance.id === action.id)) return;
-        ok = Battle.changeStance(side, action.id);
-      } else if (action.kind === 'tech') ok = Battle.useTech(side, action.id, action.empowered === true);
-      else if (action.kind === 'basic') ok = Battle.basic(side, action.id);
-    });
-    if (!ok) {
-      this.send(socket, { type: 'error', message: '현재 상태에서는 해당 행동을 사용할 수 없습니다.' });
-      this.broadcastState();
-      return;
-    }
-    if (action.kind === 'stance') {
-      await this.persist();
-      this.broadcastState();
-    } else {
-      this.meta.turn = null;
-      await this.advanceGame();
-    }
+    this.game = newGame(this.meta.players);
   }
 
   async webSocketMessage(socket, raw) {
-    const attachment = socket.deserializeAttachment();
-    if (!attachment || !this.meta?.players?.[attachment.side] || this.meta.players[attachment.side].token !== attachment.token) {
-      socket.close(4003, '인증 정보가 올바르지 않음'); return;
-    }
-    if (typeof raw !== 'string' || new TextEncoder().encode(raw).byteLength > CONFIG.maxMessageBytes) {
-      socket.close(1009, '메시지가 너무 큼'); return;
-    }
-    const now = Date.now();
-    if (now - attachment.rateStarted > CONFIG.rateWindowMs) { attachment.rateStarted = now; attachment.rateCount = 0; }
-    attachment.rateCount += 1;
-    socket.serializeAttachment(attachment);
-    if (attachment.rateCount > CONFIG.maxMessagesPerWindow) { socket.close(1008, '요청 제한'); return; }
+    await this.ready;
+    const auth = socket.deserializeAttachment(), side = auth?.side;
+    if (!side || this.meta?.players[side]?.token !== auth.token) return socket.close(4003, '인증 실패');
+    if (typeof raw !== 'string' || raw.length > 8192) return socket.close(1009, '요청이 너무 큽니다.');
     let message;
-    try { message = JSON.parse(raw); } catch (error) { this.send(socket, { type: 'error', message: '요청 형식이 올바르지 않습니다.' }); return; }
-    if (message.type === 'build') await this.handleBuild(attachment.side, message.build, socket);
-    else if (message.type === 'start') await this.handleStart(attachment.side, socket);
-    else if (message.type === 'action') await this.handleAction(attachment.side, message.action, socket);
-    else if (message.type === 'forfeit') await this.forfeit(attachment.side, 'forfeit');
-    else if (message.type === 'leave') await this.leave(attachment.side, socket);
-    else this.send(socket, { type: 'error', message: '지원하지 않는 요청입니다.' });
+    try { message = JSON.parse(raw); } catch { return this.send(side, { type: 'error', message: '요청 형식이 올바르지 않습니다.' }); }
+    if (message.type === 'start') {
+      if (side !== 'P' || this.meta.status !== 'waiting' || !this.meta.players.E || !this.connected('E'))
+        return this.send(side, { type: 'error', message: '상대가 입장한 뒤 방장이 시작할 수 있습니다.' });
+      this.start();
+    } else if (message.type === 'action') {
+      if (this.meta.status !== 'playing' || this.game?.version !== 2 || this.game.over || !this.connected(other(side)))
+        return this.send(side, { type: 'error', message: '현재 행동할 수 없습니다.' });
+      const id = message.id;
+      if (!this.meta.players[side].build.deck.includes(id) || this.game.picks[side])
+        return this.send(side, { type: 'error', message: '사용할 수 없는 카드입니다.' });
+      this.game.picks[side] = id;
+      if (this.meta.players[other(side)].bot) {
+        const deck = this.meta.players[other(side)].build.deck;
+        this.game.picks[other(side)] = deck[Math.floor(Math.random() * deck.length)];
+      }
+      if (this.game.picks.P && this.game.picks.E) resolveRound(this.game, this.meta.players);
+      if (this.game.over) { this.meta.status = 'finished'; this.meta.expires = Date.now() + 5 * 60_000; }
+    } else if (message.type === 'forfeit') {
+      if (this.game && !this.game.over) {
+        this.game.over = true;
+        this.game.winner = other(side);
+        this.meta.status = 'finished';
+        this.meta.expires = Date.now() + 5 * 60_000;
+      }
+    } else if (message.type === 'leave') {
+      if (this.meta.status === 'waiting' && side === 'E') delete this.meta.players.E;
+      else if (this.game && !this.game.over) {
+        this.game.over = true;
+        this.game.winner = other(side);
+        this.meta.status = 'finished';
+      }
+      socket.close(1000, '방 나가기');
+    }
+    await this.save();
+    await this.ctx.storage.setAlarm(this.meta.expires);
+    this.broadcast();
   }
 
-  async webSocketClose(socket) {
-    await this.socketEnded(socket);
-  }
-
-  async webSocketError(socket) {
-    await this.socketEnded(socket);
-  }
-
-  async socketEnded(socket) {
-    const attachment = socket.deserializeAttachment();
-    const side = attachment?.side;
-    if (!side || !this.meta || !this.meta.players[side] || this.meta.players[side].bot || this.meta.status === 'finished') return;
-    if (this.socketForSide(side)) return;
-    this.meta.disconnectDeadlines[side] = Date.now() + CONFIG.disconnectGraceMs;
-    this.meta.turn = null;
-    await this.persist();
-    await this.scheduleAlarm();
-    if (this.game) this.broadcastState(); else this.broadcastRoom();
-  }
-
-  async leave(side, socket) {
-    if (this.meta.status === 'playing' && !this.game.over) await this.forfeit(side, 'forfeit');
-    else if (this.meta.status === 'waiting' && side === 'E') {
-      const name = this.meta.players.E?.name || '2P';
-      delete this.meta.players.E;
-      delete this.meta.disconnectDeadlines.E;
-      await this.persist();
-      await this.scheduleAlarm();
-      this.broadcastRoom(`${name}님이 퇴장했습니다.`);
-    } else if (this.meta.status === 'waiting') await this.reset();
-    try { socket.close(1000, '방 나가기'); } catch (error) {}
-  }
-
-  async forfeit(losingSide, reason) {
-    if (!this.game || this.game.over) return;
-    this.game.over = true;
-    this.game.winner = swapSide(losingSide);
-    await this.finish(reason);
-  }
-
-  async finish(reason) {
-    this.meta.status = 'finished';
-    this.meta.reason = reason;
-    this.meta.turn = null;
-    this.meta.botDueAt = 0;
-    this.meta.cleanupAt = Date.now() + CONFIG.finishedTtlMs;
-    await this.persist();
-    await this.scheduleAlarm();
-    this.broadcastState();
-  }
-
-  async persist() {
-    const writes = [this.ctx.storage.put('meta', this.meta)];
-    if (this.game) writes.push(this.ctx.storage.put('game', this.game));
-    await Promise.all(writes);
-  }
-
-  async scheduleAlarm() {
-    if (!this.meta) return;
-    const times = [this.meta.waitingExpiresAt, this.meta.cleanupAt, this.meta.botDueAt,
-      ...Object.values(this.meta.disconnectDeadlines || {})].filter((value) => value > 0);
-    if (times.length) await this.ctx.storage.setAlarm(Math.min(...times));
-    else await this.ctx.storage.deleteAlarm();
-  }
+  async webSocketClose() { await this.ready; if (this.meta) this.broadcast(); }
+  async webSocketError() { await this.ready; if (this.meta) this.broadcast(); }
 
   async alarm() {
     await this.ready;
-    if (!this.meta) return;
-    const now = Date.now();
-    if (this.meta.status === 'waiting' && this.meta.waitingExpiresAt && this.meta.waitingExpiresAt <= now) {
-      await this.reset(); return;
+    if (this.meta?.expires <= Date.now()) {
+      for (const socket of this.ctx.getWebSockets()) try { socket.close(1000, '방 만료'); } catch {}
+      this.meta = null;
+      this.game = null;
+      await this.ctx.storage.deleteAll();
     }
-    if (this.meta.status === 'finished' && this.meta.cleanupAt && this.meta.cleanupAt <= now) {
-      await this.reset(); return;
-    }
-    if (this.meta.status === 'playing') {
-      for (const side of ['P', 'E']) {
-        const deadline = this.meta.disconnectDeadlines[side];
-        if (deadline && deadline <= now && !this.isConnected(side)) { await this.forfeit(side, 'disconnect'); return; }
-        if (this.isConnected(side)) delete this.meta.disconnectDeadlines[side];
-      }
-      if (this.meta.botDueAt && this.meta.botDueAt <= now) { await this.botAct(this.meta.turn); return; }
-    }
-    await this.persist();
-    await this.scheduleAlarm();
-  }
-
-  async reset() {
-    for (const socket of this.ctx.getWebSockets()) {
-      try { socket.close(1000, '방 만료'); } catch (error) {}
-    }
-    this.meta = null;
-    this.game = null;
-    await this.ctx.storage.deleteAll();
   }
 }
+
