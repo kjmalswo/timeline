@@ -3,69 +3,31 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-function container() {
-  return {
-    innerHTML: '',
-    selectors: new Map(),
-    querySelectorAll(selector) {
-      if (this.selectors.has(selector)) return this.selectors.get(selector);
-      const attr = selector.slice(1, -1);
-      const nodes = [...this.innerHTML.matchAll(new RegExp(`${attr}="([^"]+)"`, 'g'))]
-        .map(match => ({ dataset: { [attr.slice(5)]: match[1] }, onclick: null }));
-      this.selectors.set(selector, nodes);
-      return nodes;
-    }
-  };
-}
-
-test('전투 보상 기술 카드를 누르면 습득하고, 슬롯이 가득 차면 교체할 수 있다', async () => {
+test('기동 룬, 접근 방어, 거리 표시가 같은 거리 규칙을 사용한다', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  const script = html.slice(html.indexOf('<script>') + 8, html.indexOf('(function boot(){'));
-  const elements = new Map([['rwBody', container()], ['modalBox', container()]]);
-  const document = { getElementById(id) {
-    if (!elements.has(id)) elements.set(id, {});
-    return elements.get(id);
-  } };
-  const context = vm.createContext({ document, setTimeout, clearTimeout });
-  vm.runInContext(script, context);
-  vm.runInContext(`
-    Run.data = { techs: [], traits: [], weapon: DB.weaponStart,
-      chains: [], sigils: [], milestones: [], parts: 0 };
-    Run.rollTechs = () => ['pierce'];
-    Run.rollChains = Run.rollSigils = Run.rollTraits = Run.rollWeapons = () => [];
-    UI.showScreen = () => {};
-    UI.modal = html => { document.getElementById('modalBox').innerHTML = html; };
-    UI.closeModal = () => {};
-    Run.advance = () => { Run.data.advanced = true; };
-    UI.renderReward({ type: 'battle' });
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const core = script.slice(0, script.lastIndexOf("$$('[data-go]')"));
+  const nodes = { '#p1': { style: {} }, '#p2': { style: {} } };
+  const context = vm.createContext({ document: { querySelector: selector => nodes[selector] } });
+  vm.runInContext(core, context);
+  const result = vm.runInContext(`
+    state.weapon='shortblade'; state.peaks=['stride'];
+    state.battle={round:1,distance:7,p:{keep:0},e:{keep:0}};
+    const dash=effective('dash','p');
+    applyMove(dash,'p');
+    const afterDash=state.battle.distance;
+    state.battle.e.keep=2;
+    applyMove(effective('shadow','p'),'p');
+    const afterKeep=state.battle.distance;
+    placeFighters();
+    ({dash:dash.move,afterDash,afterKeep,guard:effective('guardStep','p').block});
   `, context);
-
-  const reward = elements.get('rwBody');
-  const pick = reward.querySelectorAll('[data-pick]')[0];
-  assert.equal(pick.dataset.pick, 'pierce');
-  assert.equal(typeof pick.onclick, 'function');
-  pick.onclick();
-  assert.deepEqual(Array.from(vm.runInContext('Run.data.techs', context)), ['pierce']);
-  assert.equal(vm.runInContext('Run.data.advanced', context), true);
-
-  reward.selectors.clear();
-  vm.runInContext(`
-    Run.data.techs = ['pierce', 'brace_mid', 'press'];
-    Run.data.advanced = false;
-    Run.rollTechs = () => ['intercept'];
-    UI.renderReward({ type: 'battle' });
-  `, context);
-  reward.querySelectorAll('[data-pick]')[0].onclick();
-  const replace = elements.get('modalBox').querySelectorAll('[data-rep]')[0];
-  assert.equal(replace.dataset.rep, 'pierce');
-  assert.equal(typeof replace.onclick, 'function');
-  replace.onclick();
-  assert.deepEqual(Array.from(vm.runInContext('Run.data.techs', context)),
-    ['brace_mid', 'press', 'intercept']);
-  assert.equal(vm.runInContext('Run.data.advanced', context), true);
-
-  const rangeCard = vm.runInContext('UI.techCard("brace_mid", {compact:true})', context);
-  assert.match(rangeCard, /0칸 · 가까움/);
-  assert.match(rangeCard, /4칸 · 멂/);
-  assert.equal((rangeCard.match(/class="on /g) || []).length, 5);
+  assert.equal(result.dash, -3);
+  assert.equal(result.afterDash, 4);
+  assert.equal(result.afterKeep, 3);
+  assert.equal(result.guard, 8);
+  const near = parseFloat(nodes['#p1'].style.left);
+  vm.runInContext('state.battle.distance=8;placeFighters()', context);
+  assert.ok(near > parseFloat(nodes['#p1'].style.left));
 });
+

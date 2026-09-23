@@ -3,43 +3,30 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-test('피해 숫자와 빗나감 문구가 대상 캐릭터 안에서 생성되고 새 전투에 남지 않는다', async () => {
+test('공격과 상대 피격 프레임은 같은 순간 시작된다', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  const script = html.slice(html.indexOf('<script>') + 8, html.indexOf('(function boot(){'));
-  const actors = Object.fromEntries(['P', 'E'].map(side => [side, {
-    children: [],
-    querySelectorAll() { return this.children.filter(child => child.className.startsWith('battle-float')); },
-    appendChild(child) { this.children.push(child); child.parent = this; }
-  }]));
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const core = script.slice(0, script.lastIndexOf("$$('[data-go]')"));
+  const timers = [];
+  function actor() {
+    const img = { src: '' };
+    return { img, children: [], querySelector: () => img,
+      classList: { add() {}, remove() {} },
+      appendChild(child) { this.children.push(child); } };
+  }
+  const p1 = actor(), p2 = actor();
   const document = {
-    querySelector(selector) {
-      return actors[selector.match(/data-actor="([PE])"/)?.[1]] || null;
-    },
-    querySelectorAll() { return Object.values(actors).flatMap(actor => actor.children); },
-    createElement() {
-      return {
-        className: '', textContent: '', style: {}, addEventListener() {},
-        remove() {
-          if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this);
-        }
-      };
-    }
+    querySelector: selector => ({ '#p1': p1, '#p2': p2 })[selector],
+    createElement: () => ({ className: '', textContent: '', remove() {} })
   };
-  const context = vm.createContext({ document, setTimeout() {} });
-  vm.runInContext(script, context);
-  vm.runInContext(`
-    Battle.st = { floatSeq: 2, floatEvents: [
-      { seq: 1, side: 'E', kind: 'damage', value: 24 },
-      { seq: 2, side: 'E', kind: 'miss' }
-    ] };
-    UI.playCombatFloats();
-  `, context);
-  assert.deepEqual(actors.P.children, []);
-  assert.deepEqual(actors.E.children.map(child => child.textContent), ['24', '빗나감!']);
-  assert.deepEqual(actors.E.children.map(child => child.className),
-    ['battle-float damage', 'battle-float miss']);
-  assert.notEqual(actors.E.children[0].style.top, actors.E.children[1].style.top);
-
-  vm.runInContext('Battle.st = { floatSeq: 0, floatEvents: [] }; UI.playCombatFloats();', context);
-  assert.deepEqual(actors.E.children, []);
+  const context = vm.createContext({ document, setTimeout: (fn, ms) => timers.push({ fn, ms }) });
+  vm.runInContext(core, context);
+  vm.runInContext("state.weapon='standard'; animateStrike('p',5)", context);
+  assert.match(p1.img.src, /standard\/attack-1\.png$/);
+  assert.match(p2.img.src, /p2\/standard\/hit-1\.png$/);
+  assert.ok(timers.some(timer => timer.ms === 160));
+  vm.runInContext("animateStrike('e',5)", context);
+  assert.match(p2.img.src, /p2\/standard\/attack-1\.png$/);
+  assert.match(p1.img.src, /standard\/hit-1\.png$/);
 });
+
