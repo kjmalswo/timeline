@@ -67,6 +67,7 @@ function resolveActorTurn(game, players, side, chosen) {
     } else {
       actor.block = card.block || 0;
       actor.keep = card.keep || 0;
+      const before = game.distance;
       game.distance = boardMove(game.positions, side, foe, card, target.keep || 0);
       if (target.keep && (card.move < 0 || card.set != null)) target.keep = 0;
       let damage = 0, hit = false;
@@ -79,12 +80,14 @@ function resolveActorTurn(game, players, side, chosen) {
         damage = Math.min(target.hp, Math.max(0, raw - target.block));
         target.hp -= damage;
       }
-      event = { side, id, kind: 'resolve', damage, hit, distance: game.distance };
+      event = { side, id, kind: 'resolve', damage, hit, distance: game.distance,
+        movement: card.move || card.set != null ? ` · 거리 ${before}→${game.distance}칸${before === game.distance ? ' (거리 한계 또는 방어)' : ''}` : '' };
     }
   }
   game.events = [event];
   game.seq += 1;
   game.log = `${players[side].name}: ${C[id].name}${event.kind === 'forecast' || event.kind === 'countdown' ? ` 예고 · ${event.ticks}틱 남음` : event.hit ? ` (${event.damage} 피해)` : C[id].dmg ? ' (빗나감)' : ''}`;
+  game.log += event.movement || '';
   if (game.actors.P.hp <= 0 || game.actors.E.hp <= 0) {
     game.over = true;
     game.winner = game.actors.P.hp > 0 ? 'P' : 'E';
