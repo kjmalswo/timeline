@@ -6,7 +6,7 @@ import vm from 'node:vm';
 test('실전 튜토리얼을 끝까지 진행해도 저장은 유지되고 이동·공격 프레임이 재생된다', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-  const nodes = new Map(), frames = [];
+  const nodes = new Map(), frames = [], timerDelays = [];
   function makeNode(id) {
     const classes = new Set(), img = {};
     Object.defineProperty(img, 'src', { set: value => frames.push(value) });
@@ -25,9 +25,9 @@ test('실전 튜토리얼을 끝까지 진행해도 저장은 유지되고 이�
     document: { querySelector: node, querySelectorAll: selector => selector === '.screen' ? screens : [],
       body: makeNode('body'), documentElement: { style: {}, clientWidth: 1200, clientHeight: 900 }, createElement: () => ({ remove() {} }) },
     localStorage: storage, sessionStorage: storage, Image: ImageMock, window: { innerWidth: 1200, innerHeight: 900, addEventListener() {} },
-    setTimeout: callback => { callback(); return 0; }
+    setTimeout: (callback, delay) => { timerDelays.push(delay); callback(); return 0; }
   });
-  const api = vm.runInContext(script + '\n({state,Tutorial,resolveTurn,startBattle,finish,takeReward,randomBackground,Net})', context);
+  const api = vm.runInContext(script + '\n({state,settings,Tutorial,resolveTurn,startBattle,finish,takeReward,randomBackground,animateFrames,Net})', context);
   api.Tutorial.start();
   assert.equal(node('#tutorialShade').hidden, false);
   assert.equal(node('#tutorialShade').children[0].style.height, '193px');
@@ -56,6 +56,18 @@ test('실전 튜토리얼을 끝까지 진행해도 저장은 유지되고 이�
   assert.match(node('#eForecast').innerHTML, /틱/);
   assert.ok(node('#eForecast').dataset.description);
   assert.match(node('#sceneBg').src, /assets\/battle\//);
+  const beforeMotion = timerDelays.length;
+  await api.animateFrames('p', ['attack-1', 'attack-2']);
+  assert.deepEqual(timerDelays.slice(beforeMotion), [320, 320]);
+  for (const motion of ['hit', 'advance', 'retreat'])
+    await api.animateFrames('p', [`${motion}-1`, `${motion}-2`]);
+  for (const motion of ['attack', 'hit', 'advance', 'retreat'])
+    assert.ok(frames.includes(`assets/battle/standard/${motion}-1.png`), `1P ${motion}`);
+  api.settings.speed = 'fast';
+  const beforeFastMotion = timerDelays.length;
+  await api.animateFrames('p', ['attack-1', 'attack-2']);
+  assert.deepEqual(timerDelays.slice(beforeFastMotion), [240, 240]);
+  api.settings.speed = 'normal';
   assert.equal((node('#hand').innerHTML.match(/data-card=/g) || []).length, 2);
   assert.match(node('#round').textContent, /현재 턴 1/);
   let previousBackground = api.state.battle.background;
