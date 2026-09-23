@@ -41,7 +41,7 @@ test('사거리가 없는 카드는 다섯 칸 모두 켜지고 공격 카드는
 test('공격·피격에 쓰는 양쪽 캐릭터 프레임이 배포된다', async () => {
   for (const id of Object.keys(W)) {
     for (const side of ['', 'p2/']) {
-      for (const file of ['idle.png', 'attack-1.png', 'attack-2.png', 'hit-1.png', 'hit-2.png']) {
+      for (const file of ['idle.png', 'attack-1.png', 'attack-2.png', 'hit-1.png', 'hit-2.png', 'advance-1.png', 'advance-2.png', 'advance-3.png', 'retreat-1.png', 'retreat-2.png', 'retreat-3.png']) {
         const bytes = await readFile(new URL(`../dist/assets/battle/${side}${id}/${file}`, import.meta.url));
         assert.equal(bytes.subarray(1, 4).toString(), 'PNG', `${side}${id}/${file}`);
       }
@@ -69,9 +69,11 @@ test('PvP 서버가 양쪽 턴을 따로 실행하고 예고를 다음 자기 �
   await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'start' }));
   assert.equal(room.game.round, 1);
   assert.equal(room.game.turn, 'P');
+  assert.equal(room.stateFor('P').tick, 1);
   await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'action', id: 'step' }));
   assert.equal(room.game.round, 1);
   assert.equal(room.game.turn, 'E');
+  assert.equal(room.stateFor('E').tick, 2);
   assert.equal(room.game.events.length, 1);
   await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'action', id: 'step' }));
   assert.equal(room.game.turn, 'E', '상대 턴에는 행동할 수 없다');

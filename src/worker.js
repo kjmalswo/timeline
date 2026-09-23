@@ -80,7 +80,8 @@ function resolveActorTurn(game, players, side, chosen) {
         damage = Math.min(target.hp, Math.max(0, raw - target.block));
         target.hp -= damage;
       }
-      event = { side, id, kind: 'resolve', damage, hit, distance: game.distance,
+      event = { side, id, kind: 'resolve', damage, hit, landed: hit, attack: !!card.dmg,
+        moved: before !== game.distance, moveDirection: game.distance < before ? 'advance' : 'retreat', distance: game.distance, positions: { ...game.positions },
         movement: card.move || card.set != null ? ` · 거리 ${before}→${game.distance}칸${before === game.distance ? ' (거리 한계 또는 방어)' : ''}` : '' };
     }
   }
@@ -229,12 +230,14 @@ export class GameRoom {
     const game = this.game, mine = game.actors[side], foe = game.actors[other(side)];
     const positions = side === 'P' ? { p: game.positions.P, e: game.positions.E } :
       { p: 6 - game.positions.E, e: 6 - game.positions.P };
-    return { round: game.round, distance: game.distance,
+    return { round: game.round, tick: game.seq + 1, distance: game.distance,
       turn: game.turn === side ? 'p' : 'e', positions,
       p: { hp: mine.hp, max: mine.max, weapon: mine.weapon, stance: mine.stance },
       e: { hp: foe.hp, max: foe.max, weapon: foe.weapon, stance: foe.stance },
       pending: { p: game.pending[side], e: game.pending[other(side)] },
-      seq: game.seq, events: game.events.map(event => ({ ...event, side: event.side === side ? 'p' : 'e' })),
+      seq: game.seq, events: game.events.map(event => ({ ...event, side: event.side === side ? 'p' : 'e',
+        positions: !event.positions ? null : side === 'P' ? { p: event.positions.P, e: event.positions.E } :
+          { p: 6 - event.positions.E, e: 6 - event.positions.P } })),
       log: game.log, over: game.over, winner: game.winner ? (game.winner === side ? 'p' : 'e') : null };
   }
 
