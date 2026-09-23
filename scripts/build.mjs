@@ -19,6 +19,6 @@ await mkdir(resolve(root, 'dist'), { recursive: true });
 await cp(resolve(root, 'assets'), resolve(root, 'dist/assets'), { recursive: true });
 await writeFile(resolve(root, 'dist/index.html'), html, 'utf8');
 await writeFile(resolve(root, 'src/turn-rules.generated.js'),
-  `${html.slice(rulesStart, rulesEnd)}\nexport { W, C, PEAKS };\n`, 'utf8');
+  `${html.slice(rulesStart, rulesEnd)}\nexport { W, C, PEAKS, initialBoard, boardDistance, boardMove, stanceMultiplier };\n`, 'utf8');
 console.log('싱글플레이 화면과 공통 PvP 카드 규칙을 배포용으로 빌드했습니다.');
 

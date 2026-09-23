@@ -1,4 +1,4 @@
-import { W, C, PEAKS } from './turn-rules.generated.js';
+import { W, C, PEAKS, initialBoard, boardMove, stanceMultiplier } from './turn-rules.generated.js';
 
 const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
@@ -31,56 +31,68 @@ function cardFor(id, build, round) {
   if (card.dmg) card.dmg += weapon.power + mod.power;
   if (card.block) card.block += weapon.guard + mod.guard;
   if (card.move) card.move += Math.sign(card.move) * mod.move;
-  if (round <= 3) card.speed += mod.early;
+  card.cast = Math.max(0, (card.cast || 0) - (round <= 3 ? mod.early : 0));
   return card;
 }
 
 function newGame(players) {
   const make = side => {
     const build = players[side].build, weapon = W[build.weapon], hp = weapon.hp + bonuses(build).hp;
-    return { hp, max: hp, weapon: build.weapon, block: 0, keep: 0 };
+    return { hp, max: hp, weapon: build.weapon, block: 0, keep: 0, stance: 'mid' };
   };
-  return { version: 2, round: 1, distance: clamp(Math.round((W[players.P.build.weapon].start + W[players.E.build.weapon].start) / 2), 1, 8),
-    actors: { P: make('P'), E: make('E') }, picks: { P: null, E: null },
-    events: [], seq: 0, log: '양쪽이 카드를 선택하면 라운드가 진행됩니다.', over: false, winner: null };
+  const distance = clamp(Math.round((W[players.P.build.weapon].start + W[players.E.build.weapon].start) / 2), 0, 4);
+  const board = initialBoard(distance);
+  return { version: 3, round: 1, turn: 'P', distance, positions: { P: board.p, E: board.e },
+    actors: { P: make('P'), E: make('E') }, pending: { P: null, E: null },
+    events: [], seq: 0, log: '방장 턴부터 시작합니다. 각자 자신의 턴에 한 장씩 행동합니다.', over: false, winner: null };
 }
 
-function resolveRound(game, players) {
-  const cards = Object.fromEntries(['P', 'E'].map(side => [side, cardFor(game.picks[side], players[side].build, game.round)]));
-  const order = cards.P.speed >= cards.E.speed ? ['P', 'E'] : ['E', 'P'];
-  game.actors.P.block = game.actors.E.block = 0;
-  game.actors.P.keep = game.actors.E.keep = 0;
-  const events = [];
-  for (const side of order) {
-    if (game.actors.P.hp <= 0 || game.actors.E.hp <= 0) break;
-    const card = cards[side], actor = game.actors[side], target = game.actors[other(side)];
-    actor.block = card.block || 0;
-    actor.keep = card.keep || 0;
-    if (card.set) game.distance = card.set;
-    if (card.move) game.distance = clamp(game.distance + card.move, 1, 8);
-    if ((card.set || card.move < 0) && target.keep) {
-      game.distance = clamp(game.distance + target.keep, 1, 8);
-      target.keep = 0;
-    }
-    let damage = 0, hit = false;
-    if (card.dmg && game.distance >= card.range[0] && game.distance <= card.range[1]) {
-      hit = true;
-      let raw = card.dmg;
-      const finish = bonuses(players[side].build).finish;
-      if (finish && target.hp <= target.max * .4) raw += finish;
-      damage = Math.min(target.hp, Math.max(0, raw - target.block));
-      target.hp -= damage;
-    }
-    events.push({ side, id: game.picks[side], damage, hit, distance: game.distance });
+function resolveActorTurn(game, players, side, chosen) {
+  const actor = game.actors[side], foe = other(side), target = game.actors[foe];
+  actor.block = 0;
+  actor.keep = 0;
+  let id = chosen, pending = game.pending[side], event;
+  if (pending) {
+    id = pending.id;
+    pending.ticks -= 1;
+    if (pending.ticks > 0) event = { side, id, kind: 'countdown', ticks: pending.ticks, damage: 0, hit: false };
+    else game.pending[side] = null;
   }
-  game.events = events;
+  if (!event) {
+    const card = cardFor(id, players[side].build, game.round);
+    actor.stance = card.stance || card.line || actor.stance;
+    if (!pending && card.cast > 0) {
+      game.pending[side] = { id, ticks: card.cast };
+      event = { side, id, kind: 'forecast', ticks: card.cast, damage: 0, hit: false };
+    } else {
+      actor.block = card.block || 0;
+      actor.keep = card.keep || 0;
+      game.distance = boardMove(game.positions, side, foe, card, target.keep || 0);
+      if (target.keep && (card.move < 0 || card.set != null)) target.keep = 0;
+      let damage = 0, hit = false;
+      if (card.dmg && game.distance >= card.range[0] && game.distance <= card.range[1]) {
+        hit = true;
+        let raw = card.dmg;
+        const finish = bonuses(players[side].build).finish;
+        if (finish && target.hp <= target.max * .4) raw += finish;
+        raw = Math.round(raw * stanceMultiplier(card.line, target.stance));
+        damage = Math.min(target.hp, Math.max(0, raw - target.block));
+        target.hp -= damage;
+      }
+      event = { side, id, kind: 'resolve', damage, hit, distance: game.distance };
+    }
+  }
+  game.events = [event];
   game.seq += 1;
-  game.log = events.map(event => `${players[event.side].name}: ${C[event.id].name}${event.hit ? ` (${event.damage} 피해)` : C[event.id].dmg ? ' (빗나감)' : ''}`).join(' · ');
-  game.picks = { P: null, E: null };
+  game.log = `${players[side].name}: ${C[id].name}${event.kind === 'forecast' || event.kind === 'countdown' ? ` 예고 · ${event.ticks}틱 남음` : event.hit ? ` (${event.damage} 피해)` : C[id].dmg ? ' (빗나감)' : ''}`;
   if (game.actors.P.hp <= 0 || game.actors.E.hp <= 0) {
     game.over = true;
     game.winner = game.actors.P.hp > 0 ? 'P' : 'E';
-  } else game.round += 1;
+  } else {
+    if (side === 'E') game.round += 1;
+    game.turn = foe;
+  }
+  return event;
 }
 
 function roomCode() {
@@ -212,10 +224,13 @@ export class GameRoom {
 
   stateFor(side) {
     const game = this.game, mine = game.actors[side], foe = game.actors[other(side)];
+    const positions = side === 'P' ? { p: game.positions.P, e: game.positions.E } :
+      { p: 6 - game.positions.E, e: 6 - game.positions.P };
     return { round: game.round, distance: game.distance,
-      p: { hp: mine.hp, max: mine.max, weapon: mine.weapon },
-      e: { hp: foe.hp, max: foe.max, weapon: foe.weapon },
-      ready: Boolean(game.picks[side]), opponentReady: Boolean(game.picks[other(side)]),
+      turn: game.turn === side ? 'p' : 'e', positions,
+      p: { hp: mine.hp, max: mine.max, weapon: mine.weapon, stance: mine.stance },
+      e: { hp: foe.hp, max: foe.max, weapon: foe.weapon, stance: foe.stance },
+      pending: { p: game.pending[side], e: game.pending[other(side)] },
       seq: game.seq, events: game.events.map(event => ({ ...event, side: event.side === side ? 'p' : 'e' })),
       log: game.log, over: game.over, winner: game.winner ? (game.winner === side ? 'p' : 'e') : null };
   }
@@ -227,7 +242,7 @@ export class GameRoom {
       this.send(side, { type: this.game ? 'state' : 'room', code: this.meta.code,
         status: this.meta.status, players: this.players(), isHost: side === 'P',
         build: player.build, you: player.name, opponent: this.meta.players[other(side)]?.name || '상대',
-        state: this.game?.version === 2 ? this.stateFor(side) : null });
+        state: this.game?.version === 3 ? this.stateFor(side) : null });
     }
   }
 
@@ -248,17 +263,18 @@ export class GameRoom {
         return this.send(side, { type: 'error', message: '상대가 입장한 뒤 방장이 시작할 수 있습니다.' });
       this.start();
     } else if (message.type === 'action') {
-      if (this.meta.status !== 'playing' || this.game?.version !== 2 || this.game.over || !this.connected(other(side)))
+      if (this.meta.status !== 'playing' || this.game?.version !== 3 || this.game.over || !this.connected(other(side)) || this.game.turn !== side)
         return this.send(side, { type: 'error', message: '현재 행동할 수 없습니다.' });
       const id = message.id;
-      if (!this.meta.players[side].build.deck.includes(id) || this.game.picks[side])
+      if (!this.game.pending[side] && !this.meta.players[side].build.deck.includes(id))
         return this.send(side, { type: 'error', message: '사용할 수 없는 카드입니다.' });
-      this.game.picks[side] = id;
-      if (this.meta.players[other(side)].bot) {
+      const events = [resolveActorTurn(this.game, this.meta.players, side, id)];
+      if (!this.game.over && this.meta.players[other(side)].bot && this.game.turn === other(side)) {
         const deck = this.meta.players[other(side)].build.deck;
-        this.game.picks[other(side)] = deck[Math.floor(Math.random() * deck.length)];
+        const botId = this.game.pending[other(side)] ? null : deck[Math.floor(Math.random() * deck.length)];
+        events.push(resolveActorTurn(this.game, this.meta.players, other(side), botId));
       }
-      if (this.game.picks.P && this.game.picks.E) resolveRound(this.game, this.meta.players);
+      this.game.events = events;
       if (this.game.over) { this.meta.status = 'finished'; this.meta.expires = Date.now() + 5 * 60_000; }
     } else if (message.type === 'forfeit') {
       if (this.game && !this.game.over) {
