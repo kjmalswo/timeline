@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { W, C, PEAKS } from '../src/turn-rules.generated.js';
+import { W, C, PEAKS, BATTLE_BACKGROUNDS } from '../src/turn-rules.generated.js';
 import { GameRoom } from '../src/worker.js';
 
 test('빌드 HTML에 이전 타이틀 메뉴와 정상 한글이 포함된다', async () => {
@@ -49,6 +49,14 @@ test('공격·피격에 쓰는 양쪽 캐릭터 프레임이 배포된다', asyn
   }
 });
 
+test('전투 배경 5종이 모두 배포되고 무작위 선택 목록에 포함된다', async () => {
+  assert.equal(BATTLE_BACKGROUNDS.length, 5);
+  for (const path of BATTLE_BACKGROUNDS) {
+    const bytes = await readFile(new URL(`../dist/assets/battle/${path}`, import.meta.url));
+    assert.equal(bytes.subarray(1, 4).toString(), 'PNG', path);
+  }
+});
+
 test('PvP 서버가 양쪽 턴을 따로 실행하고 예고를 다음 자기 턴에 발동한다', async () => {
   const records = new Map(), sockets = [];
   const storage = {
@@ -68,6 +76,9 @@ test('PvP 서버가 양쪽 턴을 따로 실행하고 예고를 다음 자기 �
   sockets.push(socket('P', pToken), socket('E', eToken));
   await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'start' }));
   assert.equal(room.game.round, 1);
+  assert.deepEqual(room.game.positions, { P: 2, E: 4 });
+  assert.ok(BATTLE_BACKGROUNDS.includes(room.game.background));
+  assert.equal(room.stateFor('P').background, room.stateFor('E').background);
   assert.equal(room.game.turn, 'P');
   assert.equal(room.stateFor('P').tick, 1);
   await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'action', id: 'step' }));
@@ -91,5 +102,19 @@ test('PvP 서버가 양쪽 턴을 따로 실행하고 예고를 다음 자기 �
   assert.equal(room.game.actors.P.hp, before - 19, '하단 공격 대 상단 방어 상성 후 막기를 적용');
   assert.equal(room.stateFor('E').positions.p, 6 - room.game.positions.E);
   assert.equal(room.game.distance, room.game.positions.E - room.game.positions.P);
+  room.meta.players.P.build.deck[0] = 'back2';
+  room.game.positions = { P: 1, E: 2 };
+  room.game.distance = 1;
+  room.game.turn = 'P';
+  await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'action', id: 'back2' }));
+  assert.deepEqual(room.game.positions, { P: 1, E: 4 });
+  assert.equal(room.game.events[0].actorMoved, false);
+  assert.equal(room.game.events[0].foeMoved, true);
+  room.game.positions = { P: 1, E: 5 };
+  room.game.distance = 4;
+  room.game.turn = 'P';
+  await room.webSocketMessage(sockets[0], JSON.stringify({ type: 'action', id: 'back2' }));
+  assert.deepEqual(room.game.positions, { P: 1, E: 5 });
+  assert.equal(room.game.events[0].moved, false);
 });
 

@@ -1,4 +1,4 @@
-import { W, C, PEAKS, initialBoard, boardMove, stanceMultiplier } from './turn-rules.generated.js';
+import { W, C, PEAKS, BATTLE_BACKGROUNDS, boardMove, stanceMultiplier } from './turn-rules.generated.js';
 
 const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
@@ -40,9 +40,9 @@ function newGame(players) {
     const build = players[side].build, weapon = W[build.weapon], hp = weapon.hp + bonuses(build).hp;
     return { hp, max: hp, weapon: build.weapon, block: 0, keep: 0, stance: 'mid' };
   };
-  const distance = clamp(Math.round((W[players.P.build.weapon].start + W[players.E.build.weapon].start) / 2), 0, 4);
-  const board = initialBoard(distance);
-  return { version: 3, round: 1, turn: 'P', distance, positions: { P: board.p, E: board.e },
+  const board = { p: 2, e: 4 }, distance = 2;
+  const background = BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
+  return { version: 3, round: 1, turn: 'P', distance, background, positions: { P: board.p, E: board.e },
     actors: { P: make('P'), E: make('E') }, pending: { P: null, E: null },
     events: [], seq: 0, log: '방장 턴부터 시작합니다. 각자 자신의 턴에 한 장씩 행동합니다.', over: false, winner: null };
 }
@@ -67,7 +67,7 @@ function resolveActorTurn(game, players, side, chosen) {
     } else {
       actor.block = card.block || 0;
       actor.keep = card.keep || 0;
-      const before = game.distance;
+      const before = game.distance, oldActor = game.positions[side], oldFoe = game.positions[foe];
       game.distance = boardMove(game.positions, side, foe, card, target.keep || 0);
       if (target.keep && (card.move < 0 || card.set != null)) target.keep = 0;
       let damage = 0, hit = false;
@@ -80,9 +80,10 @@ function resolveActorTurn(game, players, side, chosen) {
         damage = Math.min(target.hp, Math.max(0, raw - target.block));
         target.hp -= damage;
       }
+      const actorMoved = oldActor !== game.positions[side], foeMoved = oldFoe !== game.positions[foe];
       event = { side, id, kind: 'resolve', damage, hit, landed: hit, attack: !!card.dmg,
-        moved: before !== game.distance, moveDirection: game.distance < before ? 'advance' : 'retreat', distance: game.distance, positions: { ...game.positions },
-        movement: card.move || card.set != null ? ` · 거리 ${before}→${game.distance}칸${before === game.distance ? ' (거리 한계 또는 방어)' : ''}` : '' };
+        moved: before !== game.distance, actorMoved, foeMoved, moveDirection: game.distance < before ? 'advance' : 'retreat', distance: game.distance, positions: { ...game.positions },
+        movement: card.move || card.set != null ? ` · 거리 ${before}→${game.distance}칸${foeMoved ? ' · 상대 밀림' : before === game.distance ? ' (거리 한계 또는 방어)' : ''}` : '' };
     }
   }
   game.events = [event];
@@ -230,7 +231,7 @@ export class GameRoom {
     const game = this.game, mine = game.actors[side], foe = game.actors[other(side)];
     const positions = side === 'P' ? { p: game.positions.P, e: game.positions.E } :
       { p: 6 - game.positions.E, e: 6 - game.positions.P };
-    return { round: game.round, tick: game.seq + 1, distance: game.distance,
+    return { round: game.round, tick: game.seq + 1, distance: game.distance, background: game.background,
       turn: game.turn === side ? 'p' : 'e', positions,
       p: { hp: mine.hp, max: mine.max, weapon: mine.weapon, stance: mine.stance },
       e: { hp: foe.hp, max: foe.max, weapon: foe.weapon, stance: foe.stance },

@@ -33,5 +33,13 @@ test('화면 끝에서도 전진과 후퇴는 남은 거리 범위만큼 적용�
   const edge = { p: 1, e: 2 };
   assert.equal(boardMove(edge, 'p', 'e', { move: 2 }), 3);
   assert.deepEqual(edge, { p: 1, e: 4 });
+  const otherEdge = { p: 4, e: 5 };
+  assert.equal(boardMove(otherEdge, 'e', 'p', { move: 2 }), 3);
+  assert.deepEqual(otherEdge, { p: 2, e: 5 });
+  const bothEdges = { p: 1, e: 5 };
+  assert.equal(boardMove(bothEdges, 'p', 'e', { move: 2 }), 4);
+  assert.deepEqual(bothEdges, { p: 1, e: 5 });
+  assert.equal(boardMove(bothEdges, 'e', 'p', { move: 3 }), 4);
+  assert.deepEqual(bothEdges, { p: 1, e: 5 });
 });
 
