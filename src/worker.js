@@ -357,6 +357,54 @@ function makeChallenge(type, players) {
         solution: 'C',
         clues: ['사고 직전 열기구에는 세 명이 타고 있었습니다.', '짐을 버린 뒤에도 열기구가 내려갔습니다.', '탑승자들은 성냥으로 제비뽑기를 했습니다.', '손에 남은 성냥은 짧았습니다.', '한 사람이 뛰어내려야 나머지 둘이 살 수 있었습니다.', '사막에 불이나 연료가 있다는 단서는 없습니다.', '그 사람은 스스로 열기구에서 떨어졌습니다.', '성냥의 길이가 결과를 정했습니다.'],
         explanation: '세 사람은 성냥 길이로 제비뽑기를 했고, 가장 짧은 성냥을 뽑은 사람이 희생했습니다.'
+      },
+      {
+        prompt: '한 사람이 맑은 날에는 15층에서 내려 5층을 걷고, 비 오는 날에는 20층까지 갑니다. 이유는?',
+        options: [
+          { value: 'A', label: '비 오는 날에는 엘리베이터가 20층까지 운행한다.' },
+          { value: 'B', label: '키가 작아 버튼에 닿지 않지만, 비 오는 날 우산으로 20층을 누른다.' },
+          { value: 'C', label: '20층 버튼은 방장이 눌러야 한다.' },
+          { value: 'D', label: '비 오는 날에는 계단이 잠긴다.' }
+        ],
+        solution: 'B',
+        clues: ['그 사람은 20층에 삽니다.', '엘리베이터는 모든 층에 정상적으로 섭니다.', '그 사람은 키가 작아 높은 버튼에 손이 닿지 않습니다.', '맑은 날에는 우산이 없습니다.', '비 오는 날에는 긴 우산을 가지고 있습니다.', '우산 끝으로 20층 버튼을 누를 수 있습니다.', '15층에서 20층까지 계단으로 갈 수 있습니다.'],
+        explanation: '우산 끝으로 높은 층 버튼을 누릅니다.'
+      },
+      {
+        prompt: '문이 잠긴 방에 물웅덩이와 유리 조각, 죽은 물고기가 있습니다. 무슨 일이 있었나요?',
+        options: [
+          { value: 'A', label: '열린 창문으로 들어온 바람이 어항을 떨어뜨렸다.' },
+          { value: 'B', label: '누군가 문을 열고 물고기를 가져갔다.' },
+          { value: 'C', label: '수도관이 터져 물고기가 빠져나왔다.' },
+          { value: 'D', label: '물고기가 어항 밖으로 뛰어내렸다.' }
+        ],
+        solution: 'A',
+        clues: ['방에는 사람의 출입 흔적이 없습니다.', '살아 있던 생물은 금붕어 한 마리뿐입니다.', '금붕어는 유리 어항에 있었습니다.', '어항은 열린 창문 옆 선반에 놓여 있었습니다.', '당시 커튼이 바람에 크게 흔들렸습니다.', '바닥의 유리 조각은 어항과 같은 재질입니다.', '문은 안쪽에서 잠겨 있었습니다.'],
+        explanation: '창문으로 들어온 바람에 어항이 떨어져 깨졌습니다.'
+      },
+      {
+        prompt: '사람이 들판에서 발견됐고, 곁에는 열리지 않은 가방이 있었습니다. 가방에는 무엇이 있었나요?',
+        options: [
+          { value: 'A', label: '열리지 않은 낙하산' },
+          { value: 'B', label: '구급상자' },
+          { value: 'C', label: '음식과 물' },
+          { value: 'D', label: '도구 상자' }
+        ],
+        solution: 'A',
+        clues: ['그 사람은 높은 곳에서 떨어졌습니다.', '가방은 낙하 속도를 줄이기 위한 장비였습니다.', '가방은 땅에 닿을 때까지 열리지 않았습니다.', '그 사람은 비행기에서 뛰어내렸습니다.', '비행에는 낙하산이 필요했습니다.', '가방은 정상적인 낙하산 가방이었습니다.'],
+        explanation: '낙하산이 펼쳐지지 않았습니다.'
+      },
+      {
+        prompt: '남자가 호텔 앞에서 자동차를 밀자 전 재산을 잃었습니다. 왜일까요?',
+        options: [
+          { value: 'A', label: '자동차가 고장 나 호텔에 부딪혔다.' },
+          { value: 'B', label: '보드게임에서 자동차 말을 움직여 호텔 칸에 도착했다.' },
+          { value: 'C', label: '호텔 주차 요금을 내지 못했다.' },
+          { value: 'D', label: '자동차가 도난당했다.' }
+        ],
+        solution: 'B',
+        clues: ['그 남자는 실제 도로에 있지 않았습니다.', '자동차는 손바닥 크기의 게임 말입니다.', '호텔은 게임판의 부동산 칸에 있습니다.', '남자는 상대의 호텔이 있는 칸에 도착했습니다.', '그 게임에서는 상대 호텔에 도착하면 통행료를 냅니다.', '남자는 가진 돈보다 통행료가 많았습니다.'],
+        explanation: '보드게임에서 호텔 칸에 걸려 파산했습니다.'
       }
     ];
     const puzzle = sample(cases);
@@ -535,9 +583,10 @@ function makeChallenge(type, players) {
 
   if (type === 'path') {
     const nodes = ['A', 'B', 'C', 'D'];
-    const paths = nodes.map(node => ({ id: 'S-' + node + '-G', edges: ['S-' + node, node + '-G'] }));
+    const link = (a, b) => a === 'S' || b === 'G' ? a + '-' + b : [a, b].sort().join('-');
+    const paths = nodes.map(node => ({ id: 'S-' + node + '-G', edges: [link('S', node), link(node, 'G')] }));
     for (const first of nodes) for (const second of nodes) if (first !== second) {
-      paths.push({ id: 'S-' + first + '-' + second + '-G', edges: ['S-' + first, first + '-' + second, second + '-G'] });
+      paths.push({ id: 'S-' + first + '-' + second + '-G', edges: [link('S', first), link(first, second), link(second, 'G')] });
     }
     const edgeKeys = new Set(['S-A','S-B','S-C','S-D','A-G','B-G','C-G','D-G']);
     for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) edgeKeys.add(nodes[i] + '-' + nodes[j]);
