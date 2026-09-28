@@ -1,14 +1,30 @@
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_PLAYERS = 8;
-const MAIN_TYPES = ['memory', 'perfect', 'hidden', 'deduction', 'team'];
-const FINAL_TYPES = ['memory', 'perfect', 'hidden'];
-const TYPE_LABELS = { memory: '메모리', perfect: '완전정보', hidden: '불완전정보', deduction: '추리', team: '임시 팀전' };
+const FULL_INFO_TYPES = ['sequence', 'symbolGrid', 'logicGrid', 'spatial'];
+const LIMITED_INFO_TYPES = ['indianPoker', 'turtleSoup', 'rankInference', 'cipher', 'probability', 'resource', 'auction', 'truthLie', 'memory', 'strategy', 'path', 'stateInference'];
+const TYPE_LABELS = {
+  sequence: '수열·규칙 추론',
+  symbolGrid: '기호 연립 퍼즐',
+  logicGrid: '논리 그리드',
+  spatial: '공간 회전 추론',
+  indianPoker: '인디안 포커 · 더블덱',
+  turtleSoup: '바다거북스프',
+  rankInference: '순위 추론',
+  cipher: '암호 추론',
+  probability: '확률전',
+  resource: '자원 최적화',
+  auction: '봉인 경매',
+  truthLie: '참·거짓 판별',
+  memory: '작업 기억력',
+  strategy: '턴제 전략',
+  path: '경로 최적화',
+  stateInference: '상태 추론'
+};
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
 });
 const fail = (message, status = 400) => json({ message }, status);
-const other = side => side === 'P' ? 'E' : 'P';
 
 function safeName(value) {
   return String(value || '').replace(/[<>\u0000-\u001f\u007f]/g, '').trim().slice(0, 18);
@@ -35,88 +51,421 @@ function shuffle(items) {
   }
   return out;
 }
-
 function makePlayers(meta) { return Object.values(meta.players); }
 function activePlayers(meta) { return makePlayers(meta).filter(player => !player.eliminated); }
-
+function chooseMainType(previous) {
+  const group = sample([FULL_INFO_TYPES, LIMITED_INFO_TYPES]);
+  const pool = group.filter(type => type !== previous);
+  return sample(pool.length ? pool : group);
+}
+function makeChoices(values, labels = {}) {
+  return shuffle([...new Set(values.map(value => String(value)))])
+    .map(value => ({ value, label: labels[value] == null ? value : String(labels[value]) }));
+}
+function optionValues(correct, distractors) {
+  const values = [String(correct), ...distractors.map(String).filter(value => value !== String(correct))];
+  return makeChoices([...new Set(values)]);
+}
+function rankName(rank) { return rank <= 10 ? String(rank) : ({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }[rank] || String(rank)); }
+function permutations(items) {
+  if (items.length <= 1) return [items];
+  const out = [];
+  for (let i = 0; i < items.length; i++) {
+    for (const tail of permutations([...items.slice(0, i), ...items.slice(i + 1)])) out.push([items[i], ...tail]);
+  }
+  return out;
+}
+function assignPrivate(players, fragments) {
+  const buckets = Object.fromEntries(players.map(player => [player.id, []]));
+  fragments.forEach((fragment, index) => buckets[players[index % players.length].id].push(fragment));
+  for (const player of players) {
+    buckets[player.id] = { heading: '비공개 정보', text: buckets[player.id].join('\n') || '추가 단서는 없습니다.' };
+  }
+  return buckets;
+}
+function rankOptions(players) {
+  return players.map(player => ({ value: player.id, label: player.name }));
+}
 function makeChallenge(type, players) {
   const privateById = {};
-  const tieBreak = Object.fromEntries(players.map(player => [player.id, Math.random()]));
-  const base = { type, typeLabel: TYPE_LABELS[type], privateById, tieBreak };
+  const tieBreak = Object.fromEntries(players.map(player => [player.id, randomInt(1_000_000)]));
+  const isFullInfo = FULL_INFO_TYPES.includes(type);
+  const base = {
+    type,
+    typeLabel: TYPE_LABELS[type],
+    categoryLabel: isFullInfo ? '완전정보' : '불완전정보',
+    difficultyLabel: randomInt(3) === 0 ? '최상' : '상',
+    privateById,
+    tieBreak
+  };
 
-  if (type === 'memory') {
-    const sequence = Array.from({ length: 6 }, () => String(randomInt(9) + 1)).join('');
-    return { ...base, title: '기억의 배열', prompt: '잠시 공개되는 숫자 6개의 순서를 기억하세요. 공개 시간이 끝나면 같은 순서로 입력해야 합니다.',
-      answerHint: '기억한 숫자 6자리를 입력하세요', placeholder: '예: 481729', sequence };
+  if (type === 'sequence') {
+    const start = randomInt(7) + 2;
+    const first = randomInt(5) + 3;
+    const second = randomInt(4) + 2;
+    const terms = Array.from({ length: 5 }, (_, index) => start + first * index + second * index * (index - 1) / 2);
+    const solution = start + first * 5 + second * 5 * 4 / 2;
+    return { ...base, inputKind: 'number', title: '차분의 함정',
+      prompt: '숫자 배열의 다음 항을 구하세요. 첫 번째 차분이 일정한 간격으로 증가합니다.\n' + terms.join(' · ') + ' · ?',
+      answerHint: '다음 항을 입력하세요', placeholder: '정수', maxLength: 4, solution,
+      revealText: '두 번째 차분이 일정한 수열입니다. 다음 항은 ' + solution + '입니다.' };
   }
 
-  if (type === 'perfect') {
-    const a = randomInt(8) + 2, b = randomInt(8) + 2, c = randomInt(9) + 1;
-    return { ...base, title: '공개된 수식', prompt: `수식의 값을 계산하세요. 모든 정보는 공개되어 있습니다: (${a} × ${b}) + ${c}`, answerHint: '계산 결과를 입력하세요',
-      placeholder: '정수 답안', solution: a * b + c };
+  if (type === 'symbolGrid') {
+    let values;
+    do {
+      values = [randomInt(8) + 2, randomInt(8) + 2, randomInt(8) + 2];
+    } while (new Set(values).size < 3);
+    const [triangle, square, circle] = values;
+    const equations = [triangle + square, square + circle, triangle + circle];
+    const solution = triangle * square + circle;
+    return { ...base, inputKind: 'number', title: '기호 연립 추론',
+      prompt: '세 기호는 서로 다른 한 자리 수입니다. 세 식을 연립해 값을 구하세요.\n' +
+        '△ + □ = ' + equations[0] + '\n□ + ○ = ' + equations[1] + '\n△ + ○ = ' + equations[2] +
+        '\n마지막으로 △ × □ + ○ 를 계산하세요.',
+      answerHint: '최종 계산값', placeholder: '정수', maxLength: 4, solution,
+      revealText: '△=' + triangle + ', □=' + square + ', ○=' + circle + ' · 정답 ' + solution };
   }
 
-  if (type === 'hidden') {
-    const secret = randomInt(16);
-    for (const [index, player] of players.entries()) {
-      const bit = (secret >> (index % 4)) & 1;
-      privateById[player.id] = { heading: '비공개 단서', text: `금고 숫자의 4비트 자리 ${index % 4 + 1} 값은 ${bit}입니다. 다른 참가자의 단서와 합치면 숫자를 좁힐 수 있습니다.` };
+  if (type === 'logicGrid') {
+    const names = ['가람', '나래', '다온', '라온'];
+    const orders = permutations(names);
+    const target = sample(orders);
+    const facts = [];
+    for (const name of names) {
+      for (let rank = 1; rank <= 4; rank++) {
+        facts.push({ test: order => order.indexOf(name) + 1 === rank, text: name + '은(는) ' + rank + '위다.' });
+      }
+      facts.push({ test: order => order.indexOf(name) + 1 !== 1, text: name + '은(는) 1위가 아니다.' });
     }
-    return { ...base, title: '잠긴 금고', prompt: '금고 숫자는 0부터 15 사이입니다. 각자 받은 비트 단서를 공유해 정답을 찾아내세요.', answerHint: '금고 숫자 (0~15)', placeholder: '0~15', solution: secret };
-  }
-
-  if (type === 'deduction') {
-    const culprit = sample(players);
-    for (const player of players) {
-      if (player.id === culprit.id) {
-        privateById[player.id] = { heading: '비밀 역할 · 용의자', text: '당신은 용의자입니다. 정체를 숨기며 다른 참가자에게 의심이 향하게 하세요.' };
-      } else {
-        const decoys = players.filter(candidate => candidate.id !== culprit.id && candidate.id !== player.id);
-        const decoy = decoys.length ? sample(decoys) : null;
-        const text = decoy
-          ? `사건 진술: 용의자는 ${culprit.name} 또는 ${decoy.name}입니다. 다른 참가자와 단서를 비교하세요.`
-          : '사건 기록은 서로 모순됩니다. 다른 참가자와 정보를 비교해 용의자를 지목하세요.';
-        privateById[player.id] = { heading: '비공개 진술', text };
+    for (let i = 0; i < names.length; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        const a = names[i], b = names[j];
+        facts.push({ test: order => order.indexOf(a) < order.indexOf(b), text: a + '은(는) ' + b + '보다 앞선다.' });
+        facts.push({ test: order => Math.abs(order.indexOf(a) - order.indexOf(b)) === 1, text: a + '과(와) ' + b + '은(는) 이웃한 순위다.' });
       }
     }
-    return { ...base, title: '마지막 진술', prompt: '각자 비공개 정보를 확인하고, 사건의 용의자 한 명을 지목하세요.', answerHint: '용의자로 지목할 참가자를 고르세요',
-      culpritId: culprit.id };
+    let remaining = orders;
+    const clues = [];
+    while (remaining.length > 1 && clues.length < 5) {
+      const candidates = shuffle(facts.filter(fact => fact.test(target)).map(fact => ({
+        fact, matches: remaining.filter(order => fact.test(order))
+      })).filter(item => item.matches.length < remaining.length));
+      if (!candidates.length) break;
+      const bestCount = Math.min(...candidates.map(item => item.matches.length));
+      const best = sample(candidates.filter(item => item.matches.length === bestCount));
+      clues.push(best.fact.text);
+      remaining = best.matches;
+    }
+    const answer = target[1];
+    return { ...base, inputKind: 'choice', title: '네 명의 순위',
+      prompt: '네 참가자의 순위는 1~4위까지 모두 다릅니다. 단서를 모두 만족할 때 2위는 누구인가요?\n' +
+        clues.map((clue, i) => (i + 1) + '. ' + clue).join('\n'),
+      answerHint: '2위 참가자', options: makeChoices(names), solution: answer,
+      revealText: '전체 순서는 ' + target.join(' → ') + '입니다. 2위는 ' + answer + '입니다.' };
   }
 
-  const teams = shuffle(players.map(player => player.id));
-  const split = Math.ceil(teams.length / 2);
-  const teamById = Object.fromEntries(teams.map((id, index) => [id, index < split ? 'A' : 'B']));
-  const targetByTeam = { A: randomInt(6) + 1, B: randomInt(6) + 1 };
-  const teamMembers = { A: players.filter(player => teamById[player.id] === 'A'), B: players.filter(player => teamById[player.id] === 'B') };
-  for (const team of ['A', 'B']) {
-    for (const [index, player] of teamMembers[team].entries()) {
-      const target = targetByTeam[team];
-      const clues = teamMembers[team].length === 1
-        ? [`목표 숫자는 ${target % 2 ? '홀수' : '짝수'}입니다.`, `목표 숫자를 3으로 나눈 나머지는 ${target % 3}입니다.`]
-        : index % 2 === 0
-          ? [`팀 목표 숫자는 ${target % 2 ? '홀수' : '짝수'}입니다.`]
-          : [`팀 목표 숫자를 3으로 나눈 나머지는 ${target % 3}입니다.`];
-      privateById[player.id] = { heading: `임시 동맹 · ${team}팀`, text: clues.join(' ') };
+  if (type === 'spatial') {
+    const size = 4;
+    const startRow = randomInt(size), startCol = randomInt(size);
+    const solution = String.fromCharCode(65 + startCol) + String(startRow + 1);
+    const distractors = [];
+    while (distractors.length < 3) {
+      const value = String.fromCharCode(65 + randomInt(size)) + String(randomInt(size) + 1);
+      if (value !== solution && !distractors.includes(value)) distractors.push(value);
     }
+    const start = String.fromCharCode(65 + startRow) + String(startCol + 1);
+    return { ...base, inputKind: 'choice', title: '좌표 변환',
+      prompt: '4×4 격자에서 점 ' + start + '를 시계 방향으로 90도 회전한 뒤, 좌우로 반사합니다. 도착 좌표는?',
+      answerHint: '변환 결과를 선택하세요', options: optionValues(solution, distractors), solution,
+      revealText: '시계 회전 후 좌우 반사를 적용한 좌표는 ' + solution + '입니다.' };
   }
-  return { ...base, title: '임시 동맹', prompt: '같은 팀끼리 단서를 공유하세요. 팀원들이 같은 숫자를 제출해 팀 목표를 맞히면 팀 전체가 승점을 얻습니다.',
-    answerHint: '팀 목표 숫자 (1~6)', placeholder: '1~6', teamById, targetByTeam };
+
+  if (type === 'indianPoker') {
+    const deck = [];
+    for (let copy = 0; copy < 2; copy++) for (let rank = 2; rank <= 14; rank++) for (let suit = 0; suit < 4; suit++) deck.push(rank);
+    const dealt = shuffle(deck).slice(0, players.length);
+    const hand = Object.fromEntries(players.map((player, index) => [player.id, dealt[index]]));
+    for (const player of players) {
+      const visible = players.filter(other => other.id !== player.id)
+        .map(other => other.name + ': ' + rankName(hand[other.id]));
+      privateById[player.id] = { heading: '내 카드는 보이지 않습니다', text: visible.length
+        ? '내 앞 카드만 확인할 수 있습니다. 상대의 공개 카드: ' + visible.join(' · ')
+        : '상대 카드가 없습니다.' };
+    }
+    return { ...base, inputKind: 'indianPoker', title: '더블덱 인디안 포커',
+      prompt: '두 벌의 52장 덱에서 각자 한 장을 받았습니다. 내 카드는 보이지 않고 상대 카드만 보입니다. 내 숫자를 추론해 베팅하세요.',
+      answerHint: '내 카드 예상과 베팅을 함께 제출하세요', hand,
+      revealText: '개별 카드와 베팅 결과가 공개되었습니다.' };
+  }
+
+  if (type === 'turtleSoup') {
+    const cases = [
+      {
+        prompt: '한 남자가 술집에서 물을 달라고 했습니다. 바텐더가 갑자기 큰 소리를 내자 남자는 “고맙습니다”라고 하고 나갔습니다. 무슨 일이 있었을까요?',
+        options: [
+          { value: 'A', label: '남자는 목이 말라 있었고, 바텐더는 물 대신 술을 건넸다.' },
+          { value: 'B', label: '남자는 딸꾹질 중이었고, 바텐더가 놀라게 해 멈췄다.' },
+          { value: 'C', label: '남자는 바텐더의 암호를 알아냈다.' },
+          { value: 'D', label: '바텐더가 실수로 잔을 떨어뜨렸다.' }
+        ],
+        solution: 'B',
+        clues: ['남자는 물을 마시기 전부터 딸꾹질을 하고 있었습니다.', '바텐더는 남자의 딸꾹질을 알아차렸습니다.', '큰 소리에 남자의 딸꾹질이 멈췄습니다.', '남자는 실제로 물을 받지 않았습니다.', '바텐더는 남자를 해치려는 의도가 없었습니다.', '남자는 목마름보다 갑작스러운 증상 때문에 물을 찾았습니다.', '큰 소리는 의도적으로 냈습니다.', '남자는 증상이 사라진 뒤 감사 인사를 했습니다.'],
+        explanation: '남자는 딸꾹질을 멈추려고 물을 부탁했고, 바텐더는 놀라게 해 딸꾹질을 멈춰 주었습니다.'
+      },
+      {
+        prompt: '밤에 등대의 불이 꺼졌습니다. 아침에 등대지기는 항구에 들어오지 못한 배의 소식을 듣고 자신이 원인임을 알았습니다. 무슨 일이 있었을까요?',
+        options: [
+          { value: 'A', label: '등대지기가 안내등을 꺼 배가 암초를 피하지 못했다.' },
+          { value: 'B', label: '배가 목적지를 바꿔 다른 항구로 갔다.' },
+          { value: 'C', label: '선장이 등대 불빛을 보고 항로를 바로잡았다.' },
+          { value: 'D', label: '아침에 정전이 시작되어 밤의 항해와 무관했다.' }
+        ],
+        solution: 'A',
+        clues: ['이 사람의 직업은 등대지기입니다.', '배는 밤에 해안 가까이 항해하고 있었습니다.', '등대 불빛은 배가 암초를 피하는 항로 표지였습니다.', '등대의 불은 밤중에 꺼졌습니다.', '배는 그 밤 항구에 도착하지 못했습니다.', '밤의 불빛 상태가 항해에 직접 영향을 줬습니다.', '날씨는 맑았고 시야가 나쁘지 않았습니다.', '등대지기는 불을 끈 행동을 기억하고 있습니다.'],
+        explanation: '등대지기가 불을 꺼 항로 표지가 사라졌고, 배가 암초를 피하지 못했습니다.'
+      },
+      {
+        prompt: '열기구에서 세 사람이 사막 위를 날고 있습니다. 기구가 계속 내려가자 짐을 버렸지만 충분하지 않았습니다. 곧 한 사람은 사막에서 발견됐고, 손에는 짧은 성냥 하나가 있었습니다. 왜 그 사람이 떨어졌을까요?',
+        options: [
+          { value: 'A', label: '그는 지도를 찾으려고 혼자 뛰어내렸다.' },
+          { value: 'B', label: '성냥으로 불을 붙이려다 균형을 잃었다.' },
+          { value: 'C', label: '세 사람이 짧은 성냥을 뽑았고, 가장 짧은 것을 뽑은 사람이 뛰어내렸다.' },
+          { value: 'D', label: '열기구는 사막에 착륙했고 그는 걸어서 떠났다.' }
+        ],
+        solution: 'C',
+        clues: ['사고 직전 열기구에는 세 명이 타고 있었습니다.', '짐을 버린 뒤에도 열기구가 내려갔습니다.', '탑승자들은 성냥으로 제비뽑기를 했습니다.', '손에 남은 성냥은 짧았습니다.', '한 사람이 뛰어내려야 나머지 둘이 살 수 있었습니다.', '사막에 불이나 연료가 있다는 단서는 없습니다.', '그 사람은 스스로 열기구에서 떨어졌습니다.', '성냥의 길이가 결과를 정했습니다.'],
+        explanation: '세 사람은 성냥 길이로 제비뽑기를 했고, 가장 짧은 성냥을 뽑은 사람이 희생했습니다.'
+      }
+    ];
+    const puzzle = sample(cases);
+    const assigned = assignPrivate(players, puzzle.clues);
+    Object.assign(privateById, Object.fromEntries(Object.entries(assigned).map(([id, clue]) => [id, {
+      heading: '사건 기록 조각', text: clue.text
+    }])));
+    return { ...base, inputKind: 'choice', title: '기묘한 사건',
+      prompt: puzzle.prompt, answerHint: '사건의 설명을 선택하세요', options: puzzle.options,
+      solution: puzzle.solution, revealText: puzzle.explanation };
+  }
+
+  if (type === 'rankInference') {
+    const ranks = shuffle(Array.from({ length: players.length }, (_, i) => i + 1));
+    const rankById = Object.fromEntries(players.map((player, index) => [player.id, ranks[index]]));
+    const targetRank = randomInt(players.length) + 1;
+    for (const player of players) privateById[player.id] = {
+      heading: '비공개 순위 카드',
+      text: '내 카드에는 ' + rankById[player.id] + '위라고 적혀 있습니다. 다른 사람의 순위는 서로 공유해도 됩니다.'
+    };
+    const answer = players.find(player => rankById[player.id] === targetRank);
+    return { ...base, inputKind: 'choice', title: '숨겨진 순위',
+      prompt: targetRank + '위에 해당하는 참가자는 누구인가요? 각자 받은 비공개 순위 카드를 비교하세요.',
+      answerHint: '해당 순위의 참가자', options: rankOptions(players), rankById, targetRank,
+      solution: answer.id,
+      revealText: targetRank + '위는 ' + answer.name + '입니다.' };
+  }
+
+  if (type === 'cipher') {
+    const words = ['MIND', 'LOGIC', 'BRAIN', 'TRUST', 'CODE', 'WITS'];
+    const solution = sample(words);
+    const shifts = Array.from({ length: solution.length }, () => randomInt(5) + 1);
+    const cipher = [...solution].map((letter, index) => String.fromCharCode(65 + (letter.charCodeAt(0) - 65 + shifts[index]) % 26)).join('');
+    const fragments = shifts.map((shift, index) => '암호 ' + (index + 1) + '번째 문자는 복호화할 때 ' + shift + '칸 뒤로 이동합니다.');
+    Object.assign(privateById, assignPrivate(players, fragments));
+    return { ...base, inputKind: 'choice', title: '분할 키 암호',
+      prompt: '암호문: ' + cipher + '\n각자 가진 위치별 키 조각을 모아 원문을 복호화하세요.',
+      answerHint: '복호화된 단어', options: makeChoices(words), solution,
+      revealText: '복호화 결과는 ' + solution + '입니다.' };
+  }
+
+  if (type === 'probability') {
+    const redMajority = sample(['A', 'B']);
+    const jarCounts = redMajority === 'A'
+      ? { A: { red: 8, blue: 2 }, B: { red: 2, blue: 8 } }
+      : { A: { red: 2, blue: 8 }, B: { red: 8, blue: 2 } };
+    const draws = shuffle(players.map((player, index) => ({ id: player.id, jar: index % 2 ? 'B' : 'A' })));
+    for (const draw of draws) {
+      const counts = jarCounts[draw.jar];
+      const color = randomInt(10) < counts.red ? '빨강' : '파랑';
+      privateById[draw.id] = { heading: '비공개 표본', text: draw.jar + ' 항아리에서 뽑은 구슬은 ' + color + '입니다.' };
+    }
+    return { ...base, inputKind: 'choice', title: '항아리의 확률',
+      prompt: 'A와 B 중 하나에는 빨강 8개·파랑 2개, 다른 하나에는 빨강 2개·파랑 8개가 있습니다. 각 표본은 복원 추출입니다. 단서를 합쳐 빨강 비율이 더 높은 항아리를 찾으세요.',
+      answerHint: '빨강 비율이 더 높은 항아리', options: makeChoices(['A', 'B']), solution: redMajority,
+      revealText: '빨강 구슬 비율이 더 높은 항아리는 ' + redMajority + '입니다.' };
+  }
+
+  if (type === 'resource') {
+    const shares = Object.fromEntries(players.map(player => [player.id, randomInt(4) + 1]));
+    for (const player of players) privateById[player.id] = { heading: '비공개 자원 카드', text: '팀 창고에 보탤 수 있는 에너지: ' + shares[player.id] + '개' };
+    const total = Object.values(shares).reduce((sum, value) => sum + value, 0);
+    const projects = [{ id: 'A', cost: 1, reward: randomInt(8) + 5 }];
+    for (const id of ['B', 'C', 'D']) projects.push({ id, cost: randomInt(players.length * 4 + 1) + 1, reward: randomInt(12) + 3 });
+    const labels = Object.fromEntries(projects.map(project => [project.id, project.id + '안 · 비용 ' + project.cost + ' · 보상 ' + project.reward]));
+    const best = projects.filter(project => project.cost <= total)
+      .sort((a, b) => b.reward - a.reward || a.cost - b.cost || a.id.localeCompare(b.id))[0];
+    return { ...base, inputKind: 'choice', title: '한정 자원 배분',
+      prompt: '각자 가진 에너지 카드를 합쳐 팀 총량을 계산하세요. 프로젝트는 하나만 선택할 수 있습니다. 총량 안에서 보상이 가장 큰 계획을 고르세요.',
+      answerHint: '최적 프로젝트', options: projects.map(project => ({ value: project.id, label: labels[project.id] })),
+      solution: best.id, totalResource: total,
+      revealText: '팀 자원 ' + total + '개로 가능한 최고 보상은 프로젝트 ' + best.id + ' (' + best.reward + '점)입니다.' };
+  }
+
+  if (type === 'auction') {
+    const values = Object.fromEntries(players.map(player => [player.id, randomInt(9) + 3]));
+    const budgets = Object.fromEntries(players.map(player => [player.id, randomInt(7) + 4]));
+    for (const player of players) privateById[player.id] = { heading: '비공개 경매 정보',
+      text: '경매 물건의 내 가치는 ' + values[player.id] + '점, 내 입찰 한도는 ' + budgets[player.id] + '점입니다.' };
+    return { ...base, inputKind: 'bid', title: '봉인 입찰',
+      prompt: '모두 같은 물건에 한 번씩 비공개 입찰합니다. 가장 높은 입찰자가 낙찰되며 동점은 추첨으로 정합니다. 낙찰 점수는 내 가치에서 입찰액을 뺀 값입니다.',
+      answerHint: '입찰액 (한도 안에서 선택)', values, budgets,
+      revealText: '최고 입찰자가 낙찰되었습니다. 가치보다 높게 입찰하면 점수를 잃을 수 있습니다.' };
+  }
+
+  if (type === 'truthLie') {
+    const witnesses = ['가', '나', '다', '라'];
+    const secret = randomInt(5) + 4;
+    const liar = sample(witnesses);
+    const statements = {};
+    for (const witness of witnesses) {
+      if (witness === liar) statements[witness] = secret <= 6
+        ? [secret + 3, secret + 4]
+        : [secret - 4, secret - 3];
+      else statements[witness] = [secret - randomInt(3), secret + randomInt(3)];
+    }
+    const fragments = witnesses.map(witness => witness + '의 진술: 암호는 ' + statements[witness][0] + '부터 ' + statements[witness][1] + ' 사이입니다.');
+    Object.assign(privateById, assignPrivate(players, fragments));
+    return { ...base, inputKind: 'choice', title: '거짓 진술 한 개',
+      prompt: '암호는 1~12입니다. 네 진술 중 하나만 거짓입니다. 나머지 세 구간에는 암호가 모두 포함되며, 거짓 구간은 그 공통 범위와 겹치지 않습니다. 누가 거짓말을 했나요?',
+      answerHint: '거짓 진술자', options: makeChoices(witnesses), solution: liar, statements, secret,
+      revealText: '거짓 진술자는 ' + liar + '입니다. 암호는 ' + secret + '입니다.' };
+  }
+
+  if (type === 'memory') {
+    const memoryById = {};
+    for (const player of players) {
+      const sequence = Array.from({ length: 12 }, () => String(randomInt(10))).join('');
+      memoryById[player.id] = sequence;
+      privateById[player.id] = { heading: '개인 기억 과제', text: '각 참가자는 서로 다른 배열을 받습니다. 본인에게 보이는 숫자만 기억하세요.' };
+    }
+    return { ...base, inputKind: 'memory', title: '작업 기억력 · 12자리',
+      prompt: '잠시 표시되는 개인별 숫자 배열 12자리의 순서를 기억한 뒤, 표시가 사라지면 그대로 입력하세요.',
+      answerHint: '기억한 12자리를 입력하세요', placeholder: '12자리 숫자', maxLength: 12,
+      memoryById, revealText: '개인별 배열의 위치 일치 개수로 점수를 계산합니다.' };
+  }
+
+  if (type === 'strategy') {
+    const objectiveTypes = [
+      { key: 'sum', text: '가져간 타일 숫자의 합을 최대화하세요.' },
+      { key: 'even', text: '짝수 타일마다 3점을 얻습니다.' },
+      { key: 'odd', text: '홀수 타일마다 3점을 얻습니다.' },
+      { key: 'prime', text: '소수 타일마다 4점을 얻습니다.' },
+      { key: 'triple', text: '3의 배수 타일마다 4점을 얻습니다.' },
+      { key: 'low', text: '6 이하 타일마다 4점을 얻습니다.' }
+    ];
+    const cards = Array.from({ length: players.length * 2 }, (_, index) => ({
+      id: 'T' + String(index + 1).padStart(2, '0'), value: randomInt(13) + 1
+    }));
+    const objectives = {};
+    for (const player of players) objectives[player.id] = sample(objectiveTypes);
+    return { ...base, inputKind: 'strategy', title: '비공개 목표 드래프트',
+      prompt: '각자 비공개 목표가 있습니다. 두 차례씩 돌아가며 타일 하나를 가져가세요. 남은 타일과 선택 기록은 모두에게 공개됩니다.',
+      answerHint: '내 차례입니다 · 가져갈 타일을 선택하세요',
+      privateById: Object.fromEntries(players.map(player => [player.id, { heading: '비공개 작전 목표', text: objectives[player.id].text }])),
+      cards, objectives, revealText: '타일은 한 번에 하나씩 순서대로 가져갔습니다.' };
+  }
+
+  if (type === 'path') {
+    const edges = {};
+    const nodes = ['A', 'B', 'C'];
+    const edgeKeys = [];
+    for (const node of nodes) edgeKeys.push('S-' + node, node + '-G');
+    edgeKeys.push('A-B', 'A-C', 'B-C');
+    for (const key of edgeKeys) edges[key] = randomInt(9) + 1;
+    const fragments = edgeKeys.map(key => '통로 ' + key + '의 길이: ' + edges[key]);
+    Object.assign(privateById, assignPrivate(players, fragments));
+    const paths = [
+      { id: 'S-A-G', edges: ['S-A', 'A-G'] },
+      { id: 'S-B-G', edges: ['S-B', 'B-G'] },
+      { id: 'S-C-G', edges: ['S-C', 'C-G'] },
+      { id: 'S-A-B-G', edges: ['S-A', 'A-B', 'B-G'] },
+      { id: 'S-B-C-G', edges: ['S-B', 'B-C', 'C-G'] },
+      { id: 'S-A-C-G', edges: ['S-A', 'A-C', 'C-G'] }
+    ];
+    const totals = Object.fromEntries(paths.map(path => [path.id, path.edges.reduce((sum, key) => sum + edges[key], 0)]));
+    const solution = paths.slice().sort((a, b) => totals[a.id] - totals[b.id] || a.id.localeCompare(b.id))[0].id;
+    return { ...base, inputKind: 'choice', title: '분할 지도',
+      prompt: '출발 S에서 도착 G까지 갑니다. 가능한 길은 S-A/B/C, 각 노드에서 G, 그리고 A-B·A-C·B-C 통로입니다. 각 통로 길이 단서를 합쳐 가장 짧은 경로를 고르세요.',
+      answerHint: '최단 경로', options: makeChoices(paths.map(path => path.id)), solution, totals,
+      revealText: '최단 경로는 ' + solution + '이며 길이는 ' + totals[solution] + '입니다.' };
+  }
+
+  if (type === 'stateInference') {
+    let state = Array.from({ length: 5 }, () => randomInt(2));
+    const initial = [...state];
+    const operations = [];
+    for (let step = 0; step < 3; step++) {
+      const kind = randomInt(3);
+      if (kind === 0) {
+        const index = randomInt(5);
+        operations.push({ kind: 'flip', index, text: (index + 1) + '번 비트를 뒤집는다.' });
+        state[index] = 1 - state[index];
+      } else if (kind === 1) {
+        const a = randomInt(5);
+        let b = randomInt(5);
+        while (a === b) b = randomInt(5);
+        operations.push({ kind: 'swap', a, b, text: (a + 1) + '번과 ' + (b + 1) + '번 비트를 바꾼다.' });
+        [state[a], state[b]] = [state[b], state[a]];
+      } else {
+        operations.push({ kind: 'rotate', text: '오른쪽 끝 비트를 맨 앞으로 한 칸 순환 이동한다.' });
+        state = [state[4], ...state.slice(0, 4)];
+      }
+    }
+    const fragments = initial.map((bit, index) => (index + 1) + '번 시작 비트는 ' + bit + '입니다.');
+    Object.assign(privateById, assignPrivate(players, fragments));
+    const solution = state.join('');
+    return { ...base, inputKind: 'text', title: '다섯 비트 상태 전이',
+      prompt: '비공개 단서로 시작 상태를 복원한 뒤, 공개 연산을 순서대로 적용하세요.\n' +
+        operations.map((operation, index) => (index + 1) + '. ' + operation.text).join('\n'),
+      answerHint: '최종 상태 5비트', placeholder: '예: 10110', maxLength: 5,
+      operations, solution, revealText: '최종 상태는 ' + solution + '입니다.' };
+  }
+
+  return { ...base, inputKind: 'number', title: '문제 생성 오류', prompt: '문제를 다시 시작해 주세요.', solution: 0 };
 }
 
 function validateAnswer(game, playerId, value, meta) {
-  const answer = String(value ?? '').trim();
-  if (!answer || answer.length > 40) return null;
-  if (game.challenge.type === 'deduction') {
-    return activePlayers(meta).some(player => player.id === answer) ? answer : null;
+  const challenge = game.challenge;
+  if (challenge.inputKind === 'strategy') return null;
+  if (challenge.inputKind === 'choice') {
+    const answer = String(value ?? '');
+    return challenge.options.some(option => option.value === answer) ? answer : null;
   }
-  if (game.challenge.type === 'memory') return /^\d{6}$/.test(answer) ? answer : null;
-  if (!/^\d{1,2}$/.test(answer)) return null;
+  if (challenge.inputKind === 'indianPoker') {
+    if (!value || typeof value !== 'object') return null;
+    const guess = Number(value.guess), wager = Number(value.wager);
+    if (!Number.isInteger(guess) || guess < 2 || guess > 14 || !Number.isInteger(wager) || wager < 0 || wager > 5) return null;
+    return { guess, wager };
+  }
+  if (challenge.inputKind === 'bid') {
+    if (!value || typeof value !== 'object') return null;
+    const bid = Number(value.bid), maxBid = challenge.budgets[playerId];
+    if (!Number.isInteger(bid) || bid < 0 || bid > maxBid) return null;
+    return { bid };
+  }
+  const answer = String(value ?? '').trim().toUpperCase();
+  if (!answer || answer.length > 40) return null;
+  if (challenge.inputKind === 'memory') return /^\d{12}$/.test(answer) ? answer : null;
+  if (challenge.type === 'stateInference') return /^[01]{5}$/.test(answer) ? answer : null;
+  if (!/^-?\d{1,4}$/.test(answer)) return null;
   const number = Number(answer);
-  const ranges = { perfect: [0, 99], hidden: [0, 15], team: [1, 6] };
-  const [min, max] = ranges[game.challenge.type] || [0, 99];
-  return number >= min && number <= max ? number : null;
+  return Number.isSafeInteger(number) ? number : null;
 }
 
+function isPrime(value) {
+  if (value < 2) return false;
+  for (let divisor = 2; divisor * divisor <= value; divisor++) if (value % divisor === 0) return false;
+  return true;
+}
 function scoreChallenge(game, players) {
   const challenge = game.challenge;
   const points = Object.fromEntries(players.map(player => [player.id, 0]));
@@ -126,43 +475,65 @@ function scoreChallenge(game, players) {
     for (const player of players) {
       const answer = submitted[player.id];
       if (answer == null) continue;
-      points[player.id] = [...String(answer)].reduce((count, digit, index) => count + Number(digit === challenge.sequence[index]), 0);
+      const target = challenge.memoryById[player.id];
+      points[player.id] = [...String(answer)].reduce((count, digit, index) => count + Number(digit === target[index]), 0);
     }
-  } else if (challenge.type === 'perfect') {
-    const answers = players.filter(player => submitted[player.id] != null);
-    const exact = answers.filter(player => submitted[player.id] === challenge.solution);
-    if (exact.length) exact.forEach(player => { points[player.id] = 3; });
-    else if (answers.length) {
-      const best = Math.min(...answers.map(player => Math.abs(submitted[player.id] - challenge.solution)));
-      answers.filter(player => Math.abs(submitted[player.id] - challenge.solution) === best).forEach(player => { points[player.id] = 1; });
+    return points;
+  }
+  if (challenge.type === 'indianPoker') {
+    const highest = Math.max(...Object.values(challenge.hand));
+    for (const player of players) {
+      const answer = submitted[player.id];
+      if (!answer) continue;
+      points[player.id] = answer.guess === challenge.hand[player.id] ? 4 + answer.wager : -answer.wager;
+      if (challenge.hand[player.id] === highest) points[player.id] += 1;
     }
-  } else if (challenge.type === 'hidden') {
-    for (const player of players) if (submitted[player.id] === challenge.solution) points[player.id] = 3;
-  } else if (challenge.type === 'deduction') {
-    for (const player of players) if (submitted[player.id] === challenge.culpritId) points[player.id] = 3;
-    const culprit = players.find(player => player.id === challenge.culpritId);
-    const votes = players.map(player => submitted[player.id]).filter(Boolean);
-    if (culprit && submitted[culprit.id] != null && !votes.includes(culprit.id)) points[culprit.id] += 1;
-  } else {
-    const teams = ['A', 'B'];
-    for (const team of teams) {
-      const members = players.filter(player => challenge.teamById[player.id] === team);
-      if (!members.length) continue;
-      const counts = new Map();
-      for (const player of members) {
-        const answer = submitted[player.id];
-        if (answer != null) counts.set(answer, (counts.get(answer) || 0) + 1);
-        if (answer === challenge.targetByTeam[team]) points[player.id] += 1;
-      }
-      const maximum = Math.max(0, ...counts.values());
-      const leaders = [...counts.entries()].filter(([, count]) => count === maximum);
-      if (leaders.length === 1 && leaders[0][0] === challenge.targetByTeam[team] && maximum > members.length / 2) {
-        members.forEach(player => { points[player.id] += 2; });
-      }
+    return points;
+  }
+  if (challenge.type === 'auction') {
+    const bids = players.filter(player => submitted[player.id] != null)
+      .map(player => ({ player, bid: submitted[player.id].bid }));
+    if (!bids.length) return points;
+    const highest = Math.max(...bids.map(item => item.bid));
+    const winner = bids.filter(item => item.bid === highest)
+      .sort((a, b) => challenge.tieBreak[a.player.id] - challenge.tieBreak[b.player.id])[0];
+    points[winner.player.id] = challenge.values[winner.player.id] - winner.bid;
+    return points;
+  }
+  if (challenge.type === 'strategy') {
+    const cardById = Object.fromEntries(challenge.cards.map(card => [card.id, card]));
+    for (const player of players) {
+      const picked = game.moves.filter(move => move.playerId === player.id).map(move => cardById[move.cardId]?.value).filter(Number.isInteger);
+      const objective = challenge.objectives[player.id];
+      const sum = picked.reduce((total, value) => total + value, 0);
+      if (objective.key === 'sum') points[player.id] = Math.floor(sum / 3);
+      else if (objective.key === 'even') points[player.id] = picked.filter(value => value % 2 === 0).length * 3;
+      else if (objective.key === 'odd') points[player.id] = picked.filter(value => value % 2 === 1).length * 3;
+      else if (objective.key === 'prime') points[player.id] = picked.filter(isPrime).length * 4;
+      else if (objective.key === 'triple') points[player.id] = picked.filter(value => value % 3 === 0).length * 4;
+      else if (objective.key === 'low') points[player.id] = picked.filter(value => value <= 6).length * 4;
     }
+    return points;
   }
 
+  const correct = players.filter(player => submitted[player.id] != null && String(submitted[player.id]) === String(challenge.solution));
+  for (const player of correct) points[player.id] = 4;
+  if (correct.length) {
+    const fastest = Math.min(...correct.map(player => game.submissions[player.id].submittedAt));
+    for (const player of correct) if (game.submissions[player.id].submittedAt === fastest) points[player.id] += 1;
+  }
   return points;
+}
+function answerLabel(challenge, answer, playerId, game) {
+  if (answer == null) return '시간 초과 · 미제출';
+  if (challenge.type === 'indianPoker') return rankName(answer.guess) + ' 예상 · 실제 ' + rankName(challenge.hand[playerId]) + ' · ' + answer.wager + '점 베팅';
+  if (challenge.type === 'auction') return answer.bid + '점 입찰 · 내 가치 ' + challenge.values[playerId] + '점';
+  if (challenge.type === 'strategy') {
+    const cardById = Object.fromEntries(challenge.cards.map(card => [card.id, card]));
+    return game.moves.filter(move => move.playerId === playerId).map(move => cardById[move.cardId]?.value).join(', ') + ' 타일';
+  }
+  if (challenge.inputKind === 'choice') return challenge.options.find(option => option.value === String(answer))?.label || String(answer);
+  return '답 ' + String(answer);
 }
 
 export default {
@@ -297,16 +668,32 @@ export class GameRoom {
 
   stateFor(playerId) {
     const challenge = this.game?.challenge;
-    const submission = this.game?.submissions[playerId];
-    const privateInfo = challenge?.privateById?.[playerId] || null;
+    const submission = this.game?.submissions?.[playerId];
+    const currentPlayerId = challenge?.type === 'strategy' ? this.game.turnOrder[this.game.turnIndex] : null;
+    const availableCards = challenge?.type === 'strategy'
+      ? challenge.cards.filter(card => !this.game.moves.some(move => move.cardId === card.id))
+      : [];
+    const moves = challenge?.type === 'strategy' ? this.game.moves.map(move => ({
+      name: this.meta.players[move.playerId]?.name || '참가자',
+      value: challenge.cards.find(card => card.id === move.cardId)?.value
+    })) : [];
     const game = this.game ? {
       seq: this.game.seq, phaseId: this.game.phaseId, phase: this.game.phase, stage: this.game.stage,
       round: this.game.round, finalIndex: this.game.finalIndex, deadlineAt: this.game.deadlineAt,
-      type: challenge.type, typeLabel: challenge.typeLabel, title: challenge.title, prompt: challenge.prompt,
-      answerHint: challenge.answerHint, placeholder: challenge.placeholder,
-      options: challenge.type === 'deduction' ? this.playersView().filter(player => !player.eliminated).map(player => ({ value: player.id, label: player.name })) : undefined,
-      studySequence: this.game.phase === 'study' ? challenge.sequence : undefined,
-      privateInfo, you: { submitted: Boolean(submission), answer: this.game.phase === 'result' || this.game.phase === 'finished' ? submission?.answer ?? null : null },
+      type: challenge.type, typeLabel: challenge.typeLabel, categoryLabel: challenge.categoryLabel,
+      difficultyLabel: challenge.difficultyLabel, inputKind: challenge.inputKind,
+      title: challenge.title, prompt: challenge.prompt, answerHint: challenge.answerHint,
+      placeholder: challenge.placeholder, maxLength: challenge.maxLength,
+      options: challenge.inputKind === 'choice' ? challenge.options : undefined,
+      studySequence: this.game.phase === 'study' ? challenge.memoryById?.[playerId] : undefined,
+      market: challenge.type === 'strategy' ? availableCards : undefined,
+      moves: challenge.type === 'strategy' ? moves : undefined,
+      turnNumber: challenge.type === 'strategy' ? this.game.turnIndex + 1 : undefined,
+      turnCount: challenge.type === 'strategy' ? this.game.turnOrder.length : undefined,
+      turnPlayerName: currentPlayerId ? this.meta.players[currentPlayerId]?.name : undefined,
+      yourTurn: currentPlayerId === playerId,
+      privateInfo: challenge.privateById?.[playerId] || null,
+      you: { submitted: Boolean(submission), answer: this.game.phase === 'result' || this.game.phase === 'finished' ? submission?.answer ?? null : null },
       result: this.game.result, winnerId: this.game.winnerId
     } : null;
     return { type: this.game ? 'state' : 'room', code: this.meta.code, status: this.meta.status,
@@ -322,23 +709,43 @@ export class GameRoom {
   async start() {
     this.meta.status = 'playing';
     this.game = { seq: this.meta.seq, phaseId: 0, phase: 'answer', stage: 'main', round: 1, finalIndex: 0,
-      deadlineAt: 0, challenge: null, submissions: {}, result: null, winnerId: null };
+      deadlineAt: 0, challenge: null, submissions: {}, moves: [], turnOrder: [], turnIndex: 0,
+      result: null, winnerId: null, lastMainType: null };
     if (activePlayers(this.meta).length === 2) this.beginFinal();
-    else this.beginChallenge('main', sample(MAIN_TYPES));
+    else this.beginChallenge('main', chooseMainType(null));
   }
 
   beginChallenge(stage, type) {
     const players = activePlayers(this.meta);
     for (const player of makePlayers(this.meta)) player.roundPoints = 0;
-    this.game.stage = stage; this.game.phase = type === 'memory' ? 'study' : 'answer';
-    this.game.challenge = makeChallenge(type, players); this.game.submissions = {}; this.game.result = null;
-    this.game.phaseId++; this.game.deadlineAt = Date.now() + (type === 'memory' ? 9_000 : 30_000);
-    this.meta.expires = Date.now() + 60 * 60_000; this.bump();
+    const challenge = makeChallenge(type, players);
+    this.game.stage = stage;
+    this.game.challenge = challenge;
+    this.game.submissions = {};
+    this.game.moves = [];
+    this.game.turnOrder = [];
+    this.game.turnIndex = 0;
+    this.game.result = null;
+    this.game.phase = type === 'memory' ? 'study' : type === 'strategy' ? 'turn' : 'answer';
+    if (stage === 'main') this.game.lastMainType = type;
+    if (type === 'strategy') {
+      const firstLap = shuffle(players.map(player => player.id));
+      const secondLap = [...firstLap].reverse();
+      if (secondLap.length > 1) secondLap.push(secondLap.shift());
+      this.game.turnOrder = [...firstLap, ...secondLap];
+    }
+    this.game.phaseId++;
+    this.game.deadlineAt = Date.now() + (type === 'memory' ? 12_000 : type === 'strategy' ? 20_000 : 75_000);
+    this.meta.expires = Date.now() + 60 * 60_000;
+    this.bump();
   }
 
   beginFinal() {
-    this.game.stage = 'final'; this.game.finalIndex = 1; this.game.finalTieBreak = Object.fromEntries(activePlayers(this.meta).map(player => [player.id, Math.random()]));
-    this.beginChallenge('final', sample(FINAL_TYPES));
+    this.game.stage = 'final';
+    this.game.finalIndex = 1;
+    this.game.finalTypes = shuffle([...FULL_INFO_TYPES, ...LIMITED_INFO_TYPES]).slice(0, 3);
+    this.game.finalTieBreak = Object.fromEntries(activePlayers(this.meta).map(player => [player.id, randomInt(1_000_000)]));
+    this.beginChallenge('final', this.game.finalTypes[0]);
   }
 
   async persistAndBroadcast() {
@@ -371,12 +778,31 @@ export class GameRoom {
         this.bump(); await this.save(); await this.alarmAt(this.meta.expires); this.broadcast(); return;
       }
       if (message.type !== 'action') return;
-      if (this.meta.status !== 'playing' || this.game.phase !== 'answer' || player.eliminated)
-        return this.send(playerId, { type: 'error', message: '현재 답을 제출할 수 없습니다.' });
+      if (this.meta.status !== 'playing' || player.eliminated)
+        return this.send(playerId, { type: 'error', message: '현재 행동할 수 없습니다.' });
       if (message.phaseId !== this.game.phaseId) return this.send(playerId, { type: 'error', message: '문제가 바뀌었습니다. 최신 문제를 확인해 주세요.' });
       if (Date.now() >= this.game.deadlineAt) { await this.onDeadline(); await this.persistAndBroadcast(); return; }
       const actionId = String(message.actionId || '').slice(0, 80);
       if (!actionId) return this.send(playerId, { type: 'error', message: '제출 번호가 없습니다. 다시 시도해 주세요.' });
+
+      if (this.game.phase === 'turn' && this.game.challenge.type === 'strategy') {
+        const currentPlayerId = this.game.turnOrder[this.game.turnIndex];
+        if (playerId !== currentPlayerId) return this.send(playerId, { type: 'error', message: '아직 내 차례가 아닙니다.' });
+        const cardId = String(message.answer ?? '');
+        const available = this.game.challenge.cards.find(card => card.id === cardId &&
+          !this.game.moves.some(move => move.cardId === card.id));
+        if (!available) return this.send(playerId, { type: 'error', message: '선택할 수 없는 타일입니다.' });
+        this.game.moves.push({ playerId, cardId, actionId });
+        this.game.turnIndex++;
+        this.game.phaseId++;
+        this.bump();
+        if (this.game.turnIndex >= this.game.turnOrder.length) this.resolveChallenge();
+        else this.game.deadlineAt = Date.now() + 20_000;
+        await this.persistAndBroadcast();
+        return;
+      }
+
+      if (this.game.phase !== 'answer') return this.send(playerId, { type: 'error', message: '현재 답을 제출할 수 없습니다.' });
       const previous = this.game.submissions[playerId];
       if (previous) {
         if (previous.actionId === actionId) this.send(playerId, this.stateFor(playerId));
@@ -397,62 +823,93 @@ export class GameRoom {
     const players = activePlayers(this.meta), challenge = this.game.challenge;
     const points = scoreChallenge(this.game, players);
     for (const player of players) {
-      player.roundPoints = points[player.id] || 0;
+      player.roundPoints = points[player.id] ?? 0;
       if (this.game.stage === 'final') player.finalScore += player.roundPoints;
       else player.score += player.roundPoints;
     }
     const lines = players.map(player => {
       const answer = this.game.submissions[player.id]?.answer;
-      let detail = answer == null ? '시간 초과 · 미제출' : `${challenge.type === 'deduction' ? '지목 완료' : `답 ${answer}`}`;
+      let detail = answerLabel(challenge, answer, player.id, this.game);
       if (challenge.type === 'memory' && answer != null) {
-        const hits = [...String(answer)].reduce((count, digit, index) => count + Number(digit === challenge.sequence[index]), 0);
-        detail += ` · ${hits}/6개 순서 일치`;
+        const target = challenge.memoryById[player.id];
+        const hits = [...String(answer)].reduce((count, digit, index) => count + Number(digit === target[index]), 0);
+        detail += ' · ' + hits + '/12자리 일치';
       }
+      if (challenge.type === 'strategy') detail = '비공개 목표: ' + challenge.objectives[player.id].text;
       return { player, points: player.roundPoints, detail };
-    }).sort((a,b) => b.points-a.points || a.player.name.localeCompare(b.player.name, 'ko'));
-    let headline = `${challenge.typeLabel} 결과`;
-    if (challenge.type === 'memory') headline += ` · 정답 ${challenge.sequence}`;
-    if (challenge.type === 'perfect') headline += ` · 계산값 ${challenge.solution}`;
-    if (challenge.type === 'hidden') headline += ` · 금고 숫자 ${challenge.solution}`;
-    if (challenge.type === 'deduction') headline += ` · 용의자 ${this.meta.players[challenge.culpritId].name}`;
-    if (challenge.type === 'team') headline += ` · A팀 목표 ${challenge.targetByTeam.A} / B팀 목표 ${challenge.targetByTeam.B}`;
-
-    let eliminatedName = null;
-    if (this.game.stage === 'main') {
-      const order = [...players].sort((a,b) => a.roundPoints-b.roundPoints || a.score-b.score ||
-        challenge.tieBreak[a.id]-challenge.tieBreak[b.id]);
-      const eliminated = order[0]; eliminated.eliminated = true; eliminated.eliminatedRound = this.game.round;
-      eliminatedName = eliminated.name;
-      headline = `${eliminated.name} 탈락 · ${activePlayers(this.meta).length}명 생존`;
+    }).sort((a, b) => b.points - a.points || a.player.name.localeCompare(b.player.name, 'ko'));
+    let headline = challenge.typeLabel + ' 결과';
+    if (challenge.type === 'auction') {
+      const bids = players.filter(player => this.game.submissions[player.id]?.answer != null);
+      if (!bids.length) headline = '입찰 없음';
+      else {
+        const highest = Math.max(...bids.map(player => this.game.submissions[player.id].answer.bid));
+        const winner = bids.filter(player => this.game.submissions[player.id].answer.bid === highest)
+          .sort((a, b) => challenge.tieBreak[a.id] - challenge.tieBreak[b.id])[0];
+        headline = winner.name + ' 낙찰';
+      }
     }
-    this.game.result = { headline, lines: lines.map(item => ({ text: `${item.player.name} — ${item.points}점 · ${item.detail}` })) };
-    this.game.phaseId++; this.bump();
+    if (challenge.type === 'indianPoker') headline = '더블덱 인디안 포커 결과';
+    if (this.game.stage === 'main') {
+      const order = [...players].sort((a, b) => a.roundPoints - b.roundPoints || a.score - b.score ||
+        challenge.tieBreak[a.id] - challenge.tieBreak[b.id]);
+      const eliminated = order[0];
+      eliminated.eliminated = true;
+      eliminated.eliminatedRound = this.game.round;
+      headline = eliminated.name + ' 탈락 · ' + activePlayers(this.meta).length + '명 생존';
+    }
+    this.game.result = {
+      headline, subline: challenge.revealText || '라운드가 종료되었습니다.',
+      lines: lines.map(item => ({ text: item.player.name + ' — ' + item.points + '점 · ' + item.detail }))
+    };
+    this.game.phaseId++;
+    this.bump();
 
     if (this.game.stage === 'final' && this.game.finalIndex >= 3) {
-      const finalists = activePlayers(this.meta).sort((a,b) => b.finalScore-a.finalScore || this.game.finalTieBreak[a.id]-this.game.finalTieBreak[b.id]);
-      this.game.winnerId = finalists[0]?.id || null; this.game.phase = 'finished'; this.game.deadlineAt = 0;
-      this.meta.status = 'finished'; this.meta.expires = Date.now() + 5 * 60_000;
-      this.game.result.headline = `${this.meta.players[this.game.winnerId]?.name || '우승자'} 최종 우승`;
+      const finalists = activePlayers(this.meta).sort((a, b) => b.finalScore - a.finalScore ||
+        this.game.finalTieBreak[a.id] - this.game.finalTieBreak[b.id]);
+      this.game.winnerId = finalists[0]?.id || null;
+      this.game.phase = 'finished';
+      this.game.deadlineAt = 0;
+      this.meta.status = 'finished';
+      this.meta.expires = Date.now() + 5 * 60_000;
+      this.game.result.headline = (this.meta.players[this.game.winnerId]?.name || '우승자') + ' 최종 우승';
       return;
     }
-
-    this.game.phase = 'result'; this.game.deadlineAt = Date.now() + (this.game.stage === 'main' ? 7_000 : 6_000);
+    this.game.phase = 'result';
+    this.game.deadlineAt = Date.now() + 8_000;
   }
 
   async advance() {
     if (this.game.stage === 'main') {
       if (activePlayers(this.meta).length === 2) this.beginFinal();
-      else { this.game.round++; this.beginChallenge('main', sample(MAIN_TYPES)); }
+      else {
+        this.game.round++;
+        this.beginChallenge('main', chooseMainType(this.game.lastMainType));
+      }
     } else {
       this.game.finalIndex++;
-      this.beginChallenge('final', sample(FINAL_TYPES));
+      this.beginChallenge('final', this.game.finalTypes[this.game.finalIndex - 1]);
     }
   }
 
   async onDeadline() {
     if (!this.game || this.meta.status !== 'playing') return;
     if (this.game.phase === 'study') {
-      this.game.phase = 'answer'; this.game.phaseId++; this.game.deadlineAt = Date.now() + 25_000; this.bump();
+      this.game.phase = 'answer';
+      this.game.phaseId++;
+      this.game.deadlineAt = Date.now() + 40_000;
+      this.bump();
+    } else if (this.game.phase === 'turn' && this.game.challenge.type === 'strategy') {
+      const playerId = this.game.turnOrder[this.game.turnIndex];
+      const available = this.game.challenge.cards.filter(card => !this.game.moves.some(move => move.cardId === card.id));
+      if (!playerId || !available.length) return this.resolveChallenge();
+      this.game.moves.push({ playerId, cardId: sample(available).id, actionId: 'timeout-' + this.game.phaseId });
+      this.game.turnIndex++;
+      this.game.phaseId++;
+      this.bump();
+      if (this.game.turnIndex >= this.game.turnOrder.length) this.resolveChallenge();
+      else this.game.deadlineAt = Date.now() + 20_000;
     } else if (this.game.phase === 'answer') {
       this.resolveChallenge();
     } else if (this.game.phase === 'result') {
