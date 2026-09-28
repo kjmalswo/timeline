@@ -683,7 +683,8 @@ export class GameRoom {
     })) : [];
     const game = this.game ? {
       seq: this.game.seq, phaseId: this.game.phaseId, phase: this.game.phase, stage: this.game.stage,
-      round: this.game.round, finalIndex: this.game.finalIndex, deadlineAt: this.game.deadlineAt,
+      round: this.game.round, finalIndex: this.game.finalIndex,
+      finalRoundCount: this.game.finalRoundCount || this.game.finalTypes?.length || 3, deadlineAt: this.game.deadlineAt,
       type: challenge.type, typeLabel: challenge.typeLabel, categoryLabel: challenge.categoryLabel,
       difficultyLabel: challenge.difficultyLabel, inputKind: challenge.inputKind,
       title: challenge.title, prompt: challenge.prompt, answerHint: challenge.answerHint,
@@ -749,7 +750,8 @@ export class GameRoom {
   beginFinal() {
     this.game.stage = 'final';
     this.game.finalIndex = 1;
-    this.game.finalTypes = shuffle([...FULL_INFO_TYPES, ...LIMITED_INFO_TYPES]).slice(0, 3);
+    this.game.finalRoundCount = this.meta.maxPlayers === 2 ? 10 : 3;
+    this.game.finalTypes = shuffle([...FULL_INFO_TYPES, ...LIMITED_INFO_TYPES]).slice(0, this.game.finalRoundCount);
     this.game.finalTieBreak = Object.fromEntries(activePlayers(this.meta).map(player => [player.id, randomInt(1_000_000)]));
     this.beginChallenge('final', this.game.finalTypes[0]);
   }
@@ -884,7 +886,7 @@ export class GameRoom {
     this.game.phaseId++;
     this.bump();
 
-    if (this.game.stage === 'final' && this.game.finalIndex >= 3) {
+    if (this.game.stage === 'final' && this.game.finalIndex >= (this.game.finalRoundCount || this.game.finalTypes?.length || 3)) {
       const finalists = activePlayers(this.meta).sort((a, b) => b.finalScore - a.finalScore ||
         this.game.finalTieBreak[a.id] - this.game.finalTieBreak[b.id]);
       this.game.winnerId = finalists[0]?.id || null;
