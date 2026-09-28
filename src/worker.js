@@ -289,7 +289,8 @@ export class GameRoom {
   playersView() {
     return makePlayers(this.meta).sort((a,b) => a.joinedAt-b.joinedAt).map(player => ({
       id: player.id, name: player.name, connected: this.connected(player.id), score: player.score,
-      roundPoints: player.roundPoints, finalScore: player.finalScore, eliminated: player.eliminated,
+      roundPoints: player.roundPoints, finalScore: player.finalScore,
+      team: this.game?.challenge?.teamById?.[player.id] || null, eliminated: player.eliminated,
       eliminatedRound: player.eliminatedRound
     }));
   }
