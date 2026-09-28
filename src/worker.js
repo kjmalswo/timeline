@@ -831,7 +831,7 @@ export class GameRoom {
       if (challenge.type === 'strategy') detail = '비공개 목표: ' + challenge.objectives[player.id].text;
       return { player, points: player.roundPoints, detail };
     }).sort((a, b) => b.points - a.points || a.player.name.localeCompare(b.player.name, 'ko'));
-    let headline = challenge.typeLabel + ' 결과';
+    let headline = challenge.title + ' 결과';
     if (challenge.type === 'auction') {
       const bids = players.filter(player => this.game.submissions[player.id]?.answer != null);
       if (!bids.length) headline = '입찰 없음';
