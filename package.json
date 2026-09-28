@@ -2,7 +2,7 @@
   "name": "the-timeline-pvp",
   "version": "4.1.0",
   "private": true,
-  "description": "THE TIMELINE 1v1 PvP on Cloudflare Workers and Durable Objects",
+  "description": "THE TIMELINE multiplayer survival game on Cloudflare Workers and Durable Objects",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
