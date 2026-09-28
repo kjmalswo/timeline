@@ -478,7 +478,8 @@ function scoreChallenge(game, players) {
       const answer = submitted[player.id];
       if (answer == null) continue;
       const target = challenge.memoryById[player.id];
-      points[player.id] = [...String(answer)].reduce((count, digit, index) => count + Number(digit === target[index]), 0);
+      const matched = [...String(answer)].reduce((count, digit, index) => count + Number(digit === target[index]), 0);
+      points[player.id] = Math.floor(matched / 2) + Number(matched === 12);
     }
     return points;
   }
