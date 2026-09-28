@@ -1,6 +1,6 @@
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_PLAYERS = 8;
-const FULL_INFO_TYPES = ['sequence', 'symbolGrid', 'logicGrid', 'spatial'];
+const FULL_INFO_TYPES = ['sequence', 'symbolGrid', 'logicGrid', 'spatial', 'miniSudoku', 'codeLock'];
 const LIMITED_INFO_TYPES = ['indianPoker', 'turtleSoup', 'rankInference', 'cipher', 'probability', 'resource', 'auction', 'truthLie', 'memory', 'strategy', 'path', 'stateInference'];
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -74,56 +74,81 @@ function makeChallenge(type, players) {
   const base = { type, privateById, tieBreak };
 
   if (type === 'sequence') {
-    const start = randomInt(7) + 2;
-    const first = randomInt(5) + 3;
-    const second = randomInt(4) + 2;
-    const terms = Array.from({ length: 5 }, (_, index) => start + first * index + second * index * (index - 1) / 2);
-    const solution = start + first * 5 + second * 5 * 4 / 2;
-    return { ...base, inputKind: 'number', title: '수열',
-      prompt: '다음 항을 구하세요. 첫 번째 차분은 일정한 간격으로 증가합니다.\n' + terms.join(' · ') + ' · ?',
-      answerHint: '다음 항을 입력하세요', placeholder: '정수', maxLength: 4, solution,
-      revealText: '정답: ' + solution + '입니다.' };
+    const oddStart = randomInt(10) + 3;
+    const oddStep = randomInt(7) + 2;
+    const secondDifference = randomInt(4) + 2;
+    const evenStart = randomInt(5) + 2;
+    const evenMultiplier = randomInt(2) + 2;
+    const terms = [];
+    for (let index = 0; index < 10; index++) {
+      const position = Math.floor(index / 2);
+      terms.push(index % 2 === 0
+        ? oddStart + oddStep * position + secondDifference * position * (position - 1) / 2
+        : evenStart * evenMultiplier ** position);
+    }
+    const solution = oddStart + oddStep * 5 + secondDifference * 10;
+    return { ...base, inputKind: 'number', title: '교차 수열',
+      prompt: '홀수항은 두 번째 차분이 일정하고, 짝수항은 같은 수를 곱합니다. 11번째 항은?\n' + terms.join(' · ') + ' · ?',
+      placeholder: '정수', maxLength: 4, solution,
+      revealText: '정답: ' + solution };
   }
 
   if (type === 'symbolGrid') {
     let values;
     do {
-      values = [randomInt(8) + 2, randomInt(8) + 2, randomInt(8) + 2];
-    } while (new Set(values).size < 3);
-    const [triangle, square, circle] = values;
-    const equations = [triangle + square, square + circle, triangle + circle];
-    const solution = triangle * square + circle;
+      values = [randomInt(8) + 2, randomInt(8) + 2, randomInt(8) + 2, randomInt(8) + 2];
+    } while (new Set(values).size < 4);
+    const [triangle, square, circle, diamond] = values;
+    const equations = [
+      triangle + square,
+      square + circle,
+      circle + diamond,
+      triangle + circle + diamond
+    ];
+    const solution = triangle * diamond + square * circle;
     return { ...base, inputKind: 'number', title: '연립식',
-      prompt: '세 기호는 서로 다른 한 자리 수입니다. 식을 풀어 △ × □ + ○를 구하세요.\n' +
-        '△ + □ = ' + equations[0] + '\n□ + ○ = ' + equations[1] + '\n△ + ○ = ' + equations[2] +
-        '\n마지막으로 △ × □ + ○ 를 계산하세요.',
-      answerHint: '계산 결과', placeholder: '정수', maxLength: 4, solution,
-      revealText: '△=' + triangle + ', □=' + square + ', ○=' + circle + ' · 정답 ' + solution };
+      prompt: '네 기호는 서로 다른 한 자리 수입니다. 네 식으로 값을 구한 뒤 △×◇ + □×○를 계산하세요.\n' +
+        '△ + □ = ' + equations[0] + '\n□ + ○ = ' + equations[1] + '\n○ + ◇ = ' + equations[2] +
+        '\n△ + ○ + ◇ = ' + equations[3],
+      placeholder: '정수', maxLength: 4, solution,
+      revealText: '△=' + triangle + ', □=' + square + ', ○=' + circle + ', ◇=' + diamond + ' · 정답 ' + solution };
   }
 
   if (type === 'logicGrid') {
-    const names = ['가람', '나래', '다온', '라온'];
-    const orders = permutations(names);
-    const target = sample(orders);
+    const names = ['가람', '나래', '다온', '라온', '마루'];
+    const colors = ['빨강', '파랑', '초록', '노랑', '보라'];
+    const states = [];
+    for (const order of permutations(names)) {
+      for (const colorOrder of permutations(colors)) {
+        states.push({ order, colorByName: Object.fromEntries(names.map((name, index) => [name, colorOrder[index]])) });
+      }
+    }
+    const target = sample(states);
     const facts = [];
     for (const name of names) {
-      for (let rank = 1; rank <= 4; rank++) {
-        facts.push({ test: order => order.indexOf(name) + 1 === rank, text: name + '은(는) ' + rank + '위다.' });
+      for (let rank = 1; rank <= names.length; rank++) {
+        facts.push({ test: state => state.order.indexOf(name) + 1 === rank, text: name + '은(는) ' + rank + '위다.' });
       }
-      facts.push({ test: order => order.indexOf(name) + 1 !== 1, text: name + '은(는) 1위가 아니다.' });
+      for (const color of colors) {
+        facts.push({ test: state => state.colorByName[name] === color, text: name + '의 표식은 ' + color + '이다.' });
+      }
     }
     for (let i = 0; i < names.length; i++) {
       for (let j = i + 1; j < names.length; j++) {
         const a = names[i], b = names[j];
-        facts.push({ test: order => order.indexOf(a) < order.indexOf(b), text: a + '은(는) ' + b + '보다 앞선다.' });
-        facts.push({ test: order => Math.abs(order.indexOf(a) - order.indexOf(b)) === 1, text: a + '과(와) ' + b + '은(는) 이웃한 순위다.' });
+        facts.push({ test: state => state.order.indexOf(a) < state.order.indexOf(b), text: a + '은(는) ' + b + '보다 앞선다.' });
+        facts.push({ test: state => Math.abs(state.order.indexOf(a) - state.order.indexOf(b)) === 1, text: a + '과(와) ' + b + '은(는) 이웃한 순위다.' });
+        for (const color of colors) {
+          facts.push({ test: state => state.order.indexOf(a) < state.order.indexOf(names.find(name => state.colorByName[name] === color)),
+            text: a + '은(는) ' + color + ' 표식 참가자보다 앞선다.' });
+        }
       }
     }
-    let remaining = orders;
+    let remaining = states;
     const clues = [];
-    while (remaining.length > 1 && clues.length < 5) {
+    while (remaining.length > 1) {
       const candidates = shuffle(facts.filter(fact => fact.test(target)).map(fact => ({
-        fact, matches: remaining.filter(order => fact.test(order))
+        fact, matches: remaining.filter(state => fact.test(state))
       })).filter(item => item.matches.length < remaining.length));
       if (!candidates.length) break;
       const bestCount = Math.min(...candidates.map(item => item.matches.length));
@@ -131,28 +156,150 @@ function makeChallenge(type, players) {
       clues.push(best.fact.text);
       remaining = best.matches;
     }
-    const answer = target[1];
-    return { ...base, inputKind: 'choice', title: '네 명의 순위',
-      prompt: '네 참가자의 순위는 1~4위까지 모두 다릅니다. 단서를 모두 만족할 때 2위는 누구인가요?\n' +
-        clues.map((clue, i) => (i + 1) + '. ' + clue).join('\n'),
-      answerHint: '2위 참가자', options: makeChoices(names), solution: answer,
-      revealText: '순서: ' + target.join(' → ') + ' · 2위: ' + answer };
+    const rankedThird = target.order[2];
+    const solution = target.colorByName[rankedThird];
+    return { ...base, inputKind: 'choice', title: '순위·표식 논리',
+      prompt: '다섯 참가자의 순위와 표식은 모두 다릅니다. 단서를 정리해 3위 참가자의 표식을 고르세요.\n' +
+        clues.map((clue, index) => (index + 1) + '. ' + clue).join('\n'),
+      options: makeChoices(colors), solution,
+      revealText: '순위·표식: ' + target.order.map((name, index) => (index + 1) + '위 ' + name + '(' + target.colorByName[name] + ')').join(' · ') };
   }
 
   if (type === 'spatial') {
-    const size = 4;
+    const size = 5;
     const startRow = randomInt(size), startCol = randomInt(size);
-    const solution = String.fromCharCode(65 + startCol) + String(startRow + 1);
+    const start = String.fromCharCode(65 + startCol) + String(startRow + 1);
+    const transformations = shuffle([
+      { id: 'rotate', label: '시계 방향 90° 회전' },
+      { id: 'leftRight', label: '좌우 반사' },
+      { id: 'topBottom', label: '상하 반사' },
+      { id: 'transpose', label: '대각선 반사' }
+    ]).slice(0, 3);
+    let row = startRow, col = startCol;
+    for (const operation of transformations) {
+      if (operation.id === 'rotate') [row, col] = [col, size - 1 - row];
+      else if (operation.id === 'leftRight') col = size - 1 - col;
+      else if (operation.id === 'topBottom') row = size - 1 - row;
+      else [row, col] = [col, row];
+    }
+    const solution = String.fromCharCode(65 + col) + String(row + 1);
     const distractors = [];
-    while (distractors.length < 3) {
+    while (distractors.length < 4) {
       const value = String.fromCharCode(65 + randomInt(size)) + String(randomInt(size) + 1);
       if (value !== solution && !distractors.includes(value)) distractors.push(value);
     }
-    const start = String.fromCharCode(65 + startRow) + String(startCol + 1);
     return { ...base, inputKind: 'choice', title: '좌표 변환',
-      prompt: '4×4 격자에서 ' + start + '를 시계 방향으로 90° 회전한 뒤 좌우 반사합니다. 새 좌표는?',
-      answerHint: '변환 결과를 선택하세요', options: optionValues(solution, distractors), solution,
+      prompt: 'A~E열, 1~5행 격자에서 ' + start + '를 다음 순서대로 변환하세요.\n' +
+        transformations.map((operation, index) => (index + 1) + '. ' + operation.label).join('\n'),
+      options: optionValues(solution, distractors), solution,
       revealText: '정답: ' + solution };
+  }
+
+  if (type === 'miniSudoku') {
+    const baseGrid = [[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]];
+    const groupOrder = () => shuffle([0,1]).flatMap(group => shuffle([0,1]).map(offset => group * 2 + offset));
+    const rowOrder = groupOrder(), columnOrder = groupOrder(), digitMap = shuffle([1,2,3,4]);
+    const solved = rowOrder.map(row => columnOrder.map(column => digitMap[baseGrid[row][column] - 1]));
+    const board = solved.map(row => [...row]);
+    function countSolutions() {
+      let count = 0;
+      function search() {
+        if (count >= 2) return;
+        let bestCell = null, bestValues = null;
+        for (let row = 0; row < 4; row++) for (let column = 0; column < 4; column++) {
+          if (board[row][column] !== 0) continue;
+          const possible = [1,2,3,4].filter(value => {
+            for (let index = 0; index < 4; index++) {
+              if (board[row][index] === value || board[index][column] === value) return false;
+            }
+            const boxRow = Math.floor(row / 2) * 2, boxColumn = Math.floor(column / 2) * 2;
+            for (let r = boxRow; r < boxRow + 2; r++) for (let c = boxColumn; c < boxColumn + 2; c++) {
+              if (board[r][c] === value) return false;
+            }
+            return true;
+          });
+          if (!possible.length) return;
+          if (!bestValues || possible.length < bestValues.length) { bestCell = [row, column]; bestValues = possible; }
+        }
+        if (!bestCell) { count++; return; }
+        const [row, column] = bestCell;
+        for (const value of bestValues) {
+          board[row][column] = value;
+          search();
+          board[row][column] = 0;
+          if (count >= 2) return;
+        }
+      }
+      search();
+      return count;
+    }
+    const removalOrder = shuffle(Array.from({ length: 16 }, (_, index) => ({ row: Math.floor(index / 4), column: index % 4 })));
+    let blankCount = 0;
+    for (const cell of removalOrder) {
+      if (blankCount >= 9) break;
+      board[cell.row][cell.column] = 0;
+      if (countSolutions() === 1) blankCount++;
+      else board[cell.row][cell.column] = solved[cell.row][cell.column];
+    }
+    const blanks = [];
+    for (let row = 0; row < 4; row++) for (let column = 0; column < 4; column++) {
+      if (board[row][column] === 0) blanks.push({ row, column });
+    }
+    const solution = blanks.map(cell => solved[cell.row][cell.column]).join('');
+    const distractorSet = new Set([solution]);
+    for (let index = 0; index < solution.length && distractorSet.size < 4; index++) {
+      for (let shift = 1; shift <= 3 && distractorSet.size < 4; shift++) {
+        const replacement = String((Number(solution[index]) - 1 + shift) % 4 + 1);
+        distractorSet.add(solution.slice(0, index) + replacement + solution.slice(index + 1));
+      }
+    }
+    const values = [...distractorSet];
+    const labels = Object.fromEntries(values.map(value => [value, [...value].join(' ')]));
+    const gridText = board.map(row => row.map((value, column) =>
+      (value || '?') + (column === 1 ? ' │' : '')).join(' ')).join('\n');
+    return { ...base, inputKind: 'choice', title: '4×4 스도쿠',
+      prompt: '각 행·열·2×2 상자에 1~4가 한 번씩 들어갑니다. 물음표를 행 순서대로 채우세요.\n' + gridText,
+      options: makeChoices(values, labels), solution,
+      revealText: '빈칸 순서대로: ' + [...solution].join(' ') };
+  }
+
+  if (type === 'codeLock') {
+    const digits = '0123456789';
+    const codes = [];
+    function generateCodes(prefix, available) {
+      if (prefix.length === 5) { codes.push(prefix); return; }
+      for (const digit of available) generateCodes(prefix + digit, available.replace(digit, ''));
+    }
+    generateCodes('', digits);
+    const secret = sample(codes);
+    const feedback = (code, guess) => {
+      const exact = [...guess].reduce((sum, digit, index) => sum + Number(digit === code[index]), 0);
+      const present = [...guess].reduce((sum, digit) => sum + Number(code.includes(digit)), 0) - exact;
+      return { exact, present };
+    };
+    let remaining = codes;
+    const clues = [], used = new Set();
+    while (remaining.length > 1 || clues.length < 5) {
+      let guess;
+      if (clues.length >= 10 && remaining.length > 1) {
+        guess = sample(remaining.filter(code => code !== secret && !used.has(code)));
+      } else {
+        do { guess = [...shuffle([...digits])].slice(0, 5).join(''); } while (guess === secret || used.has(guess));
+      }
+      used.add(guess);
+      const result = feedback(secret, guess);
+      clues.push(guess + ': 자리까지 ' + result.exact + ' · 숫자만 ' + result.present);
+      remaining = remaining.filter(code => {
+        const candidate = feedback(code, guess);
+        return candidate.exact === result.exact && candidate.present === result.present;
+      });
+    }
+    const distractors = shuffle(codes.filter(code => code !== secret)).slice(0, 3);
+    return { ...base, inputKind: 'choice', title: '5자리 암호',
+      prompt: '0~9 중 서로 다른 숫자 5개의 암호를 찾으세요. “자리까지”는 숫자와 위치가 모두 맞고, “숫자만”은 다른 위치에 있는 숫자 수입니다.\n' +
+        clues.map((clue, index) => (index + 1) + '. ' + clue).join('\n'),
+      options: makeChoices([secret, ...distractors]), solution: secret,
+      revealText: '암호: ' + secret };
   }
 
   if (type === 'indianPoker') {
@@ -168,7 +315,7 @@ function makeChallenge(type, players) {
         : '상대 카드가 없습니다.' };
     }
     return { ...base, inputKind: 'indianPoker', title: '더블덱 인디안 포커',
-      prompt: '두 벌의 덱에서 한 장씩 받습니다. 내 카드는 보이지 않고 상대 카드만 보입니다. 내 숫자를 추측해 베팅하세요.',
+      prompt: '2~A 각 8장인 더블덱입니다. 공개된 상대 카드로 남은 분포를 계산해 내 숫자와 베팅(0~5)을 정하세요. 적중 4+베팅점, 오답은 베팅만큼 감점; 최고 카드 +1.',
       answerHint: '내 카드 예상과 베팅을 함께 제출하세요', hand,
       revealText: '' };
   }
@@ -225,29 +372,32 @@ function makeChallenge(type, players) {
   if (type === 'rankInference') {
     const ranks = shuffle(Array.from({ length: players.length }, (_, i) => i + 1));
     const rankById = Object.fromEntries(players.map((player, index) => [player.id, ranks[index]]));
-    const targetRank = randomInt(players.length) + 1;
+    const weightedTotal = players.reduce((sum, player, index) => sum + (index + 1) * rankById[player.id], 0);
+    const targetRank = weightedTotal % players.length + 1;
     for (const player of players) privateById[player.id] = {
       heading: '내 순위',
       text: '내 순위: ' + rankById[player.id] + '위'
     };
     const answer = players.find(player => rankById[player.id] === targetRank);
-    return { ...base, inputKind: 'choice', title: '순위 추론',
-      prompt: targetRank + '위 참가자는 누구인가요? 받은 순위 카드를 공유하세요.',
+    return { ...base, inputKind: 'choice', title: '가중 순위 추론',
+      prompt: '참가 순서대로 가중치 1, 2, 3…을 곱해 순위 합을 구하세요. 목표 순위는 합을 참가자 수로 나눈 나머지+1입니다. 해당 참가자는?',
       answerHint: '해당 순위의 참가자', options: rankOptions(players), rankById, targetRank,
       solution: answer.id,
       revealText: targetRank + '위는 ' + answer.name + '입니다.' };
   }
 
   if (type === 'cipher') {
-    const words = ['MIND', 'LOGIC', 'BRAIN', 'TRUST', 'CODE', 'WITS'];
+    const words = ['PUZZLE', 'PLAYER', 'CIPHER', 'RIDDLE', 'REASON', 'WISDOM'];
     const solution = sample(words);
-    const shifts = Array.from({ length: solution.length }, () => randomInt(5) + 1);
-    const cipher = [...solution].map((letter, index) => String.fromCharCode(65 + (letter.charCodeAt(0) - 65 + shifts[index]) % 26)).join('');
-    const fragments = shifts.map((shift, index) => '암호 ' + (index + 1) + '번째 문자는 복호화할 때 ' + shift + '칸 뒤로 이동합니다.');
+    const shifts = Array.from({ length: 3 }, () => randomInt(5) + 1);
+    const shifted = [...solution].map((letter, index) =>
+      String.fromCharCode(65 + (letter.charCodeAt(0) - 65 + shifts[index % 3]) % 26));
+    const cipher = [0,2,4,1,3,5].map(index => shifted[index]).join('');
+    const fragments = shifts.map((shift, index) => '반복 키 ' + (index + 1) + '번: 각 문자를 ' + shift + '칸 이동합니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
-    return { ...base, inputKind: 'choice', title: '암호 추론',
-      prompt: '암호문: ' + cipher + '\n위치별 키 조각을 모아 복호화하세요.',
-      answerHint: '복호화된 단어', options: makeChoices(words), solution,
+    return { ...base, inputKind: 'choice', title: '전치·반복키 암호',
+      prompt: '암호화할 때 반복 키로 이동한 뒤 홀수 위치를 앞에, 짝수 위치를 뒤에 붙였습니다. 역순으로 복호화하세요.\n암호문: ' + cipher,
+      options: makeChoices(words), solution,
       revealText: '정답: ' + solution };
   }
 
@@ -256,32 +406,67 @@ function makeChallenge(type, players) {
     const jarCounts = redMajority === 'A'
       ? { A: { red: 8, blue: 2 }, B: { red: 2, blue: 8 } }
       : { A: { red: 2, blue: 8 }, B: { red: 8, blue: 2 } };
-    const draws = shuffle(players.map((player, index) => ({ id: player.id, jar: index % 2 ? 'B' : 'A' })));
-    for (const draw of draws) {
-      const counts = jarCounts[draw.jar];
-      const color = randomInt(10) < counts.red ? '빨강' : '파랑';
-      privateById[draw.id] = { heading: '내 표본', text: draw.jar + ' 항아리에서 뽑은 구슬은 ' + color + '입니다.' };
+    let sampleById = {};
+    let likelihoodSignal = 0;
+    for (let attempt = 0; attempt < 20 && likelihoodSignal === 0; attempt++) {
+      sampleById = Object.fromEntries(players.map(player => [player.id, { A: [], B: [] }]));
+      const totals = { A: { red: 0, blue: 0 }, B: { red: 0, blue: 0 } };
+      for (const player of players) for (const jar of ['A', 'B']) {
+        for (let draw = 0; draw < 3; draw++) {
+          const color = randomInt(10) < jarCounts[jar].red ? '빨강' : '파랑';
+          sampleById[player.id][jar].push(color);
+          totals[jar][color === '빨강' ? 'red' : 'blue']++;
+        }
+      }
+      likelihoodSignal = totals.A.red - totals.A.blue - totals.B.red + totals.B.blue;
     }
-    return { ...base, inputKind: 'choice', title: '항아리의 확률',
-      prompt: 'A와 B 중 한 곳은 빨강 8개·파랑 2개, 다른 곳은 빨강 2개·파랑 8개입니다. 표본은 복원 추출입니다. 개인 표본을 합쳐 빨강 비율이 높은 항아리를 찾으세요.',
-      answerHint: '빨강 비율이 더 높은 항아리', options: makeChoices(['A', 'B']), solution: redMajority,
-      revealText: '정답: ' + redMajority };
+    for (const player of players) privateById[player.id] = {
+      heading: '내 표본',
+      text: 'A: ' + sampleById[player.id].A.map(color => color === '빨강' ? 'R' : 'B').join(' ') +
+        ' · B: ' + sampleById[player.id].B.map(color => color === '빨강' ? 'R' : 'B').join(' ')
+    };
+    const solution = likelihoodSignal > 0 ? 'A' : 'B';
+    return { ...base, inputKind: 'choice', title: '표본 확률 분석',
+      prompt: 'A·B 중 한 곳은 빨강 8·파랑 2, 다른 곳은 빨강 2·파랑 8입니다. 표본은 복원 추출, 사전확률은 1:1입니다. 표본 전체에서 더 유력한 항아리를 고르세요.',
+      options: makeChoices(['A', 'B']), solution,
+      revealText: '표본의 우도 기준: ' + solution };
   }
 
   if (type === 'resource') {
-    const shares = Object.fromEntries(players.map(player => [player.id, randomInt(4) + 1]));
-    for (const player of players) privateById[player.id] = { heading: '내 자원', text: '에너지 ' + shares[player.id] + '개' };
-    const total = Object.values(shares).reduce((sum, value) => sum + value, 0);
-    const projects = [{ id: 'A', cost: 1, reward: randomInt(8) + 5 }];
-    for (const id of ['B', 'C', 'D']) projects.push({ id, cost: randomInt(players.length * 4 + 1) + 1, reward: randomInt(12) + 3 });
-    const labels = Object.fromEntries(projects.map(project => [project.id, project.id + '안 · 비용 ' + project.cost + ' · 보상 ' + project.reward]));
-    const best = projects.filter(project => project.cost <= total)
-      .sort((a, b) => b.reward - a.reward || a.cost - b.cost || a.id.localeCompare(b.id))[0];
-    return { ...base, inputKind: 'choice', title: '한정 자원 배분',
-      prompt: '에너지 카드 합계를 구하고, 비용 안에서 보상이 가장 큰 프로젝트 하나를 고르세요.',
-      answerHint: '최적 프로젝트', options: projects.map(project => ({ value: project.id, label: labels[project.id] })),
-      solution: best.id, totalResource: total,
-      revealText: '정답: ' + best.id + ' · 자원 ' + total };
+    const shares = Object.fromEntries(players.map(player => [player.id, {
+      energy: randomInt(3) + 1, data: randomInt(3) + 1
+    }]));
+    for (const player of players) privateById[player.id] = {
+      heading: '내 자원', text: '에너지 ' + shares[player.id].energy + ' · 데이터 ' + shares[player.id].data
+    };
+    const energy = Object.values(shares).reduce((sum, share) => sum + share.energy, 0);
+    const data = Object.values(shares).reduce((sum, share) => sum + share.data, 0);
+    const projects = [
+      { id: 'A', energy: 1, data: 1, reward: 9 },
+      { id: 'B', energy: 1, data: 1, reward: 9 },
+      { id: 'C', energy: randomInt(energy) + 1, data: randomInt(data) + 1, reward: randomInt(8) + 7 },
+      { id: 'D', energy: randomInt(energy) + 1, data: randomInt(data) + 1, reward: randomInt(8) + 7 }
+    ];
+    const packages = [];
+    for (let mask = 1; mask < 16; mask++) {
+      const selected = projects.filter((_, index) => mask & (1 << index));
+      const costEnergy = selected.reduce((sum, project) => sum + project.energy, 0);
+      const costData = selected.reduce((sum, project) => sum + project.data, 0);
+      const reward = selected.reduce((sum, project) => sum + project.reward, 0);
+      packages.push({ id: selected.map(project => project.id).join('+'), costEnergy, costData, reward,
+        feasible: costEnergy <= energy && costData <= data });
+    }
+    const feasible = packages.filter(item => item.feasible)
+      .sort((a, b) => b.reward - a.reward || a.costEnergy + a.costData - b.costEnergy - b.costData || a.id.localeCompare(b.id));
+    const best = feasible[0];
+    const distractors = shuffle(packages.filter(item => item.id !== best.id)).slice(0, 3);
+    const options = makeChoices([best, ...distractors].map(item => item.id),
+      Object.fromEntries([best, ...distractors].map(item => [item.id, item.id.split('+').join(' + ')])));
+    const projectText = projects.map(project => project.id + ': E' + project.energy + '/D' + project.data + ', ' + project.reward + '점').join(' · ');
+    return { ...base, inputKind: 'choice', title: '다중 자원 최적화',
+      prompt: '개인 자원을 합산해 가능한 프로젝트 조합 중 총 보상이 가장 큰 것을 고르세요.\n' + projectText,
+      options, solution: best.id,
+      revealText: '최적 조합: ' + best.id + ' · 보상 ' + best.reward };
   }
 
   if (type === 'auction') {
@@ -317,14 +502,13 @@ function makeChallenge(type, players) {
   if (type === 'memory') {
     const memoryById = {};
     for (const player of players) {
-      const sequence = Array.from({ length: 12 }, () => String(randomInt(10))).join('');
+      const sequence = Array.from({ length: 16 }, () => String(randomInt(10))).join('');
       memoryById[player.id] = sequence;
       privateById[player.id] = { heading: '내 숫자', text: '내 배열을 기억하세요.' };
     }
-    return { ...base, inputKind: 'memory', title: '기억력 · 12자리',
-      prompt: '12자리 숫자를 기억한 뒤 그대로 입력하세요.',
-      answerHint: '기억한 12자리를 입력하세요', placeholder: '12자리 숫자', maxLength: 12,
-      memoryById, revealText: '' };
+    return { ...base, inputKind: 'memory', title: '기억력 · 16자리',
+      prompt: '16자리 숫자를 기억한 뒤 그대로 입력하세요.',
+      placeholder: '16자리 숫자', maxLength: 16, memoryById, revealText: '' };
   }
 
   if (type === 'strategy') {
@@ -350,59 +534,60 @@ function makeChallenge(type, players) {
   }
 
   if (type === 'path') {
-    const edges = {};
-    const nodes = ['A', 'B', 'C'];
-    const edgeKeys = [];
-    for (const node of nodes) edgeKeys.push('S-' + node, node + '-G');
-    edgeKeys.push('A-B', 'A-C', 'B-C');
-    for (const key of edgeKeys) edges[key] = randomInt(9) + 1;
-    const fragments = edgeKeys.map(key => '통로 ' + key + '의 길이: ' + edges[key]);
+    const nodes = ['A', 'B', 'C', 'D'];
+    const paths = nodes.map(node => ({ id: 'S-' + node + '-G', edges: ['S-' + node, node + '-G'] }));
+    for (const first of nodes) for (const second of nodes) if (first !== second) {
+      paths.push({ id: 'S-' + first + '-' + second + '-G', edges: ['S-' + first, first + '-' + second, second + '-G'] });
+    }
+    const edgeKeys = new Set(['S-A','S-B','S-C','S-D','A-G','B-G','C-G','D-G']);
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) edgeKeys.add(nodes[i] + '-' + nodes[j]);
+    const keys = [...edgeKeys];
+    let edges, totals, shortest;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      edges = Object.fromEntries(keys.map(key => [key, randomInt(20) + 1]));
+      totals = Object.fromEntries(paths.map(path => [path.id, path.edges.reduce((sum, key) => sum + edges[key], 0)]));
+      const minimum = Math.min(...Object.values(totals));
+      shortest = paths.filter(path => totals[path.id] === minimum);
+      if (shortest.length === 1) break;
+    }
+    const fragments = keys.map(key => key + ' 통로: ' + edges[key]);
     Object.assign(privateById, assignPrivate(players, fragments));
-    const paths = [
-      { id: 'S-A-G', edges: ['S-A', 'A-G'] },
-      { id: 'S-B-G', edges: ['S-B', 'B-G'] },
-      { id: 'S-C-G', edges: ['S-C', 'C-G'] },
-      { id: 'S-A-B-G', edges: ['S-A', 'A-B', 'B-G'] },
-      { id: 'S-B-C-G', edges: ['S-B', 'B-C', 'C-G'] },
-      { id: 'S-A-C-G', edges: ['S-A', 'A-C', 'C-G'] }
-    ];
-    const totals = Object.fromEntries(paths.map(path => [path.id, path.edges.reduce((sum, key) => sum + edges[key], 0)]));
-    const solution = paths.slice().sort((a, b) => totals[a.id] - totals[b.id] || a.id.localeCompare(b.id))[0].id;
+    const solution = shortest[0].id;
     return { ...base, inputKind: 'choice', title: '최단 경로',
-      prompt: 'S에서 G까지 갑니다. 통로 정보를 합쳐 여섯 후보 경로 중 가장 짧은 것을 고르세요.',
-      answerHint: '최단 경로', options: makeChoices(paths.map(path => path.id)), solution, totals,
+      prompt: 'S에서 G까지 갈 수 있는 16개 후보입니다. 통로 길이를 합산해 가장 짧은 경로를 고르세요.',
+      options: makeChoices(paths.map(path => path.id)), solution, totals,
       revealText: '정답: ' + solution + ' · 길이 ' + totals[solution] };
   }
 
   if (type === 'stateInference') {
-    let state = Array.from({ length: 5 }, () => randomInt(2));
+    let state = Array.from({ length: 8 }, () => randomInt(2));
     const initial = [...state];
     const operations = [];
-    for (let step = 0; step < 3; step++) {
+    for (let step = 0; step < 6; step++) {
       const kind = randomInt(3);
       if (kind === 0) {
-        const index = randomInt(5);
+        const index = randomInt(8);
         operations.push({ kind: 'flip', index, text: (index + 1) + '번 비트를 뒤집는다.' });
         state[index] = 1 - state[index];
       } else if (kind === 1) {
-        const a = randomInt(5);
-        let b = randomInt(5);
-        while (a === b) b = randomInt(5);
+        const a = randomInt(8);
+        let b = randomInt(8);
+        while (a === b) b = randomInt(8);
         operations.push({ kind: 'swap', a, b, text: (a + 1) + '번과 ' + (b + 1) + '번 비트를 바꾼다.' });
         [state[a], state[b]] = [state[b], state[a]];
       } else {
         operations.push({ kind: 'rotate', text: '오른쪽 끝 비트를 맨 앞으로 한 칸 순환 이동한다.' });
-        state = [state[4], ...state.slice(0, 4)];
+        state = [state[7], ...state.slice(0, 7)];
       }
     }
     const fragments = initial.map((bit, index) => (index + 1) + '번 시작 비트는 ' + bit + '입니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
     const solution = state.join('');
-    return { ...base, inputKind: 'text', title: '상태 추론',
-      prompt: '개인 단서로 시작 상태를 정하고 연산을 순서대로 적용하세요.\n' +
+    return { ...base, inputKind: 'text', title: '8비트 상태 추론',
+      prompt: '개인 단서를 합쳐 시작 상태를 복원하고 6개 연산을 순서대로 적용하세요.\n' +
         operations.map((operation, index) => (index + 1) + '. ' + operation.text).join('\n'),
-      answerHint: '최종 상태 5비트', placeholder: '예: 10110', maxLength: 5,
-      operations, solution, revealText: '정답: ' + solution };
+      placeholder: '예: 10110110', maxLength: 8, operations, solution,
+      revealText: '정답: ' + solution };
   }
 
   return { ...base, inputKind: 'number', title: '문제 오류', prompt: '문제를 다시 시작해 주세요.', solution: 0 };
