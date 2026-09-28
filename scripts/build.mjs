@@ -1,24 +1,18 @@
-import { cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
-const rulesStart = html.indexOf('const W=');
-const rulesEnd = html.indexOf('const AI=', rulesStart);
+const worker = await readFile(resolve(root, 'src/worker.js'), 'utf8');
 
-if (!html.includes('<meta charset="utf-8">') || !html.includes('const W=') ||
-    !html.includes('function resolveTurn()') || !html.includes('</script>')) {
-  throw new Error('새 턴제 전투 화면이 올바르지 않습니다.');
-}
-if (rulesStart < 0 || rulesEnd < 0) {
-  throw new Error('새 전투 규칙을 찾지 못했습니다.');
+if (!html.includes('<meta charset="utf-8">') || !html.includes('id="createRoom"') ||
+    !html.includes('id="joinRoom"') || !worker.includes('export class GameRoom') ||
+    !worker.includes('async webSocketMessage') || !worker.includes('setAlarm')) {
+  throw new Error('두뇌 서바이벌 화면 또는 실시간 방 서버를 찾지 못했습니다.');
 }
 
-await stat(resolve(root, 'assets/battle/grassland.png'));
-await mkdir(resolve(root, 'dist'), { recursive: true });
-await cp(resolve(root, 'assets'), resolve(root, 'dist/assets'), { recursive: true });
-await writeFile(resolve(root, 'dist/index.html'), html, 'utf8');
-await writeFile(resolve(root, 'src/turn-rules.generated.js'),
-  `${html.slice(rulesStart, rulesEnd)}\nexport { W, C, PEAKS, BATTLE_BACKGROUNDS, initialBoard, boardDistance, boardMove, stanceMultiplier };\n`, 'utf8');
-console.log('싱글플레이 화면과 공통 PvP 카드 규칙을 배포용으로 빌드했습니다.');
-
+const dist = resolve(root, 'dist');
+await rm(dist, { recursive: true, force: true });
+await mkdir(dist, { recursive: true });
+await writeFile(resolve(dist, 'index.html'), html, 'utf8');
+console.log('TIMELINE 두뇌 서바이벌을 배포용으로 빌드했습니다.');
