@@ -281,7 +281,7 @@ function makeChallenge(type, players) {
       prompt: '에너지 카드 합계를 구하고, 비용 안에서 보상이 가장 큰 프로젝트 하나를 고르세요.',
       answerHint: '최적 프로젝트', options: projects.map(project => ({ value: project.id, label: labels[project.id] })),
       solution: best.id, totalResource: total,
-      revealText: '정답: ' + best.id + ' · 자원 ' + total + ' };
+      revealText: '정답: ' + best.id + ' · 자원 ' + total };
   }
 
   if (type === 'auction') {
