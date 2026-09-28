@@ -8,6 +8,8 @@
   <style>
     :root{color-scheme:dark;--bg:#0b0e15;--panel:#121824;--panel2:#171f2e;--line:#283449;--text:#f2f5fa;--muted:#9aa8bc;--blue:#77a7ff;--gold:#f3c76a;--red:#ff7483;--green:#64d7b0;--radius:18px;font-family:Inter,"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#26344a 0,#111722 42%,var(--bg) 78%);color:var(--text);min-height:100vh}button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disabled{cursor:not-allowed;opacity:.48}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.screen{display:none;min-height:100vh;padding:clamp(20px,5vw,54px) 18px}.screen.active{display:flex;align-items:center;justify-content:center}.wrap{width:min(980px,100%);margin:auto}.brand{font-size:.72rem;letter-spacing:.34em;font-weight:800;color:var(--gold)}.hero{text-align:center;margin:0 auto 34px}.hero h1{font-size:clamp(2.8rem,9vw,6.4rem);letter-spacing:.16em;margin:.28em 0 .1em;text-shadow:0 8px 40px #000}.hero h1 span{color:var(--gold)}.hero p{color:var(--muted);letter-spacing:.1em;font-size:.9rem}.panel{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(145deg,rgba(26,35,51,.96),rgba(16,22,33,.96));box-shadow:0 22px 80px #0005}.home-panel{padding:clamp(20px,4vw,34px);max-width:680px;margin:auto}.field{display:grid;gap:8px;margin-bottom:18px}.field label,.label{font-size:.78rem;font-weight:800;color:#c4cedc}.input,select{width:100%;border:1px solid #35435a;border-radius:12px;background:#0e1420;color:var(--text);padding:13px 14px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.divider{border:0;border-top:1px solid var(--line);margin:26px 0}.btn{border:1px solid #3a4962;border-radius:12px;padding:12px 16px;background:#202b3c;font-weight:800;transition:transform .15s,border-color .15s,background .15s}.btn:hover:not(:disabled){transform:translateY(-1px);border-color:#7895c2}.btn.primary{background:var(--gold);border-color:var(--gold);color:#17130b}.btn.blue{background:#315da7;border-color:#4779cd}.btn.ghost{background:transparent}.btn.danger{color:var(--red)}.btn.block{width:100%}.hint{font-size:.8rem;line-height:1.6;color:var(--muted)}.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.topline{display:flex;align-items:center;gap:14px;margin-bottom:18px}.topline h2{font-size:1.05rem;letter-spacing:.06em;margin:0}.grow{flex:1}.room-code{font-size:clamp(1.8rem,6vw,3rem);font-weight:900;letter-spacing:.28em;text-align:center;color:var(--gold);margin:12px 0}.center{text-align:center}.lobby{max-width:760px;padding:clamp(20px,4vw,34px);margin:auto}.lobby-sub{color:var(--muted);text-align:center;margin:0 0 22px}.roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:18px 0 24px}.seat{display:flex;align-items:center;gap:10px;padding:12px;background:#0d1420;border:1px solid var(--line);border-radius:12px;min-height:54px}.seat-number{color:var(--gold);font-size:.75rem;font-weight:900;width:22px}.seat-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.seat-meta{margin-left:auto;color:var(--muted);font-size:.72rem}.seat-meta.offline{color:var(--red)}.lobby-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.arena{width:min(1080px,100%);margin:auto}.arena-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}.round-chip,.phase-chip{display:inline-flex;align-items:center;border:1px solid var(--line);background:#111a28;border-radius:999px;padding:7px 11px;font-size:.78rem;font-weight:850}.round-chip{color:var(--gold)}.timer{font-variant-numeric:tabular-nums;font-size:1.1rem;font-weight:900;color:var(--gold);min-width:48px;text-align:right}.timer.urgent{color:var(--red)}.arena-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px}.challenge{padding:clamp(20px,4vw,34px);min-height:400px}.challenge h2{font-size:clamp(1.5rem,4vw,2.3rem);margin:14px 0 8px}.prompt{font-size:1rem;line-height:1.75;color:#d4deeb;max-width:720px}.stage-note{color:var(--muted);font-size:.78rem;margin-top:12px}.private-card,.study-card{margin:22px 0;padding:16px;border-radius:13px;border:1px solid #4d4260;background:#241e31}.private-card strong{color:#dbb6ff}.study-card{text-align:center;border-color:#4b5f7e;background:#111e31}.study-sequence{font-size:clamp(2rem,8vw,3.5rem);letter-spacing:.42em;font-variant-numeric:tabular-nums;font-weight:900;color:#fff;padding:15px 0 5px}.answer-box{margin-top:24px}.answer-box[hidden],.private-card[hidden],.study-card[hidden],.result-box[hidden],.waiting-box[hidden]{display:none}.answer-row{display:flex;gap:9px;margin-top:10px}.answer-row .input{max-width:250px}.candidate-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}.candidate{padding:13px;text-align:left;border:1px solid var(--line);border-radius:12px;background:#111a28}.candidate.selected{border-color:var(--gold);background:#2a271e}.candidate small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px}.waiting-box{margin-top:22px;padding:16px;background:#0d1420;border:1px solid var(--line);border-radius:12px;color:#cbd6e5}.result-box{margin-top:20px;padding:17px;border:1px solid #695a37;background:#211d14;border-radius:13px}.result-box h3{margin:0 0 9px;color:var(--gold)}.result-box ul{margin:0;padding-left:20px;color:#d7deea;line-height:1.8}.side-panel{padding:17px;height:max-content}.side-panel h3{font-size:.8rem;letter-spacing:.1em;color:var(--muted);margin:0 0 12px}.score-list{display:grid;gap:8px}.score-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;background:#0d1420}.score-row.me{border:1px solid #4d6591}.score-row.out{opacity:.48}.rank{color:var(--gold);font-weight:900;font-size:.78rem}.score-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.83rem}.score-points{font-weight:900;font-variant-numeric:tabular-nums}.score-sub{grid-column:2/4;color:var(--muted);font-size:.68rem;margin-top:-5px}.roster-status{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:.72rem;color:var(--muted);line-height:1.6}.finish-card{padding:clamp(25px,6vw,55px);text-align:center;max-width:700px;margin:auto}.finish-card .crown{font-size:3rem}.finish-card h1{font-size:clamp(2rem,6vw,3.6rem);margin:10px 0}.finish-card p{color:var(--muted);line-height:1.7}.finish-rank{display:grid;gap:8px;max-width:420px;margin:24px auto}.toast{position:fixed;z-index:10;left:50%;bottom:20px;transform:translate(-50%,18px);opacity:0;pointer-events:none;padding:11px 16px;border:1px solid #43516a;border-radius:12px;background:#182132;box-shadow:0 10px 40px #0008;transition:.2s;max-width:calc(100vw - 30px);text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}.connection{font-size:.74rem;color:var(--green)}.connection.offline{color:var(--red)}.empty-seat{color:#617086;font-size:.78rem}
     @media(max-width:760px){.arena-grid{grid-template-columns:1fr}.side-panel{order:2}.score-list{grid-template-columns:repeat(2,minmax(0,1fr))}.challenge{min-height:0}.roster{grid-template-columns:1fr}.arena-head{flex-wrap:wrap}.arena-head .grow{flex-basis:10px}.form-row,.home-actions{grid-template-columns:1fr}.candidate-list{grid-template-columns:1fr 1fr}.screen{align-items:flex-start!important;padding-top:max(20px,env(safe-area-inset-top))!important;padding-bottom:max(20px,env(safe-area-inset-bottom))!important}}
+  .strategy-board{margin:18px 0;padding:14px;border:1px solid #31435b;border-radius:14px;background:#0b1421}.strategy-market{display:flex;flex-wrap:wrap;gap:8px;margin:9px 0 13px}.strategy-tile{min-width:42px;padding:8px 12px;border:1px solid #b68b4c;border-radius:9px;background:#20202a;color:#f2c46d;text-align:center;font-weight:800}.strategy-log{margin:0;padding-left:20px;color:#aebbd0;font-size:.86rem;line-height:1.7}.phase-chip{max-width:52vw;white-space:normal;text-align:center}
+  .chat-panel{width:min(1200px,100%);margin:16px auto 0;padding:18px}.chat-panel h3{margin:0 0 12px}.chat-messages{height:170px;overflow:auto;padding:10px 12px;margin-bottom:12px;border:1px solid #27364b;border-radius:11px;background:#09111d}.chat-line{padding:5px 0;color:#d7e1ef;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.chat-line strong{color:#f2c46d;margin-right:7px}.chat-line time{color:#718198;font-size:.72rem;margin-right:8px}.result-note{color:#c6d2e2;line-height:1.55}.chat-panel .answer-row{grid-template-columns:minmax(0,1fr) auto}
   </style>
 </head>
 <body>
@@ -21,7 +23,7 @@
             <div class="field"><label for="maxPlayers">방 최대 인원</label><select id="maxPlayers" class="input"></select></div>
             <div class="field"><label>&nbsp;</label><button id="createRoom" class="btn primary block">새 방 만들기</button></div>
           </div>
-          <p class="hint">2~8명이 함께하는 실시간 생존 게임입니다. 메모리, 계산, 비밀 단서, 추리, 임시 팀전이 라운드마다 무작위로 열립니다.</p>
+          <p class="hint">2~8명이 함께하는 실시간 두뇌 서바이벌입니다. 논리 퍼즐과 인디안 포커, 추리, 경매, 전략전 등 16가지 유형이 라운드마다 무작위로 열립니다.</p>
           <hr class="divider">
           <div class="field"><label for="roomCodeInput">초대 코드로 참가</label><input id="roomCodeInput" class="input" maxlength="6" autocomplete="off" placeholder="예: 4K8T2M" style="text-transform:uppercase;letter-spacing:.2em"></div>
           <button id="joinRoom" class="btn blue block">방 입장</button>
@@ -46,7 +48,7 @@
         <header class="arena-head"><span id="roundChip" class="round-chip">ROUND 1</span><span id="phaseChip" class="phase-chip">메모리</span><span class="grow"></span><span id="connectionArena" class="connection">연결 중</span><span id="timer" class="timer">--</span></header>
         <div class="arena-grid">
           <article class="panel challenge">
-            <div id="stageLabel" class="brand">MAIN MATCH</div><h2 id="challengeTitle">문제를 준비하고 있습니다</h2><p id="challengePrompt" class="prompt"></p>
+            <div id="stageLabel" class="brand">MAIN MATCH</div><h2 id="challengeTitle">문제를 준비하고 있습니다</h2><p id="challengePrompt" class="prompt"></p><div id="strategyBoard" class="strategy-board" hidden></div>
             <div id="privateCard" class="private-card" hidden><strong id="privateHeading">나만의 단서</strong><p id="privateText" style="margin:8px 0 0;line-height:1.65"></p></div>
             <div id="studyCard" class="study-card" hidden><div class="label">순서를 기억하세요</div><div id="studySequence" class="study-sequence"></div><div class="hint">시간이 끝나면 순서대로 입력합니다.</div></div>
             <div id="answerBox" class="answer-box" hidden></div>
@@ -55,6 +57,7 @@
           </article>
           <aside class="panel side-panel"><h3 id="scoreHeading">현재 승점</h3><div id="scoreList" class="score-list"></div><div id="roomStatus" class="roster-status"></div></aside>
         </div>
+        <section class="panel chat-panel"><h3>공개 대화</h3><div id="chatMessages" class="chat-messages" aria-live="polite"></div><div class="answer-row"><input id="chatInput" class="input" maxlength="240" autocomplete="off" placeholder="단서 공유, 협상, 추론 내용을 입력하세요"><button id="sendChat" class="btn">전송</button></div></section>
       </div>
     </section>
 
@@ -69,7 +72,7 @@
     const screens = ['home','lobby','arena','finished'];
     const home = $('#home'), nameInput = $('#playerName'), roomInput = $('#roomCodeInput');
     let session = null, snapshot = null, socket = null, reconnectTimer = null, clockTimer = null;
-    let reconnectDelay = 700, lastSeq = -1, chosenAnswer = null, toastTimer = null;
+    let reconnectDelay = 700, lastSeq = -1, chosenAnswer = null, chosenPhaseId = null, toastTimer = null;
     const savedName = localStorage.getItem('timeline.playerName');
     if (savedName) nameInput.value = savedName;
     for (let n=2;n<=8;n++) { const option=document.createElement('option'); option.value=String(n); option.textContent=`${n}명`; $('#maxPlayers').append(option); }
@@ -136,47 +139,139 @@
       $('#lobbyHint').textContent=data.isHost?(canStart?'모두 모였습니다. 시작 버튼을 누르면 생존전이 시작됩니다.':'2명 이상 참가하고 전원이 접속하면 시작할 수 있습니다.'):'방장이 게임을 시작할 때까지 기다려 주세요.';
       setConnection(socket?.readyState===WebSocket.OPEN);
     }
+    function renderChat(messages) {
+      const box=$('#chatMessages'); if(!box)return;
+      const rows=(messages||[]).slice(-60).map(message=>{
+        const time=new Date(Number(message.at)||Date.now()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+        return '<div class="chat-line"><time>'+escapeHtml(time)+'</time><strong>'+escapeHtml(message.name)+'</strong>'+escapeHtml(message.text)+'</div>';
+      });
+      box.innerHTML=rows.join('')||'<div class="chat-line" style="color:#718198">아직 대화가 없습니다.</div>';
+      box.scrollTop=box.scrollHeight;
+    }
+    function sendChat() {
+      const input=$('#chatInput'), text=input.value.trim();
+      if(!text)return;
+      if(send({type:'chat',text}))input.value='';
+    }
     function renderGame(data) {
-      const game=data.game; if(!game)return; showScreen('arena'); chosenAnswer=game.you?.submitted?game.you.answer??null:null;
-      $('#roundChip').textContent=game.stage==='final'?`FINAL ${game.finalIndex} / 3`:`ROUND ${game.round}`;
-      $('#phaseChip').textContent=game.typeLabel||'라운드'; $('#stageLabel').textContent=game.stage==='final'?'FINAL MATCH':'MAIN MATCH';
-      $('#challengeTitle').textContent=game.title||'문제를 확인하세요'; $('#challengePrompt').textContent=game.prompt||'';
+      const game=data.game; if(!game)return; showScreen('arena');
+      if(game.you?.submitted) chosenAnswer=game.you.answer??null;
+      else if(chosenPhaseId!==game.phaseId) { chosenAnswer=null; chosenPhaseId=game.phaseId; }
+      $('#roundChip').textContent=game.stage==='final'?'FINAL '+game.finalIndex+' / 3':'ROUND '+game.round;
+      $('#phaseChip').textContent=[game.categoryLabel,game.typeLabel,game.difficultyLabel].filter(Boolean).join(' · ');
+      $('#stageLabel').textContent=game.stage==='final'?'FINAL MATCH':'MAIN MATCH';
+      $('#challengeTitle').textContent=game.title||'문제를 확인하세요';
+      $('#challengePrompt').textContent=game.prompt||'';
       const privateCard=$('#privateCard'); privateCard.hidden=!game.privateInfo;
       if(game.privateInfo) { $('#privateHeading').textContent=game.privateInfo.heading||'나만의 단서'; $('#privateText').textContent=game.privateInfo.text||''; }
       const study=$('#studyCard'); study.hidden=game.phase!=='study'; $('#studySequence').textContent=game.studySequence||'';
-      renderAnswer(game);
-      const waiting=$('#waitingBox'); waiting.hidden=game.phase!=='answer'||!game.you?.submitted;
-      if(!waiting.hidden) waiting.textContent='제출 완료 · 다른 참가자의 답을 기다리는 중입니다. 제출 답안은 라운드 종료 전까지 공개되지 않습니다.';
+      const board=$('#strategyBoard'); board.hidden=game.type!=='strategy';
+      if(game.type==='strategy') {
+        const market=(game.market||[]).map(card=>'<span class="strategy-tile">'+Number(card.value)+'</span>').join('');
+        const history=(game.moves||[]).map(move=>'<li>'+escapeHtml(move.name)+' · '+escapeHtml(move.value)+'</li>').join('');
+        board.innerHTML='<div class="label">남은 타일</div><div class="strategy-market">'+market+'</div><div class="label">선택 기록</div><ol class="strategy-log">'+history+'</ol>';
+      }
+      renderAnswer(game); renderChat(data.chat||[]);
+      const waiting=$('#waitingBox');
+      const waitingForTurn=game.phase==='turn'&&!game.yourTurn;
+      waiting.hidden=!(waitingForTurn||(game.phase==='answer'&&game.you?.submitted));
+      if(waitingForTurn) waiting.textContent='현재 차례: '+(game.turnPlayerName||'참가자')+' · '+game.turnNumber+' / '+game.turnCount+'턴';
+      else if(!waiting.hidden) waiting.textContent='제출 완료 · 다른 참가자의 답을 기다리는 중입니다. 제출 답안은 라운드 종료 전까지 공개되지 않습니다.';
       const result=$('#resultBox'); result.hidden=!game.result;
-      if(game.result) result.innerHTML=`<h3>${escapeHtml(game.result.headline)}</h3><ul>${(game.result.lines||[]).map(line=>`<li>${escapeHtml(line.text)}</li>`).join('')}</ul>`;
+      if(game.result) result.innerHTML='<h3>'+escapeHtml(game.result.headline)+'</h3>'+
+        (game.result.subline?'<p class="result-note">'+escapeHtml(game.result.subline)+'</p>':'')+
+        '<ul>'+(game.result.lines||[]).map(line=>'<li>'+escapeHtml(line.text)+'</li>').join('')+'</ul>';
       $('#scoreHeading').textContent=game.stage==='final'?'결승 승점':'현재 승점';
       const ranked=[...(data.players||[])].sort((a,b)=>game.stage==='final'?b.finalScore-a.finalScore||b.score-a.score:b.score-a.score);
-      $('#scoreList').innerHTML=ranked.map((player,index)=>`<div class="score-row ${player.id===data.youId?'me':''} ${player.eliminated?'out':''}"><span class="rank">${String(index+1).padStart(2,'0')}</span><span class="score-name">${escapeHtml(player.name)}${player.id===data.youId?' (나)':''}${player.team?` · ${player.team}팀`:''}</span><span class="score-points">${game.stage==='final'?player.finalScore:player.score}</span><span class="score-sub">${player.eliminated?`ROUND ${player.eliminatedRound} 탈락`:game.stage==='final'?`본선 ${player.score}점 · 이번 결승 ${player.finalScore}점`:`이번 라운드 +${player.roundPoints}점`}</span></div>`).join('');
-      const active=(data.players||[]).filter(player=>!player.eliminated); $('#roomStatus').textContent=`생존 ${active.length}명 · ${active.map(player=>player.name).join(' / ')}`;
-      $('#timer').classList.toggle('urgent',Number(game.deadlineAt)-Date.now()<5000); setConnection(socket?.readyState===WebSocket.OPEN); updateTimer(game.deadlineAt);
+      $('#scoreList').innerHTML=ranked.map((player,index)=>'<div class="score-row '+(player.id===data.youId?'me ':'')+(player.eliminated?'out':'')+'"><span class="rank">'+String(index+1).padStart(2,'0')+'</span><span class="score-name">'+escapeHtml(player.name)+(player.id===data.youId?' (나)':'')+(player.team?' · '+escapeHtml(player.team)+'팀':'')+'</span><span class="score-points">'+(game.stage==='final'?player.finalScore:player.score)+'</span><span class="score-sub">'+(player.eliminated?'ROUND '+player.eliminatedRound+' 탈락':game.stage==='final'?'본선 '+player.score+'점 · 이번 결승 '+player.finalScore+'점':'이번 라운드 '+(player.roundPoints>=0?'+':'')+player.roundPoints+'점')+'</span></div>').join('');
+      const active=(data.players||[]).filter(player=>!player.eliminated);
+      $('#roomStatus').textContent='생존 '+active.length+'명 · '+active.map(player=>player.name).join(' / ');
+      $('#timer').classList.toggle('urgent',Number(game.deadlineAt)-Date.now()<5000);
+      setConnection(socket?.readyState===WebSocket.OPEN); updateTimer(game.deadlineAt);
     }
     function renderAnswer(game) {
-      const box=$('#answerBox'); box.replaceChildren(); box.hidden=game.phase!=='answer'||Boolean(game.you?.submitted);
-      if(box.hidden)return;
-      const label=document.createElement('div'); label.className='label'; label.textContent=game.answerHint||'답을 입력하고 제출하세요'; box.append(label);
-      if(game.type==='deduction') {
+      const box=$('#answerBox'); box.replaceChildren();
+      const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.yourTurn);
+      box.hidden=!canAnswer; if(box.hidden)return;
+      const label=document.createElement('div'); label.className='label';
+      label.textContent=game.answerHint||'답을 입력하고 제출하세요'; box.append(label);
+
+      if(game.inputKind==='choice') {
         const list=document.createElement('div'); list.className='candidate-list';
-        for(const option of game.options||[]) { const button=document.createElement('button'); button.type='button'; button.className=`candidate ${chosenAnswer===option.value?'selected':''}`; button.innerHTML=`${escapeHtml(option.label)}<small>용의자로 지목</small>`; button.addEventListener('click',()=>{chosenAnswer=option.value; renderAnswer(game);}); list.append(button); }
+        for(const option of game.options||[]) {
+          const button=document.createElement('button'); button.type='button';
+          button.className='candidate '+(chosenAnswer===option.value?'selected':'');
+          button.innerHTML=escapeHtml(option.label)+'<small>선택</small>';
+          button.addEventListener('click',()=>{chosenAnswer=option.value; renderAnswer(game);});
+          list.append(button);
+        }
         box.append(list);
-      } else {
-        const row=document.createElement('div'); row.className='answer-row';
-        const input=document.createElement('input'); input.className='input'; input.id='answerInput'; input.autocomplete='off'; input.placeholder=game.placeholder||'숫자를 입력'; input.maxLength=game.type==='memory'?6:3; input.inputMode='numeric'; input.value=chosenAnswer??''; input.addEventListener('input',()=>{chosenAnswer=input.value;});
-        const button=document.createElement('button'); button.type='button'; button.className='btn primary'; button.textContent='답 제출'; button.addEventListener('click',()=>submitAnswer(input.value)); row.append(input,button); box.append(row);
-        input.addEventListener('keydown',event=>{if(event.key==='Enter')submitAnswer(input.value);});
+        const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
+        submit.style.marginTop='12px'; submit.textContent='선택한 답 제출'; submit.disabled=!chosenAnswer;
+        submit.addEventListener('click',()=>submitAnswer(chosenAnswer)); box.append(submit);
+        return;
       }
-      if(game.type==='deduction') { const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.style.marginTop='12px'; submit.textContent='선택한 인물 지목'; submit.disabled=!chosenAnswer; submit.addEventListener('click',()=>submitAnswer(chosenAnswer)); box.append(submit); }
+
+      if(game.inputKind==='strategy') {
+        const list=document.createElement('div'); list.className='candidate-list';
+        for(const card of game.market||[]) {
+          const button=document.createElement('button'); button.type='button'; button.className='candidate';
+          button.textContent='타일 '+card.value+' 가져가기';
+          button.addEventListener('click',()=>submitAnswer(card.id)); list.append(button);
+        }
+        box.append(list); return;
+      }
+
+      if(game.inputKind==='indianPoker') {
+        const row=document.createElement('div'); row.className='answer-row';
+        const guess=document.createElement('input'); guess.className='input'; guess.type='number';
+        guess.min='2'; guess.max='14'; guess.step='1'; guess.inputMode='numeric'; guess.placeholder='예상 카드 2~14';
+        guess.autocomplete='off';
+        const wager=document.createElement('input'); wager.className='input'; wager.type='number';
+        wager.min='0'; wager.max='5'; wager.step='1'; wager.inputMode='numeric'; wager.placeholder='베팅 0~5';
+        wager.autocomplete='off';
+        const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.textContent='예상·베팅 제출';
+        submit.addEventListener('click',()=>submitAnswer({guess:guess.value,wager:wager.value}));
+        row.append(guess,wager,submit); box.append(row); return;
+      }
+
+      if(game.inputKind==='bid') {
+        const row=document.createElement('div'); row.className='answer-row';
+        const bid=document.createElement('input'); bid.className='input'; bid.type='number';
+        bid.min='0'; bid.max='10'; bid.step='1'; bid.inputMode='numeric'; bid.placeholder='입찰액 (내 한도 확인)';
+        bid.autocomplete='off';
+        const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.textContent='봉인 입찰';
+        submit.addEventListener('click',()=>submitAnswer({bid:bid.value}));
+        row.append(bid,submit); box.append(row); return;
+      }
+
+      const row=document.createElement('div'); row.className='answer-row';
+      const input=document.createElement('input'); input.className='input'; input.id='answerInput';
+      input.type='text'; input.autocomplete='off'; input.placeholder=game.placeholder||'답을 입력하세요';
+      input.maxLength=game.maxLength||4; input.inputMode=game.inputKind==='text'?'text':'numeric';
+      input.value=typeof chosenAnswer==='string'?chosenAnswer:'';
+      input.addEventListener('input',()=>{chosenAnswer=input.value;});
+      const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
+      submit.textContent='답 제출'; submit.addEventListener('click',()=>submitAnswer(input.value));
+      row.append(input,submit); box.append(row);
+      input.addEventListener('keydown',event=>{if(event.key==='Enter')submitAnswer(input.value);});
     }
     function submitAnswer(answer) {
-      if(!snapshot?.game||snapshot.game.phase!=='answer'||snapshot.game.you?.submitted)return;
+      if(!snapshot?.game)return;
       const game=snapshot.game;
+      const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.type==='strategy'&&game.yourTurn);
+      if(!canAnswer)return;
       if(answer==null||String(answer).trim()==='') { toast('답을 선택하거나 입력해 주세요.'); return; }
-      if(game.type==='memory'&&!/^\d{6}$/.test(String(answer).replace(/\s/g,''))) { toast('기억한 숫자 6자리를 입력해 주세요.'); return; }
-      if(!send({type:'action',phaseId:game.phaseId,actionId:crypto.randomUUID(),answer:String(answer).trim()}))return;
+      if(game.inputKind==='memory'&&!/^\d{12}$/.test(String(answer).replace(/\s/g,''))) { toast('기억한 숫자 12자리를 입력해 주세요.'); return; }
+      if(game.type==='stateInference'&&!/^[01]{5}$/.test(String(answer).trim())) { toast('최종 상태 5비트를 입력해 주세요.'); return; }
+      if(game.inputKind==='number'&&!/^-?\d{1,4}$/.test(String(answer).trim())) { toast('정수 답안을 입력해 주세요.'); return; }
+      if(game.inputKind==='indianPoker') {
+        const guess=Number(answer.guess), wager=Number(answer.wager);
+        if(!Number.isInteger(guess)||guess<2||guess>14||!Number.isInteger(wager)||wager<0||wager>5) { toast('카드 예상은 2~14, 베팅은 0~5로 입력해 주세요.'); return; }
+      }
+      if(game.inputKind==='bid'&&!/^\d{1,2}$/.test(String(answer.bid??''))) { toast('입찰액을 숫자로 입력해 주세요.'); return; }
+      const payload=typeof answer==='object'?answer:String(answer).trim();
+      if(!send({type:'action',phaseId:game.phaseId,actionId:crypto.randomUUID(),answer:payload}))return;
       const button=$('#answerBox button'); if(button)button.disabled=true;
     }
     function updateTimer(deadline) {
@@ -189,6 +284,7 @@
       $('#finishRank').innerHTML=ranked.map((player,index)=>`<div class="score-row ${player.id===data.game.winnerId?'me':''}"><span class="rank">${String(index+1).padStart(2,'0')}</span><span class="score-name">${escapeHtml(player.name)}</span><span class="score-points">${player.finalScore}점</span></div>`).join('');
     }
     $('#createRoom').addEventListener('click',createRoom); $('#joinRoom').addEventListener('click',joinRoom);
+    $('#sendChat').addEventListener('click',sendChat); $('#chatInput').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();sendChat();}});
     roomInput.addEventListener('input',()=>roomInput.value=roomInput.value.toUpperCase()); roomInput.addEventListener('keydown',event=>{if(event.key==='Enter')joinRoom();});
     $('#startGame').addEventListener('click',()=>send({type:'start'}));
     $('#copyCode').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(snapshot?.code||'');toast('초대 코드를 복사했습니다.');}catch{toast(`초대 코드: ${snapshot?.code||''}`);}});
