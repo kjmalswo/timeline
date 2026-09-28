@@ -90,11 +90,12 @@ function makeChallenge(type, players) {
   const privateById = {};
   const tieBreak = Object.fromEntries(players.map(player => [player.id, randomInt(1_000_000)]));
   const isFullInfo = FULL_INFO_TYPES.includes(type);
+  const veryHard = ['logicGrid', 'spatial', 'indianPoker', 'truthLie', 'strategy', 'path', 'stateInference'].includes(type);
   const base = {
     type,
     typeLabel: TYPE_LABELS[type],
     categoryLabel: isFullInfo ? '완전정보' : '불완전정보',
-    difficultyLabel: randomInt(3) === 0 ? '최상' : '상',
+    difficultyLabel: veryHard ? '최상' : '상',
     privateById,
     tieBreak
   };
@@ -366,7 +367,8 @@ function makeChallenge(type, players) {
       id: 'T' + String(index + 1).padStart(2, '0'), value: randomInt(13) + 1
     }));
     const objectives = {};
-    for (const player of players) objectives[player.id] = sample(objectiveTypes);
+    const shuffledObjectives = shuffle(objectiveTypes);
+    for (const [index, player] of players.entries()) objectives[player.id] = shuffledObjectives[index % shuffledObjectives.length];
     return { ...base, inputKind: 'strategy', title: '비공개 목표 드래프트',
       prompt: '각자 비공개 목표가 있습니다. 두 차례씩 돌아가며 타일 하나를 가져가세요. 남은 타일과 선택 기록은 모두에게 공개됩니다.',
       answerHint: '내 차례입니다 · 가져갈 타일을 선택하세요',
@@ -394,7 +396,7 @@ function makeChallenge(type, players) {
     const totals = Object.fromEntries(paths.map(path => [path.id, path.edges.reduce((sum, key) => sum + edges[key], 0)]));
     const solution = paths.slice().sort((a, b) => totals[a.id] - totals[b.id] || a.id.localeCompare(b.id))[0].id;
     return { ...base, inputKind: 'choice', title: '분할 지도',
-      prompt: '출발 S에서 도착 G까지 갑니다. 가능한 길은 S-A/B/C, 각 노드에서 G, 그리고 A-B·A-C·B-C 통로입니다. 각 통로 길이 단서를 합쳐 가장 짧은 경로를 고르세요.',
+      prompt: '출발 S에서 도착 G까지 갑니다. 가능한 통로와 길이 정보는 참가자별로 나뉘어 있습니다. 아래 여섯 후보 경로의 길이를 합쳐 가장 짧은 경로를 고르세요.',
       answerHint: '최단 경로', options: makeChoices(paths.map(path => path.id)), solution, totals,
       revealText: '최단 경로는 ' + solution + '이며 길이는 ' + totals[solution] + '입니다.' };
   }
@@ -584,10 +586,11 @@ export class GameRoom {
     this.tail = Promise.resolve();
     this.ready = ctx.blockConcurrencyWhile(async () => {
       const snapshot = await ctx.storage.get('snapshot');
-      if (snapshot) { this.meta = snapshot.meta; this.game = snapshot.game; }
+      if (snapshot?.meta?.schemaVersion === 2) { this.meta = snapshot.meta; this.game = snapshot.game; }
       else {
-        // Rooms created by the previous 1v1 rules cannot be resumed under the new game state.
+        // Drop rooms whose saved challenge format predates the expanded challenge engine.
         await ctx.storage.deleteAll();
+        this.meta = null; this.game = null;
       }
     });
   }
@@ -616,8 +619,8 @@ export class GameRoom {
     if (this.meta && this.meta.expires > Date.now()) return fail('이미 사용 중인 방 코드입니다.', 409);
     const playerId = crypto.randomUUID();
     const token = `${crypto.randomUUID()}${crypto.randomUUID()}`;
-    this.meta = { code: body.code, maxPlayers: body.maxPlayers, hostId: playerId, status: 'waiting', seq: 1,
-      expires: Date.now() + 30 * 60_000, players: { [playerId]: { id: playerId, name: body.name, token,
+    this.meta = { schemaVersion: 2, code: body.code, maxPlayers: body.maxPlayers, hostId: playerId, status: 'waiting', seq: 1,
+      chat: [], chatLastSent: {}, expires: Date.now() + 30 * 60_000, players: { [playerId]: { id: playerId, name: body.name, token,
         connected: false, score: 0, roundPoints: 0, finalScore: 0, eliminated: false, eliminatedRound: null, joinedAt: Date.now() } } };
     this.game = null;
     await this.save(); await this.alarmAt(this.meta.expires);
@@ -693,6 +696,8 @@ export class GameRoom {
       turnPlayerName: currentPlayerId ? this.meta.players[currentPlayerId]?.name : undefined,
       yourTurn: currentPlayerId === playerId,
       privateInfo: challenge.privateById?.[playerId] || null,
+      chat: (this.meta.chat || []).map(message => ({ id: message.id, playerId: message.playerId,
+        name: this.meta.players[message.playerId]?.name || '참가자', text: message.text, at: message.at })),
       you: { submitted: Boolean(submission), answer: this.game.phase === 'result' || this.game.phase === 'finished' ? submission?.answer ?? null : null },
       result: this.game.result, winnerId: this.game.winnerId
     } : null;
@@ -765,6 +770,19 @@ export class GameRoom {
       const player = this.meta.players[playerId];
 
       if (message.type === 'sync') { this.send(playerId, this.stateFor(playerId)); return; }
+      if (message.type === 'chat') {
+        if (this.meta.status !== 'playing') return this.send(playerId, { type: 'error', message: '게임 진행 중에만 대화할 수 있습니다.' });
+        const text = String(message.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 240);
+        if (!text) return;
+        const now = Date.now();
+        this.meta.chatLastSent ||= {};
+        if (now - (this.meta.chatLastSent[playerId] || 0) < 650) return;
+        this.meta.chatLastSent[playerId] = now;
+        this.meta.chat ||= [];
+        this.meta.chat.push({ id: crypto.randomUUID(), playerId, text, at: now });
+        if (this.meta.chat.length > 60) this.meta.chat.splice(0, this.meta.chat.length - 60);
+        this.bump(); await this.save(); this.broadcast(); return;
+      }
       if (message.type === 'start') {
         const allConnected = makePlayers(this.meta).every(item => this.connected(item.id));
         if (playerId !== this.meta.hostId || this.meta.status !== 'waiting' || makePlayers(this.meta).length < 2 || !allConnected)
