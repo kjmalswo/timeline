@@ -144,7 +144,7 @@
         const time=new Date(Number(message.at)||Date.now()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
         return '<div class="chat-line"><time>'+escapeHtml(time)+'</time><strong>'+escapeHtml(message.name)+'</strong>'+escapeHtml(message.text)+'</div>';
       });
-      box.innerHTML=rows.join()||'<div class="chat-line" style="color:#718198">대화 없음</div>';
+      box.innerHTML=rows.join('')||'<div class="chat-line" style="color:#718198">대화 없음</div>';
       box.scrollTop=box.scrollHeight;
     }
     function sendChat() {
