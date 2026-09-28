@@ -2,24 +2,6 @@ const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_PLAYERS = 8;
 const FULL_INFO_TYPES = ['sequence', 'symbolGrid', 'logicGrid', 'spatial'];
 const LIMITED_INFO_TYPES = ['indianPoker', 'turtleSoup', 'rankInference', 'cipher', 'probability', 'resource', 'auction', 'truthLie', 'memory', 'strategy', 'path', 'stateInference'];
-const TYPE_LABELS = {
-  sequence: '수열·규칙 추론',
-  symbolGrid: '기호 연립 퍼즐',
-  logicGrid: '논리 그리드',
-  spatial: '공간 회전 추론',
-  indianPoker: '인디안 포커 · 더블덱',
-  turtleSoup: '바다거북스프',
-  rankInference: '순위 추론',
-  cipher: '암호 추론',
-  probability: '확률전',
-  resource: '자원 최적화',
-  auction: '봉인 경매',
-  truthLie: '참·거짓 판별',
-  memory: '작업 기억력',
-  strategy: '턴제 전략',
-  path: '경로 최적화',
-  stateInference: '상태 추론'
-};
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
@@ -89,16 +71,7 @@ function rankOptions(players) {
 function makeChallenge(type, players) {
   const privateById = {};
   const tieBreak = Object.fromEntries(players.map(player => [player.id, randomInt(1_000_000)]));
-  const isFullInfo = FULL_INFO_TYPES.includes(type);
-  const veryHard = ['logicGrid', 'spatial', 'indianPoker', 'truthLie', 'strategy', 'path', 'stateInference'].includes(type);
-  const base = {
-    type,
-    typeLabel: TYPE_LABELS[type],
-    categoryLabel: isFullInfo ? '완전정보' : '불완전정보',
-    difficultyLabel: veryHard ? '최상' : '상',
-    privateById,
-    tieBreak
-  };
+  const base = { type, privateById, tieBreak };
 
   if (type === 'sequence') {
     const start = randomInt(7) + 2;
@@ -106,10 +79,10 @@ function makeChallenge(type, players) {
     const second = randomInt(4) + 2;
     const terms = Array.from({ length: 5 }, (_, index) => start + first * index + second * index * (index - 1) / 2);
     const solution = start + first * 5 + second * 5 * 4 / 2;
-    return { ...base, inputKind: 'number', title: '차분의 함정',
-      prompt: '숫자 배열의 다음 항을 구하세요. 첫 번째 차분이 일정한 간격으로 증가합니다.\n' + terms.join(' · ') + ' · ?',
+    return { ...base, inputKind: 'number', title: '수열',
+      prompt: '다음 항을 구하세요. 첫 번째 차분은 일정한 간격으로 증가합니다.\n' + terms.join(' · ') + ' · ?',
       answerHint: '다음 항을 입력하세요', placeholder: '정수', maxLength: 4, solution,
-      revealText: '두 번째 차분이 일정한 수열입니다. 다음 항은 ' + solution + '입니다.' };
+      revealText: '정답: ' + solution + '입니다.' };
   }
 
   if (type === 'symbolGrid') {
@@ -120,11 +93,11 @@ function makeChallenge(type, players) {
     const [triangle, square, circle] = values;
     const equations = [triangle + square, square + circle, triangle + circle];
     const solution = triangle * square + circle;
-    return { ...base, inputKind: 'number', title: '기호 연립 추론',
-      prompt: '세 기호는 서로 다른 한 자리 수입니다. 세 식을 연립해 값을 구하세요.\n' +
+    return { ...base, inputKind: 'number', title: '연립식',
+      prompt: '세 기호는 서로 다른 한 자리 수입니다. 식을 풀어 △ × □ + ○를 구하세요.\n' +
         '△ + □ = ' + equations[0] + '\n□ + ○ = ' + equations[1] + '\n△ + ○ = ' + equations[2] +
         '\n마지막으로 △ × □ + ○ 를 계산하세요.',
-      answerHint: '최종 계산값', placeholder: '정수', maxLength: 4, solution,
+      answerHint: '계산 결과', placeholder: '정수', maxLength: 4, solution,
       revealText: '△=' + triangle + ', □=' + square + ', ○=' + circle + ' · 정답 ' + solution };
   }
 
@@ -163,7 +136,7 @@ function makeChallenge(type, players) {
       prompt: '네 참가자의 순위는 1~4위까지 모두 다릅니다. 단서를 모두 만족할 때 2위는 누구인가요?\n' +
         clues.map((clue, i) => (i + 1) + '. ' + clue).join('\n'),
       answerHint: '2위 참가자', options: makeChoices(names), solution: answer,
-      revealText: '전체 순서는 ' + target.join(' → ') + '입니다. 2위는 ' + answer + '입니다.' };
+      revealText: '순서: ' + target.join(' → ') + ' · 2위: ' + answer };
   }
 
   if (type === 'spatial') {
@@ -177,9 +150,9 @@ function makeChallenge(type, players) {
     }
     const start = String.fromCharCode(65 + startRow) + String(startCol + 1);
     return { ...base, inputKind: 'choice', title: '좌표 변환',
-      prompt: '4×4 격자에서 점 ' + start + '를 시계 방향으로 90도 회전한 뒤, 좌우로 반사합니다. 도착 좌표는?',
+      prompt: '4×4 격자에서 ' + start + '를 시계 방향으로 90° 회전한 뒤 좌우 반사합니다. 새 좌표는?',
       answerHint: '변환 결과를 선택하세요', options: optionValues(solution, distractors), solution,
-      revealText: '시계 회전 후 좌우 반사를 적용한 좌표는 ' + solution + '입니다.' };
+      revealText: '정답: ' + solution };
   }
 
   if (type === 'indianPoker') {
@@ -190,20 +163,20 @@ function makeChallenge(type, players) {
     for (const player of players) {
       const visible = players.filter(other => other.id !== player.id)
         .map(other => other.name + ': ' + rankName(hand[other.id]));
-      privateById[player.id] = { heading: '내 카드는 보이지 않습니다', text: visible.length
+      privateById[player.id] = { heading: '내 카드', text: visible.length
         ? '내 앞 카드만 확인할 수 있습니다. 상대의 공개 카드: ' + visible.join(' · ')
         : '상대 카드가 없습니다.' };
     }
     return { ...base, inputKind: 'indianPoker', title: '더블덱 인디안 포커',
-      prompt: '두 벌의 52장 덱에서 각자 한 장을 받았습니다. 내 카드는 보이지 않고 상대 카드만 보입니다. 내 숫자를 추론해 베팅하세요.',
+      prompt: '두 벌의 덱에서 한 장씩 받습니다. 내 카드는 보이지 않고 상대 카드만 보입니다. 내 숫자를 추측해 베팅하세요.',
       answerHint: '내 카드 예상과 베팅을 함께 제출하세요', hand,
-      revealText: '개별 카드와 베팅 결과가 공개되었습니다.' };
+      revealText: '' };
   }
 
   if (type === 'turtleSoup') {
     const cases = [
       {
-        prompt: '한 남자가 술집에서 물을 달라고 했습니다. 바텐더가 갑자기 큰 소리를 내자 남자는 “고맙습니다”라고 하고 나갔습니다. 무슨 일이 있었을까요?',
+        prompt: '술집에서 물을 청한 사람이 있습니다. 바텐더가 갑자기 소리치자, 그 사람은 감사하고 나갔습니다. 이유는?',
         options: [
           { value: 'A', label: '남자는 목이 말라 있었고, 바텐더는 물 대신 술을 건넸다.' },
           { value: 'B', label: '남자는 딸꾹질 중이었고, 바텐더가 놀라게 해 멈췄다.' },
@@ -215,7 +188,7 @@ function makeChallenge(type, players) {
         explanation: '남자는 딸꾹질을 멈추려고 물을 부탁했고, 바텐더는 놀라게 해 딸꾹질을 멈춰 주었습니다.'
       },
       {
-        prompt: '밤에 등대의 불이 꺼졌습니다. 아침에 등대지기는 항구에 들어오지 못한 배의 소식을 듣고 자신이 원인임을 알았습니다. 무슨 일이 있었을까요?',
+        prompt: '밤에 등대 불이 꺼졌습니다. 다음 날 배 한 척이 항구에 오지 못했고, 등대지기는 자신이 원인임을 알았습니다. 무슨 일이 있었나요?',
         options: [
           { value: 'A', label: '등대지기가 안내등을 꺼 배가 암초를 피하지 못했다.' },
           { value: 'B', label: '배가 목적지를 바꿔 다른 항구로 갔다.' },
@@ -227,7 +200,7 @@ function makeChallenge(type, players) {
         explanation: '등대지기가 불을 꺼 항로 표지가 사라졌고, 배가 암초를 피하지 못했습니다.'
       },
       {
-        prompt: '열기구에서 세 사람이 사막 위를 날고 있습니다. 기구가 계속 내려가자 짐을 버렸지만 충분하지 않았습니다. 곧 한 사람은 사막에서 발견됐고, 손에는 짧은 성냥 하나가 있었습니다. 왜 그 사람이 떨어졌을까요?',
+        prompt: '열기구에 세 사람이 탔습니다. 기구가 내려가 짐을 버렸지만, 한 사람이 사막에 떨어졌습니다. 그 손에는 짧은 성냥이 있었습니다. 왜 떨어졌나요?',
         options: [
           { value: 'A', label: '그는 지도를 찾으려고 혼자 뛰어내렸다.' },
           { value: 'B', label: '성냥으로 불을 붙이려다 균형을 잃었다.' },
@@ -244,8 +217,8 @@ function makeChallenge(type, players) {
     Object.assign(privateById, Object.fromEntries(Object.entries(assigned).map(([id, clue]) => [id, {
       heading: '사건 기록 조각', text: clue.text
     }])));
-    return { ...base, inputKind: 'choice', title: '기묘한 사건',
-      prompt: puzzle.prompt, answerHint: '사건의 설명을 선택하세요', options: puzzle.options,
+    return { ...base, inputKind: 'choice', title: '상황 추리',
+      prompt: puzzle.prompt, answerHint: '정답 선택', options: puzzle.options,
       solution: puzzle.solution, revealText: puzzle.explanation };
   }
 
@@ -254,12 +227,12 @@ function makeChallenge(type, players) {
     const rankById = Object.fromEntries(players.map((player, index) => [player.id, ranks[index]]));
     const targetRank = randomInt(players.length) + 1;
     for (const player of players) privateById[player.id] = {
-      heading: '비공개 순위 카드',
-      text: '내 카드에는 ' + rankById[player.id] + '위라고 적혀 있습니다. 다른 사람의 순위는 서로 공유해도 됩니다.'
+      heading: '내 순위',
+      text: '내 순위: ' + rankById[player.id] + '위'
     };
     const answer = players.find(player => rankById[player.id] === targetRank);
-    return { ...base, inputKind: 'choice', title: '숨겨진 순위',
-      prompt: targetRank + '위에 해당하는 참가자는 누구인가요? 각자 받은 비공개 순위 카드를 비교하세요.',
+    return { ...base, inputKind: 'choice', title: '순위 추론',
+      prompt: targetRank + '위 참가자는 누구인가요? 받은 순위 카드를 공유하세요.',
       answerHint: '해당 순위의 참가자', options: rankOptions(players), rankById, targetRank,
       solution: answer.id,
       revealText: targetRank + '위는 ' + answer.name + '입니다.' };
@@ -272,10 +245,10 @@ function makeChallenge(type, players) {
     const cipher = [...solution].map((letter, index) => String.fromCharCode(65 + (letter.charCodeAt(0) - 65 + shifts[index]) % 26)).join('');
     const fragments = shifts.map((shift, index) => '암호 ' + (index + 1) + '번째 문자는 복호화할 때 ' + shift + '칸 뒤로 이동합니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
-    return { ...base, inputKind: 'choice', title: '분할 키 암호',
-      prompt: '암호문: ' + cipher + '\n각자 가진 위치별 키 조각을 모아 원문을 복호화하세요.',
+    return { ...base, inputKind: 'choice', title: '암호 추론',
+      prompt: '암호문: ' + cipher + '\n위치별 키 조각을 모아 복호화하세요.',
       answerHint: '복호화된 단어', options: makeChoices(words), solution,
-      revealText: '복호화 결과는 ' + solution + '입니다.' };
+      revealText: '정답: ' + solution };
   }
 
   if (type === 'probability') {
@@ -287,17 +260,17 @@ function makeChallenge(type, players) {
     for (const draw of draws) {
       const counts = jarCounts[draw.jar];
       const color = randomInt(10) < counts.red ? '빨강' : '파랑';
-      privateById[draw.id] = { heading: '비공개 표본', text: draw.jar + ' 항아리에서 뽑은 구슬은 ' + color + '입니다.' };
+      privateById[draw.id] = { heading: '내 표본', text: draw.jar + ' 항아리에서 뽑은 구슬은 ' + color + '입니다.' };
     }
     return { ...base, inputKind: 'choice', title: '항아리의 확률',
-      prompt: 'A와 B 중 하나에는 빨강 8개·파랑 2개, 다른 하나에는 빨강 2개·파랑 8개가 있습니다. 각 표본은 복원 추출입니다. 단서를 합쳐 빨강 비율이 더 높은 항아리를 찾으세요.',
+      prompt: 'A와 B 중 한 곳은 빨강 8개·파랑 2개, 다른 곳은 빨강 2개·파랑 8개입니다. 표본은 복원 추출입니다. 개인 표본을 합쳐 빨강 비율이 높은 항아리를 찾으세요.',
       answerHint: '빨강 비율이 더 높은 항아리', options: makeChoices(['A', 'B']), solution: redMajority,
-      revealText: '빨강 구슬 비율이 더 높은 항아리는 ' + redMajority + '입니다.' };
+      revealText: '정답: ' + redMajority };
   }
 
   if (type === 'resource') {
     const shares = Object.fromEntries(players.map(player => [player.id, randomInt(4) + 1]));
-    for (const player of players) privateById[player.id] = { heading: '비공개 자원 카드', text: '팀 창고에 보탤 수 있는 에너지: ' + shares[player.id] + '개' };
+    for (const player of players) privateById[player.id] = { heading: '내 자원', text: '에너지 ' + shares[player.id] + '개' };
     const total = Object.values(shares).reduce((sum, value) => sum + value, 0);
     const projects = [{ id: 'A', cost: 1, reward: randomInt(8) + 5 }];
     for (const id of ['B', 'C', 'D']) projects.push({ id, cost: randomInt(players.length * 4 + 1) + 1, reward: randomInt(12) + 3 });
@@ -305,21 +278,21 @@ function makeChallenge(type, players) {
     const best = projects.filter(project => project.cost <= total)
       .sort((a, b) => b.reward - a.reward || a.cost - b.cost || a.id.localeCompare(b.id))[0];
     return { ...base, inputKind: 'choice', title: '한정 자원 배분',
-      prompt: '각자 가진 에너지 카드를 합쳐 팀 총량을 계산하세요. 프로젝트는 하나만 선택할 수 있습니다. 총량 안에서 보상이 가장 큰 계획을 고르세요.',
+      prompt: '에너지 카드 합계를 구하고, 비용 안에서 보상이 가장 큰 프로젝트 하나를 고르세요.',
       answerHint: '최적 프로젝트', options: projects.map(project => ({ value: project.id, label: labels[project.id] })),
       solution: best.id, totalResource: total,
-      revealText: '팀 자원 ' + total + '개로 가능한 최고 보상은 프로젝트 ' + best.id + ' (' + best.reward + '점)입니다.' };
+      revealText: '정답: ' + best.id + ' · 자원 ' + total + ' };
   }
 
   if (type === 'auction') {
     const values = Object.fromEntries(players.map(player => [player.id, randomInt(9) + 3]));
     const budgets = Object.fromEntries(players.map(player => [player.id, randomInt(7) + 4]));
-    for (const player of players) privateById[player.id] = { heading: '비공개 경매 정보',
+    for (const player of players) privateById[player.id] = { heading: '내 입찰 정보',
       text: '경매 물건의 내 가치는 ' + values[player.id] + '점, 내 입찰 한도는 ' + budgets[player.id] + '점입니다.' };
     return { ...base, inputKind: 'bid', title: '봉인 입찰',
-      prompt: '모두 같은 물건에 한 번씩 비공개 입찰합니다. 가장 높은 입찰자가 낙찰되며 동점은 추첨으로 정합니다. 낙찰 점수는 내 가치에서 입찰액을 뺀 값입니다.',
-      answerHint: '입찰액 (한도 안에서 선택)', values, budgets,
-      revealText: '최고 입찰자가 낙찰되었습니다. 가치보다 높게 입찰하면 점수를 잃을 수 있습니다.' };
+      prompt: '각자 한 번 입찰합니다. 최고가가 낙찰되며, 동점은 추첨합니다. 점수는 내 가치에서 입찰액을 뺀 값입니다.',
+      answerHint: '입찰액', values, budgets,
+      revealText: '' };
   }
 
   if (type === 'truthLie') {
@@ -336,7 +309,7 @@ function makeChallenge(type, players) {
     const fragments = witnesses.map(witness => witness + '의 진술: 암호는 ' + statements[witness][0] + '부터 ' + statements[witness][1] + ' 사이입니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
     return { ...base, inputKind: 'choice', title: '거짓 진술 한 개',
-      prompt: '암호는 1~12입니다. 네 진술 중 하나만 거짓입니다. 나머지 세 구간에는 암호가 모두 포함되며, 거짓 구간은 그 공통 범위와 겹치지 않습니다. 누가 거짓말을 했나요?',
+      prompt: '암호는 1~12입니다. 네 진술 중 하나만 거짓입니다. 나머지 세 구간에는 암호가 포함되고, 거짓 구간은 공통 범위와 겹치지 않습니다. 누가 거짓인가요?',
       answerHint: '거짓 진술자', options: makeChoices(witnesses), solution: liar, statements, secret,
       revealText: '거짓 진술자는 ' + liar + '입니다. 암호는 ' + secret + '입니다.' };
   }
@@ -346,12 +319,12 @@ function makeChallenge(type, players) {
     for (const player of players) {
       const sequence = Array.from({ length: 12 }, () => String(randomInt(10))).join('');
       memoryById[player.id] = sequence;
-      privateById[player.id] = { heading: '개인 기억 과제', text: '각 참가자는 서로 다른 배열을 받습니다. 본인에게 보이는 숫자만 기억하세요.' };
+      privateById[player.id] = { heading: '내 숫자', text: '내 배열을 기억하세요.' };
     }
-    return { ...base, inputKind: 'memory', title: '작업 기억력 · 12자리',
-      prompt: '잠시 표시되는 개인별 숫자 배열 12자리의 순서를 기억한 뒤, 표시가 사라지면 그대로 입력하세요.',
+    return { ...base, inputKind: 'memory', title: '기억력 · 12자리',
+      prompt: '12자리 숫자를 기억한 뒤 그대로 입력하세요.',
       answerHint: '기억한 12자리를 입력하세요', placeholder: '12자리 숫자', maxLength: 12,
-      memoryById, revealText: '개인별 배열의 위치 일치 개수로 점수를 계산합니다.' };
+      memoryById, revealText: '' };
   }
 
   if (type === 'strategy') {
@@ -369,11 +342,11 @@ function makeChallenge(type, players) {
     const objectives = {};
     const shuffledObjectives = shuffle(objectiveTypes);
     for (const [index, player] of players.entries()) objectives[player.id] = shuffledObjectives[index % shuffledObjectives.length];
-    return { ...base, inputKind: 'strategy', title: '비공개 목표 드래프트',
-      prompt: '각자 비공개 목표가 있습니다. 두 차례씩 돌아가며 타일 하나를 가져가세요. 남은 타일과 선택 기록은 모두에게 공개됩니다.',
-      answerHint: '내 차례입니다 · 가져갈 타일을 선택하세요',
-      privateById: Object.fromEntries(players.map(player => [player.id, { heading: '비공개 작전 목표', text: objectives[player.id].text }])),
-      cards, objectives, revealText: '타일은 한 번에 하나씩 순서대로 가져갔습니다.' };
+    return { ...base, inputKind: 'strategy', title: '타일 전략',
+      prompt: '각자 목표에 맞춰 두 번씩 타일을 고르세요. 남은 타일과 선택은 공개됩니다.',
+      answerHint: '타일 선택',
+      privateById: Object.fromEntries(players.map(player => [player.id, { heading: '내 목표', text: objectives[player.id].text }])),
+      cards, objectives, revealText: '' };
   }
 
   if (type === 'path') {
@@ -395,10 +368,10 @@ function makeChallenge(type, players) {
     ];
     const totals = Object.fromEntries(paths.map(path => [path.id, path.edges.reduce((sum, key) => sum + edges[key], 0)]));
     const solution = paths.slice().sort((a, b) => totals[a.id] - totals[b.id] || a.id.localeCompare(b.id))[0].id;
-    return { ...base, inputKind: 'choice', title: '분할 지도',
-      prompt: '출발 S에서 도착 G까지 갑니다. 가능한 통로와 길이 정보는 참가자별로 나뉘어 있습니다. 아래 여섯 후보 경로의 길이를 합쳐 가장 짧은 경로를 고르세요.',
+    return { ...base, inputKind: 'choice', title: '최단 경로',
+      prompt: 'S에서 G까지 갑니다. 통로 정보를 합쳐 여섯 후보 경로 중 가장 짧은 것을 고르세요.',
       answerHint: '최단 경로', options: makeChoices(paths.map(path => path.id)), solution, totals,
-      revealText: '최단 경로는 ' + solution + '이며 길이는 ' + totals[solution] + '입니다.' };
+      revealText: '정답: ' + solution + ' · 길이 ' + totals[solution] };
   }
 
   if (type === 'stateInference') {
@@ -425,14 +398,14 @@ function makeChallenge(type, players) {
     const fragments = initial.map((bit, index) => (index + 1) + '번 시작 비트는 ' + bit + '입니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
     const solution = state.join('');
-    return { ...base, inputKind: 'text', title: '다섯 비트 상태 전이',
-      prompt: '비공개 단서로 시작 상태를 복원한 뒤, 공개 연산을 순서대로 적용하세요.\n' +
+    return { ...base, inputKind: 'text', title: '상태 추론',
+      prompt: '개인 단서로 시작 상태를 정하고 연산을 순서대로 적용하세요.\n' +
         operations.map((operation, index) => (index + 1) + '. ' + operation.text).join('\n'),
       answerHint: '최종 상태 5비트', placeholder: '예: 10110', maxLength: 5,
-      operations, solution, revealText: '최종 상태는 ' + solution + '입니다.' };
+      operations, solution, revealText: '정답: ' + solution };
   }
 
-  return { ...base, inputKind: 'number', title: '문제 생성 오류', prompt: '문제를 다시 시작해 주세요.', solution: 0 };
+  return { ...base, inputKind: 'number', title: '문제 오류', prompt: '문제를 다시 시작해 주세요.', solution: 0 };
 }
 
 function validateAnswer(game, playerId, value, meta) {
@@ -685,9 +658,8 @@ export class GameRoom {
       seq: this.game.seq, phaseId: this.game.phaseId, phase: this.game.phase, stage: this.game.stage,
       round: this.game.round, finalIndex: this.game.finalIndex,
       finalRoundCount: this.game.finalRoundCount || this.game.finalTypes?.length || 3, deadlineAt: this.game.deadlineAt,
-      type: challenge.type, typeLabel: challenge.typeLabel, categoryLabel: challenge.categoryLabel,
-      difficultyLabel: challenge.difficultyLabel, inputKind: challenge.inputKind,
-      title: challenge.title, prompt: challenge.prompt, answerHint: challenge.answerHint,
+      type: challenge.type, inputKind: challenge.inputKind,
+      title: challenge.title, prompt: challenge.prompt,
       placeholder: challenge.placeholder, maxLength: challenge.maxLength,
       options: challenge.inputKind === 'choice' ? challenge.options : undefined,
       studySequence: this.game.phase === 'study' ? challenge.memoryById?.[playerId] : undefined,
@@ -880,7 +852,7 @@ export class GameRoom {
       headline = eliminated.name + ' 탈락 · ' + activePlayers(this.meta).length + '명 생존';
     }
     this.game.result = {
-      headline, subline: challenge.revealText || '라운드가 종료되었습니다.',
+      headline, subline: challenge.revealText || '',
       lines: lines.map(item => ({ text: item.player.name + ' — ' + item.points + '점 · ' + item.detail }))
     };
     this.game.phaseId++;
