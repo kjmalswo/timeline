@@ -40,14 +40,6 @@ function chooseMainType(previous) {
   const pool = group.filter(type => type !== previous);
   return sample(pool.length ? pool : group);
 }
-function makeChoices(values, labels = {}) {
-  return shuffle([...new Set(values.map(value => String(value)))])
-    .map(value => ({ value, label: labels[value] == null ? value : String(labels[value]) }));
-}
-function optionValues(correct, distractors) {
-  const values = [String(correct), ...distractors.map(String).filter(value => value !== String(correct))];
-  return makeChoices([...new Set(values)]);
-}
 function rankName(rank) { return rank <= 10 ? String(rank) : ({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }[rank] || String(rank)); }
 function permutations(items) {
   if (items.length <= 1) return [items];
@@ -65,9 +57,6 @@ function assignPrivate(players, fragments) {
   }
   return buckets;
 }
-function rankOptions(players) {
-  return players.map(player => ({ value: player.id, label: player.name }));
-}
 function makeChallenge(type, players) {
   const privateById = {};
   const tieBreak = Object.fromEntries(players.map(player => [player.id, randomInt(1_000_000)]));
@@ -80,15 +69,15 @@ function makeChallenge(type, players) {
     const evenStart = randomInt(5) + 2;
     const evenMultiplier = randomInt(2) + 2;
     const terms = [];
-    for (let index = 0; index < 10; index++) {
+    for (let index = 0; index < 14; index++) {
       const position = Math.floor(index / 2);
       terms.push(index % 2 === 0
         ? oddStart + oddStep * position + secondDifference * position * (position - 1) / 2
         : evenStart * evenMultiplier ** position);
     }
-    const solution = oddStart + oddStep * 5 + secondDifference * 10;
+    const solution = oddStart + oddStep * 7 + secondDifference * 21;
     return { ...base, inputKind: 'number', title: '교차 수열',
-      prompt: '홀수항은 두 번째 차분이 일정하고, 짝수항은 같은 수를 곱합니다. 11번째 항은?\n' + terms.join(' · ') + ' · ?',
+      prompt: '홀수항은 두 번째 차분이 일정하고, 짝수항은 같은 수를 곱합니다. 15번째 항은?\n' + terms.join(' · ') + ' · ?',
       placeholder: '정수', maxLength: 4, solution,
       revealText: '정답: ' + solution };
   }
@@ -181,10 +170,10 @@ function makeChallenge(type, players) {
       remainingCount = bestCount;
     }
     const solution = target.colorByName[target.order[2]];
-    return { ...base, inputKind: 'choice', title: '순위·표식 논리',
-      prompt: '다섯 참가자의 순위와 표식은 모두 다릅니다. 관계 단서를 정리해 3위 참가자의 표식을 고르세요.\n' +
+    return { ...base, inputKind: 'text', title: '순위·표식 논리',
+      prompt: '다섯 참가자의 순위와 표식은 모두 다릅니다. 관계 단서를 정리해 3위 참가자의 표식을 입력하세요.\n' +
         clues.map((clue, index) => (index + 1) + '. ' + clue).join('\n'),
-      options: makeChoices(colors), solution,
+      placeholder: '표식 이름', maxLength: 12, solution,
       revealText: '순위·표식: ' + target.order.map((name, index) => (index + 1) + '위 ' + name + '(' + target.colorByName[name] + ')').join(' · ') };
   }
 
@@ -206,15 +195,10 @@ function makeChallenge(type, players) {
       else [row, col] = [col, row];
     }
     const solution = String.fromCharCode(65 + col) + String(row + 1);
-    const distractors = [];
-    while (distractors.length < 4) {
-      const value = String.fromCharCode(65 + randomInt(size)) + String(randomInt(size) + 1);
-      if (value !== solution && !distractors.includes(value)) distractors.push(value);
-    }
-    return { ...base, inputKind: 'choice', title: '좌표 변환',
-      prompt: 'A~E열, 1~5행 격자에서 ' + start + '를 다음 순서대로 변환하세요.\n' +
+    return { ...base, inputKind: 'text', title: '좌표 변환',
+      prompt: 'A~E열, 1~5행 격자에서 ' + start + '를 다음 순서대로 변환하세요. 좌표 하나만 입력하세요.\n' +
         transformations.map((operation, index) => (index + 1) + '. ' + operation.label).join('\n'),
-      options: optionValues(solution, distractors), solution,
+      placeholder: '예: C4', maxLength: 2, solution,
       revealText: '정답: ' + solution };
   }
 
@@ -274,21 +258,12 @@ function makeChallenge(type, players) {
       if (board[row][column] === 0) blanks.push({ row, column });
     }
     const solution = blanks.map(cell => solved[cell.row][cell.column]).join('');
-    const distractorSet = new Set([solution]);
-    for (let index = 0; index < solution.length && distractorSet.size < 4; index++) {
-      for (let shift = 1; shift < size && distractorSet.size < 4; shift++) {
-        const replacement = String((Number(solution[index]) - 1 + shift) % size + 1);
-        distractorSet.add(solution.slice(0, index) + replacement + solution.slice(index + 1));
-      }
-    }
-    const values = [...distractorSet];
-    const labels = Object.fromEntries(values.map(value => [value, [...value].join(' ')]));
     const gridText = board.map((row, rowIndex) => row
       .map((value, column) => String(value || '·').padStart(2, ' ') + (column === 2 ? ' │' : ''))
       .join(' ') + (rowIndex === 1 || rowIndex === 3 ? '\n------+-------' : '')).join('\n');
-    return { ...base, inputKind: 'choice', title: '6×6 스도쿠',
-      prompt: '각 행·열·2×3 상자에 1~6이 한 번씩 들어갑니다. 물음표를 행 순서대로 채우세요.\n' + gridText,
-      options: makeChoices(values, labels), solution,
+    return { ...base, inputKind: 'text', title: '6×6 스도쿠',
+      prompt: '각 행·열·2×3 상자에 1~6이 한 번씩 들어갑니다. 빈칸을 위에서 아래, 왼쪽에서 오른쪽 순서로 공백 없이 입력하세요.\n' + gridText,
+      placeholder: '빈칸 ' + solution.length + '개를 순서대로 입력', maxLength: solution.length, solution,
       revealText: '빈칸 순서대로: ' + [...solution].join(' ') };
   }
 
@@ -323,11 +298,10 @@ function makeChallenge(type, players) {
         return candidate.exact === result.exact && candidate.present === result.present;
       });
     }
-    const distractors = shuffle(codes.filter(code => code !== secret)).slice(0, 3);
-    return { ...base, inputKind: 'choice', title: '5자리 암호',
-      prompt: '0~9 중 서로 다른 숫자 5개의 암호를 찾으세요. “자리까지”는 숫자와 위치가 모두 맞고, “숫자만”은 다른 위치에 있는 숫자 수입니다.\n' +
+return { ...base, inputKind: 'text', title: '5자리 암호',
+      prompt: '0~9 중 서로 다른 숫자 5개의 암호를 찾으세요. “자리까지”는 숫자와 위치가 모두 맞고, “숫자만”은 다른 위치에 있는 숫자 수입니다. 서로 다른 다섯 숫자를 입력하세요.\n' +
         clues.map((clue, index) => (index + 1) + '. ' + clue).join('\n'),
-      options: makeChoices([secret, ...distractors]), solution: secret,
+      placeholder: '서로 다른 숫자 5개', maxLength: 5, solution: secret,
       revealText: '암호: ' + secret };
   }
 
@@ -350,194 +324,71 @@ function makeChallenge(type, players) {
   if (type === 'turtleSoup') {
     const cases = [
       {
-        prompt: '술집에서 물을 청한 사람이 있습니다. 바텐더가 갑자기 소리치자, 그 사람은 감사하고 나갔습니다. 이유는?',
-        options: [
-          { value: 'A', label: '남자는 목이 말라 있었고, 바텐더는 물 대신 술을 건넸다.' },
-          { value: 'B', label: '남자는 딸꾹질 중이었고, 바텐더가 놀라게 해 멈췄다.' },
-          { value: 'C', label: '남자는 바텐더의 암호를 알아냈다.' },
-          { value: 'D', label: '바텐더가 실수로 잔을 떨어뜨렸다.' }
-        ],
-        solution: 'B',
-        clues: ['남자는 물을 마시기 전부터 딸꾹질을 하고 있었습니다.', '바텐더는 남자의 딸꾹질을 알아차렸습니다.', '큰 소리에 남자의 딸꾹질이 멈췄습니다.', '남자는 실제로 물을 받지 않았습니다.', '바텐더는 남자를 해치려는 의도가 없었습니다.', '남자는 목마름보다 갑작스러운 증상 때문에 물을 찾았습니다.', '큰 소리는 의도적으로 냈습니다.', '남자는 증상이 사라진 뒤 감사 인사를 했습니다.'],
-        explanation: '남자는 딸꾹질을 멈추려고 물을 부탁했고, 바텐더는 놀라게 해 딸꾹질을 멈춰 주었습니다.'
+        prompt: '네 사람은 1·2·7·10분이 걸립니다. 손전등 하나로 한 번에 두 명까지 건널 수 있고, 함께 건너면 느린 사람의 시간이 걸립니다. 모두 건너는 최소 시간과 왕복 순서를 근거와 함께 쓰세요.',
+        answer: '17분',
+        keywordGroups: [['17'], ['1분'], ['2분'], ['7분'], ['10분'], ['돌아', '복귀', '되돌', '왕복']],
+        clues: ['A의 단독 통과 시간은 1분입니다.', 'B의 단독 통과 시간은 2분입니다.', 'C의 단독 통과 시간은 7분입니다.', 'D의 단독 통과 시간은 10분입니다.', '두 명이 함께 건너면 느린 사람의 시간이 걸립니다.', '손전등은 다리를 건널 때마다 필요합니다.', '손전등을 든 사람은 반대편에서 되돌아올 수 있습니다.', '목표는 네 사람 모두를 최소 시간에 반대편으로 보내는 것입니다.'],
+        explanation: '최소 17분입니다. 1·2분인 두 사람이 손전등을 왕복시키고, 7·10분인 두 사람이 함께 건너는 순서가 최적입니다.'
       },
       {
-        prompt: '밤에 등대 불이 꺼졌습니다. 다음 날 배 한 척이 항구에 오지 못했고, 등대지기는 자신이 원인임을 알았습니다. 무슨 일이 있었나요?',
-        options: [
-          { value: 'A', label: '등대지기가 안내등을 꺼 배가 암초를 피하지 못했다.' },
-          { value: 'B', label: '배가 목적지를 바꿔 다른 항구로 갔다.' },
-          { value: 'C', label: '선장이 등대 불빛을 보고 항로를 바로잡았다.' },
-          { value: 'D', label: '아침에 정전이 시작되어 밤의 항해와 무관했다.' }
-        ],
-        solution: 'A',
-        clues: ['이 사람의 직업은 등대지기입니다.', '배는 밤에 해안 가까이 항해하고 있었습니다.', '등대 불빛은 배가 암초를 피하는 항로 표지였습니다.', '등대의 불은 밤중에 꺼졌습니다.', '배는 그 밤 항구에 도착하지 못했습니다.', '밤의 불빛 상태가 항해에 직접 영향을 줬습니다.', '날씨는 맑았고 시야가 나쁘지 않았습니다.', '등대지기는 불을 끈 행동을 기억하고 있습니다.'],
-        explanation: '등대지기가 불을 꺼 항로 표지가 사라졌고, 배가 암초를 피하지 못했습니다.'
+        prompt: '방 밖의 스위치 세 개는 안쪽의 전구 세 개와 각각 하나씩 연결되어 있습니다. 전구가 있는 방에는 한 번만 들어갈 수 있습니다. 빛과 열만 이용해 세 연결을 모두 알아내는 조작 순서를 설명하세요.',
+        answer: '첫 스위치를 켜 전구를 데운 뒤 끄고, 둘째 스위치를 켠 채 들어가 빛과 열로 구분한다.',
+        keywordGroups: [['첫째', '1번', '첫 스위치'], ['켜', '불을 붙'], ['끄', '끈'], ['둘째', '2번', '두 번째'], ['따뜻', '열', '온도'], ['빛', '켜진']],
+        clues: ['스위치마다 연결된 전구는 정확히 하나입니다.', '스위치가 켜진 전구만 빛납니다.', '전구는 켜져 있으면 열이 나고, 끈 뒤에도 한동안 따뜻합니다.', '방에는 한 번만 들어갈 수 있습니다.', '방에 들어간 뒤에는 스위치를 조작할 수 없습니다.', '입장 전에는 스위치를 여러 번 켜고 끌 수 있습니다.', '빛과 손으로 느끼는 온도만 관찰할 수 있습니다.', '세 전구와 세 스위치의 대응을 모두 밝혀야 합니다.'],
+        explanation: '첫 스위치를 몇 분 켜 전구를 데운 뒤 끕니다. 둘째를 켜고 들어가면 켜진 전구는 둘째, 꺼졌지만 따뜻한 전구는 첫째, 차가운 전구는 셋째에 연결됩니다.'
       },
       {
-        prompt: '열기구에 세 사람이 탔습니다. 기구가 내려가 짐을 버렸지만, 한 사람이 사막에 떨어졌습니다. 그 손에는 짧은 성냥이 있었습니다. 왜 떨어졌나요?',
-        options: [
-          { value: 'A', label: '그는 지도를 찾으려고 혼자 뛰어내렸다.' },
-          { value: 'B', label: '성냥으로 불을 붙이려다 균형을 잃었다.' },
-          { value: 'C', label: '세 사람이 짧은 성냥을 뽑았고, 가장 짧은 것을 뽑은 사람이 뛰어내렸다.' },
-          { value: 'D', label: '열기구는 사막에 착륙했고 그는 걸어서 떠났다.' }
-        ],
-        solution: 'C',
-        clues: ['사고 직전 열기구에는 세 명이 타고 있었습니다.', '짐을 버린 뒤에도 열기구가 내려갔습니다.', '탑승자들은 성냥으로 제비뽑기를 했습니다.', '손에 남은 성냥은 짧았습니다.', '한 사람이 뛰어내려야 나머지 둘이 살 수 있었습니다.', '사막에 불이나 연료가 있다는 단서는 없습니다.', '그 사람은 스스로 열기구에서 떨어졌습니다.', '성냥의 길이가 결과를 정했습니다.'],
-        explanation: '세 사람은 성냥 길이로 제비뽑기를 했고, 가장 짧은 성냥을 뽑은 사람이 희생했습니다.'
+        prompt: '불균등하게 타는 밧줄 두 개는 각각 완전히 타는 데 60분이 걸립니다. 밧줄의 어느 구간이 몇 분 타는지는 알 수 없고 성냥만 있습니다. 정확히 45분을 재는 방법을 순서대로 설명하세요.',
+        answer: '첫 밧줄 양끝과 둘째 밧줄 한쪽 끝에 동시에 불을 붙인다. 첫 밧줄이 다 타면 둘째의 반대쪽에도 불을 붙여 15분 뒤를 잰다.',
+        keywordGroups: [['45'], ['양끝', '양쪽 끝'], ['30'], ['반대쪽', '다른 쪽'], ['15']],
+        clues: ['각 밧줄은 한쪽에서 태우면 정확히 60분 후 모두 탑니다.', '밧줄의 길이와 타는 속도는 일정하지 않습니다.', '밧줄의 양끝에 동시에 불을 붙일 수 있습니다.', '두 밧줄을 동시에 태울 수 있습니다.', '불은 붙은 뒤 꺼지지 않고 계속 탑니다.', '첫 밧줄이 양끝에서 타면 전체가 30분 후 끝납니다.', '둘째 밧줄은 처음에 한쪽 끝에서 타고 있습니다.', '정확히 45분이 되는 순간을 알아내야 합니다.'],
+        explanation: '첫 밧줄을 양끝에서 태우면 30분입니다. 그때 둘째의 반대쪽에도 불을 붙이면 남은 연소 시간이 절반으로 줄어 15분 뒤 끝납니다.'
       },
       {
-        prompt: '한 사람이 맑은 날에는 15층에서 내려 5층을 걷고, 비 오는 날에는 20층까지 갑니다. 이유는?',
-        options: [
-          { value: 'A', label: '비 오는 날에는 엘리베이터가 20층까지 운행한다.' },
-          { value: 'B', label: '키가 작아 버튼에 닿지 않지만, 비 오는 날 우산으로 20층을 누른다.' },
-          { value: 'C', label: '20층 버튼은 방장이 눌러야 한다.' },
-          { value: 'D', label: '비 오는 날에는 계단이 잠긴다.' }
-        ],
-        solution: 'B',
-        clues: ['그 사람은 20층에 삽니다.', '엘리베이터는 모든 층에 정상적으로 섭니다.', '그 사람은 키가 작아 높은 버튼에 손이 닿지 않습니다.', '맑은 날에는 우산이 없습니다.', '비 오는 날에는 긴 우산을 가지고 있습니다.', '우산 끝으로 20층 버튼을 누를 수 있습니다.', '15층에서 20층까지 계단으로 갈 수 있습니다.'],
-        explanation: '우산 끝으로 높은 층 버튼을 누릅니다.'
+        prompt: '겉모습이 같은 공 8개 중 하나가 더 무겁습니다. 양팔저울은 양쪽의 무게 비교만 보여 주며 추가 추는 없습니다. 두 번의 비교만으로 반드시 무거운 공을 찾는 전략을 각 결과에 따라 설명하세요.',
+        answer: '처음 3개씩 비교한다. 균형이면 남은 두 개를 비교하고, 기울면 무거운 쪽 후보 셋 중 두 개를 비교한다.',
+        keywordGroups: [['3개씩', '3개 대 3개'], ['균형'], ['남은', '올리지 않은'], ['기울', '무거운 쪽'], ['두 번째', '한 번 더', '두 개를 비교']],
+        clues: ['위조 공은 정확히 하나이며 정상 공보다 무겁습니다.', '공은 눈으로 구별할 수 없습니다.', '저울은 왼쪽 무거움·오른쪽 무거움·균형만 보여 줍니다.', '첫 비교에서 균형이면 위조 공은 올리지 않은 두 공 중 하나입니다.', '첫 비교에서 기울면 위조 공은 무거운 쪽의 세 공 중 하나입니다.', '두 번째 비교는 첫 결과에 따라 대상을 고를 수 있습니다.', '두 번 비교한 뒤에는 공 하나를 특정해야 합니다.', '정상 공의 무게를 아는 기준 추는 없습니다.'],
+        explanation: '3개 대 3개를 잽니다. 균형이면 남은 두 개를 서로 비교하고, 기울면 무거운 쪽 세 공 중 두 개를 비교해 균형 여부로 세 번째 공까지 구분합니다.'
       },
       {
-        prompt: '문이 잠긴 방에 물웅덩이와 유리 조각, 죽은 물고기가 있습니다. 무슨 일이 있었나요?',
-        options: [
-          { value: 'A', label: '열린 창문으로 들어온 바람이 어항을 떨어뜨렸다.' },
-          { value: 'B', label: '누군가 문을 열고 물고기를 가져갔다.' },
-          { value: 'C', label: '수도관이 터져 물고기가 빠져나왔다.' },
-          { value: 'D', label: '물고기가 어항 밖으로 뛰어내렸다.' }
-        ],
-        solution: 'A',
-        clues: ['방에는 사람의 출입 흔적이 없습니다.', '살아 있던 생물은 금붕어 한 마리뿐입니다.', '금붕어는 유리 어항에 있었습니다.', '어항은 열린 창문 옆 선반에 놓여 있었습니다.', '당시 커튼이 바람에 크게 흔들렸습니다.', '바닥의 유리 조각은 어항과 같은 재질입니다.', '문은 안쪽에서 잠겨 있었습니다.'],
-        explanation: '창문으로 들어온 바람에 어항이 떨어져 깨졌습니다.'
+        prompt: '닫힌 문 100개를 1번 사람은 모두 바꾸고, n번 사람은 n의 배수 번호 문만 한 번씩 엽니다/닫습니다. 100번째 사람까지 끝났을 때 열린 문이 몇 개인지, 왜 그런지 설명하세요.',
+        answer: '10개. 완전제곱수 번호만 약수가 홀수 개다.',
+        keywordGroups: [['10'], ['제곱수'], ['홀수'], ['약수']],
+        clues: ['문은 처음에 모두 닫혀 있습니다.', '사람은 1번부터 100번까지 차례로 행동합니다.', 'n번 사람은 n의 배수 번호인 문만 뒤집습니다.', '문 번호의 약수인 사람 수만큼 해당 문 상태가 바뀝니다.', '약수는 보통 서로 짝을 이룹니다.', '완전제곱수는 제곱근과 같은 약수 하나가 짝을 이루지 않습니다.', '홀수 번 뒤집힌 문만 마지막에 열려 있습니다.', '100 이하의 완전제곱수는 1²부터 10²까지입니다.'],
+        explanation: '완전제곱수만 홀수 개의 약수를 가지므로 1²부터 10²까지 총 10개 문이 열립니다.'
       },
       {
-        prompt: '사람이 들판에서 발견됐고, 곁에는 열리지 않은 가방이 있었습니다. 가방에는 무엇이 있었나요?',
-        options: [
-          { value: 'A', label: '열리지 않은 낙하산' },
-          { value: 'B', label: '구급상자' },
-          { value: 'C', label: '음식과 물' },
-          { value: 'D', label: '도구 상자' }
-        ],
-        solution: 'A',
-        clues: ['그 사람은 높은 곳에서 떨어졌습니다.', '가방은 낙하 속도를 줄이기 위한 장비였습니다.', '가방은 땅에 닿을 때까지 열리지 않았습니다.', '그 사람은 비행기에서 뛰어내렸습니다.', '비행에는 낙하산이 필요했습니다.', '가방은 정상적인 낙하산 가방이었습니다.'],
-        explanation: '낙하산이 펼쳐지지 않았습니다.'
+        prompt: '죄수 100명과 상자 100개에 1~100의 번호가 무작위 순열로 하나씩 들어 있습니다. 각자 상자 50개까지만 열 수 있고, 한 명이라도 자기 번호를 못 찾으면 모두 실패합니다. 사전 합의할 최선의 탐색 규칙과 성공 조건을 설명하세요.',
+        answer: '각자 자기 번호 상자에서 시작해 상자 안 번호가 가리키는 다음 상자를 따라간다. 길이 50 이하인 순환만 있으면 전원이 성공한다.',
+        keywordGroups: [['자기 번호', '자신의 번호'], ['다음 번호', '상자 안 번호', '번호가 가리키'], ['50'], ['순환', '사이클']],
+        clues: ['상자 안의 번호는 1~100의 순열이라 중복이 없습니다.', '죄수들은 시작 전 전략을 합의할 수 있습니다.', '상자를 열어도 번호를 바꾸지 않고 다시 닫을 수 있습니다.', '각 죄수는 자기 번호를 찾아야 합니다.', '각 죄수는 상자 50개까지만 열 수 있습니다.', '자기 번호가 든 상자에서 시작하는 규칙을 고려하세요.', '상자에서 본 번호를 다음에 열 상자 번호로 삼을 수 있습니다.', '이 연결은 순열을 서로 겹치지 않는 순환들로 나눕니다.'],
+        explanation: '자기 번호 상자에서 시작해 상자 안의 번호를 다음 상자로 따라갑니다. 순열의 모든 순환 길이가 50 이하일 때만 전원이 번호를 찾습니다.'
       },
       {
-        prompt: '남자가 호텔 앞에서 자동차를 밀자 전 재산을 잃었습니다. 왜일까요?',
-        options: [
-          { value: 'A', label: '자동차가 고장 나 호텔에 부딪혔다.' },
-          { value: 'B', label: '보드게임에서 자동차 말을 움직여 호텔 칸에 도착했다.' },
-          { value: 'C', label: '호텔 주차 요금을 내지 못했다.' },
-          { value: 'D', label: '자동차가 도난당했다.' }
-        ],
-        solution: 'B',
-        clues: ['그 남자는 실제 도로에 있지 않았습니다.', '자동차는 손바닥 크기의 게임 말입니다.', '호텔은 게임판의 부동산 칸에 있습니다.', '남자는 상대의 호텔이 있는 칸에 도착했습니다.', '그 게임에서는 상대 호텔에 도착하면 통행료를 냅니다.', '남자는 가진 돈보다 통행료가 많았습니다.'],
-        explanation: '보드게임에서 호텔 칸에 걸려 파산했습니다.'
+        prompt: '모자는 검정 둘·흰색 둘입니다. A는 B와 C를 보고, B는 C만 보며, C는 아무도 보지 못합니다. 모두 규칙을 알고 있고 A가 침묵한 뒤 B가 자기 색을 알아냈습니다. B의 색과 그 추론을 설명하세요.',
+        answer: 'B는 C와 반대 색이다. A의 침묵은 B와 C의 색이 서로 달라 A가 자기 색을 확정하지 못했다는 뜻이다.',
+        keywordGroups: [['A의 침묵', 'A가 침묵', '침묵'], ['B와 C 다르', '색이 다르', '서로 다른 색', '서로 달라'], ['C와 반대', 'C의 반대', '반대 색']],
+        clues: ['네 사람에게 검정 모자 둘과 흰색 모자 둘을 씌웠습니다.', 'A는 B와 C의 모자를 볼 수 있습니다.', 'B는 C의 모자만 볼 수 있습니다.', 'C는 앞의 벽 때문에 아무 모자도 볼 수 없습니다.', '각자는 전체 모자 수를 알고 있습니다.', '색을 확정할 수 있으면 즉시 말해야 합니다.', 'A는 충분히 생각한 뒤에도 아무 말도 하지 않았습니다.', '그 침묵을 들은 B는 C의 모자를 보고 자기 색을 말했습니다.'],
+        explanation: 'B와 C가 같은 색이면 A는 남은 색으로 자기 모자까지 확정할 수 있습니다. A의 침묵은 두 색이 다름을 뜻하므로 B는 C와 반대 색입니다.'
       },
       {
-        prompt: '네 사람이 1분·2분·7분·10분 걸립니다. 한 번에 두 명까지 다리를 건널 수 있고 손전등은 하나뿐입니다. 모두 건너는 최소 시간은?',
-        options: [
-          { value: 'A', label: '15분' },
-          { value: 'B', label: '17분' },
-          { value: 'C', label: '19분' },
-          { value: 'D', label: '21분' }
-        ],
-        solution: 'B',
-        clues: ['A의 단독 통과 시간은 1분입니다.', 'B의 단독 통과 시간은 2분입니다.', 'C의 단독 통과 시간은 7분입니다.', 'D의 단독 통과 시간은 10분입니다.', '두 명이 함께 건너면 느린 사람의 시간이 걸립니다.', '손전등은 건널 때마다 필요하고 한 번에 한쪽 방향으로만 이동합니다.', '다리를 건넌 사람은 손전등을 들고 되돌아올 수 있습니다.', '모두가 도착해야 종료하며, 이동 중에는 다리 양쪽에 사람이 남을 수 있습니다.'],
-        explanation: '1·2분인 두 사람이 손전등을 왕복시키고, 7·10분인 두 사람이 함께 건너면 최소 17분입니다.'
-      },
-      {
-        prompt: '방 밖에 스위치 세 개, 안쪽 방에 전구 세 개가 있습니다. 방에 한 번만 들어가 스위치와 전구를 모두 짝지으려면?',
-        options: [
-          { value: 'A', label: '첫 스위치를 켠 채 들어가 빛만 확인한다.' },
-          { value: 'B', label: '첫 스위치를 잠시 켰다 끄고, 둘째를 켠 뒤 들어가 빛과 열을 확인한다.' },
-          { value: 'C', label: '세 스위치를 차례로 한 번씩 켜고 바로 들어간다.' },
-          { value: 'D', label: '셋째 스위치를 켰다 끄고 들어가 전구 위치를 추측한다.' }
-        ],
-        solution: 'B',
-        clues: ['스위치 하나는 전구 하나에만 연결됩니다.', '방 안은 스위치가 켜진 전구만 빛나도록 어둡습니다.', '전구는 켜져 있으면 빛으로 확인할 수 있습니다.', '전구는 꺼진 직후에도 잠시 열을 유지합니다.', '방에는 딱 한 번 들어갈 수 있고 다시 나와 조작할 수 없습니다.', '입장 전에는 스위치를 여러 번 켜거나 끌 수 있습니다.', '입장 뒤에는 스위치를 만질 수 없습니다.', '다른 측정 도구나 사람의 도움은 없습니다.'],
-        explanation: '첫 전구를 데운 뒤 끄고 둘째를 켭니다. 들어가서 켜진 전구, 꺼졌지만 따뜻한 전구, 차가운 전구를 구분합니다.'
-      },
-      {
-        prompt: '불균등하게 타는 밧줄 두 개와 성냥이 있습니다. 각 밧줄은 완전히 타는 데 정확히 60분 걸립니다. 정확히 45분을 재는 방법은?',
-        options: [
-          { value: 'A', label: '첫 밧줄을 한쪽에서 태운 뒤 45분쯤에 끈다.' },
-          { value: 'B', label: '첫 밧줄은 양끝에서, 둘째는 한쪽에서 동시에 태운다. 첫 밧줄이 끝나면 둘째의 반대쪽도 태운다.' },
-          { value: 'C', label: '두 밧줄을 한쪽씩 동시에 태워 첫 번째가 끝날 때까지 기다린다.' },
-          { value: 'D', label: '첫 밧줄을 양끝에서 태우고 끝난 뒤 둘째를 한쪽에서 태운다.' }
-        ],
-        solution: 'B',
-        clues: ['각 밧줄 하나는 불이 붙은 뒤 완전히 타는 데 60분이 걸립니다.', '밧줄의 어느 구간이 몇 분 타는지는 균일하지 않습니다.', '밧줄 양끝에 동시에 불을 붙일 수 있습니다.', '불이 한쪽에서 붙은 밧줄은 꺼지지 않고 계속 탑니다.', '첫 밧줄 양끝을 태우면 전체가 30분 뒤 끝납니다.', '그동안 둘째 밧줄은 한쪽에서만 타고 있습니다.', '둘째 밧줄은 반대쪽에도 불을 붙일 수 있습니다.', '성냥 외에 시계나 자를 사용할 수 없습니다.'],
-        explanation: '첫 밧줄은 양끝에서 30분 만에 탑니다. 그때 둘째 밧줄의 반대쪽에도 불을 붙이면 남은 부분이 15분 만에 타서 총 45분입니다.'
-      },
-      {
-        prompt: '겉모습이 같은 공 8개 중 하나만 더 무겁습니다. 양팔저울로 두 번만 재서 반드시 찾으려면 첫 비교는?',
-        options: [
-          { value: 'A', label: '공 3개와 공 3개' },
-          { value: 'B', label: '공 4개와 공 4개' },
-          { value: 'C', label: '공 2개와 공 2개' },
-          { value: 'D', label: '공 1개와 공 1개' }
-        ],
-        solution: 'A',
-        clues: ['위조 공은 정확히 하나이며 정상 공보다 무겁습니다.', '공은 눈으로 구별할 수 없습니다.', '양팔저울은 왼쪽이 무거움·오른쪽이 무거움·균형 세 결과를 냅니다.', '정상 공의 무게를 재는 추가 추는 없습니다.', '첫 비교 뒤 결과에 따라 두 번째 비교 대상을 정할 수 있습니다.', '두 번의 비교가 끝나면 공 하나를 특정해야 합니다.', '첫 비교에서 균형이면 위조 공은 양쪽에 올리지 않은 공들 중 하나입니다.', '첫 비교에서 기울면 더 무거운 쪽에 위조 공이 있습니다.'],
-        explanation: '3개씩 비교하면 균형일 때 남은 2개, 기울 때 무거운 쪽 3개가 후보입니다. 둘째 비교 한 번으로 어느 경우든 찾을 수 있습니다.'
-      },
-      {
-        prompt: '문 100개가 모두 닫혀 있습니다. 1번 사람은 모든 문을, 2번 사람은 2의 배수 번호 문을, n번 사람은 n의 배수 번호 문을 한 번씩 바꿉니다. 마지막에 열린 문은 몇 개인가요?',
-        options: [
-          { value: 'A', label: '9개' },
-          { value: 'B', label: '10개' },
-          { value: 'C', label: '50개' },
-          { value: 'D', label: '100개' }
-        ],
-        solution: 'B',
-        clues: ['사람은 1번부터 100번까지 한 명씩 차례로 행동합니다.', 'n번 사람은 n의 배수 번호인 문만 바꿉니다.', '문을 바꾼다는 것은 닫힘과 열림을 서로 뒤집는 것입니다.', '문 번호의 약수인 사람 수만큼 그 문 상태가 바뀝니다.', '약수는 보통 짝을 이룹니다.', '서로 다른 약수끼리 짝지을 수 없는 번호는 제곱수입니다.', '짝수 번 바뀐 문은 닫히고 홀수 번 바뀐 문은 열립니다.', '100 이하의 제곱수 개수를 세어야 합니다.'],
-        explanation: '홀수 개의 약수를 가진 문은 제곱수 번호입니다. 1²부터 10²까지 총 10개가 열립니다.'
-      },
-      {
-        prompt: '죄수 100명과 상자 100개에 각각 1~100 번호가 무작위로 하나씩 들어 있습니다. 각 죄수는 상자 50개만 열 수 있습니다. 전원이 자기 번호를 찾을 확률을 높이는 사전 전략은?',
-        options: [
-          { value: 'A', label: '각자 무작위로 50개를 고른다.' },
-          { value: 'B', label: '상자 번호를 따라가며 시작 번호가 나온 상자부터 최대 50개를 연다.' },
-          { value: 'C', label: '모두 같은 번호의 상자 50개를 열어 결과를 공유한다.' },
-          { value: 'D', label: '죄수 번호 순서대로 상자 번호가 작은 것부터 연다.' }
-        ],
-        solution: 'B',
-        clues: ['각 상자에는 서로 다른 죄수 번호 하나씩이 들어 있습니다.', '상자 번호와 안에 든 번호는 무작위 순열입니다.', '죄수들은 시작 전에 전략을 합의할 수 있습니다.', '죄수들은 상자를 연 뒤 다시 닫을 수 있습니다.', '각 죄수는 자기 번호를 찾으면 성공입니다.', '한 명이라도 번호를 못 찾으면 전원이 실패합니다.', '각 죄수는 최대 50개만 열 수 있습니다.', '상자 번호를 따라가면 순열의 사이클을 차례로 탐색할 수 있습니다.'],
-        explanation: '자기 번호 상자에서 시작해 그 안의 번호를 다음 상자로 따라갑니다. 모두가 순열의 사이클 길이 50 이하에 속하면 전원이 성공합니다.'
-      },
-      {
-        prompt: 'A는 B와 C의 모자를 봅니다. B는 C만 보고, C는 벽을 봅니다. 검은 모자 둘·흰 모자 둘을 썼을 때 A가 침묵했습니다. B가 자기 모자 색을 알아낸 근거는?',
-        options: [
-          { value: 'A', label: 'A가 침묵했으므로 B와 C는 같은 색이다.' },
-          { value: 'B', label: 'A의 침묵으로 B와 C가 다름을 알고, C의 색에서 자기 색을 추론한다.' },
-          { value: 'C', label: '벽 뒤의 D가 B에게 색을 알려 줬다.' },
-          { value: 'D', label: '검은 모자가 둘이므로 B는 검은색이다.' }
-        ],
-        solution: 'B',
-        clues: ['네 사람의 모자는 검은색 둘, 흰색 둘입니다.', '모든 사람은 모자 수와 배치를 알고 있습니다.', 'A, B, C는 한 줄로 서서 앞을 봅니다.', 'A는 B와 C의 모자를 볼 수 있습니다.', 'B는 C의 모자만 볼 수 있습니다.', 'C는 앞의 벽 때문에 아무 모자도 볼 수 없습니다.', 'D는 벽 반대편에 있어 다른 사람을 볼 수 없습니다.', '모자 색을 알면 즉시 말하고, A는 침묵했습니다.'],
-        explanation: 'B와 C가 같은 색이라면 A는 자기 색을 알 수 있습니다. A의 침묵은 둘의 색이 다르다는 뜻이므로 B는 C와 반대 색입니다.'
-      },
-      {
-        prompt: '25마리 말 중 가장 빠른 세 마리를 찾으려 합니다. 한 번에 다섯 마리만 경주할 수 있고 시간 기록은 없습니다. 최소 경주 횟수는?',
-        options: [
-          { value: 'A', label: '6회' },
-          { value: 'B', label: '7회' },
-          { value: 'C', label: '8회' },
-          { value: 'D', label: '9회' }
-        ],
-        solution: 'B',
-        clues: ['말은 다섯 마리씩 다섯 조로 나눌 수 있습니다.', '한 경주에는 최대 다섯 마리만 참가합니다.', '각 경주에서는 결승 순서만 알 수 있고 정확한 시간은 모릅니다.', '말의 속도는 경주마다 같으며 다시 출전할 수 있습니다.', '다섯 조의 경주 순서를 각각 알아야 합니다.', '각 조 1위끼리 한 번 더 달린 결과는 A1, B1, C1, D1, E1 순입니다.', 'A1은 전체에서 가장 빠르고, 상위 세 마리 후보는 A1·A2·A3·B1·B2·C1입니다.', 'A1을 제외한 다섯 후보를 한 경주에 달리게 해 2·3위를 정할 수 있습니다.'],
-        explanation: '조별 5회, 각 조 1위 경주 1회, 남은 상위 후보 경주 1회로 최소 7회입니다.'
+        prompt: '말 25마리의 속도는 일정하지만 시간 기록 장치는 없습니다. 한 경주에 최대 5마리만 달릴 수 있습니다. 가장 빠른 세 마리를 확정하는 최소 경주 횟수와 마지막 후보 구성을 설명하세요.',
+        answer: '최소 7회다. 다섯 조 경주와 조 1위 경주 뒤 A2·A3·B1·B2·C1을 겨룬다.',
+        keywordGroups: [['7'], ['다섯 조', '조별'], ['A2'], ['A3'], ['B1'], ['B2'], ['C1'], ['1위', '우승']],
+        clues: ['말을 A~E 다섯 조로 나누어 각 조 다섯 마리씩 경주시킬 수 있습니다.', '각 경주의 순위는 알지만 완주 시간은 알 수 없습니다.', '다섯 조의 경주 순서를 먼저 알아야 합니다.', '각 조의 1위끼리 달린 경주 순서는 A1, B1, C1, D1, E1입니다.', 'A1은 전체에서 가장 빠르고, D1·E1은 상위 세 마리에 들 수 없습니다.', '상위 후보는 A1, A2, A3, B1, B2, C1뿐입니다.', 'A1은 이미 1위이므로 나머지 다섯 후보가 마지막 경주를 합니다.', '마지막 경주에서 가장 빠른 두 말이 전체 2위와 3위입니다.'],
+        explanation: '조별 5회, 각 조 1위 경주 1회, A1을 제외한 후보 경주 1회로 최소 7회입니다. A2·A3·B1·B2·C1 중 상위 두 마리가 전체 2·3위입니다.'
       }
     ];
-    const puzzle = randomInt(4) === 0 ? sample(cases.slice(0, 7)) : sample(cases.slice(7));
+    const puzzle = sample(cases);
     const assigned = assignPrivate(players, puzzle.clues);
     Object.assign(privateById, Object.fromEntries(Object.entries(assigned).map(([id, clue]) => [id, {
       heading: '사건 기록 조각', text: clue.text
     }])));
-    return { ...base, inputKind: 'choice', title: '상황 추리',
-      prompt: puzzle.prompt, answerHint: '정답 선택', options: puzzle.options,
-      solution: puzzle.solution, revealText: puzzle.explanation };
+    return { ...base, inputKind: 'essay', title: '분산 단서 서술 추리',
+      prompt: puzzle.prompt, placeholder: '추론 근거를 포함해 1~2문장으로 작성',
+      maxLength: 240, solution: puzzle.answer, answerKeywordGroups: puzzle.keywordGroups,
+      revealText: puzzle.explanation };
   }
 
   if (type === 'rankInference') {
@@ -550,10 +401,10 @@ function makeChallenge(type, players) {
       text: '내 순위: ' + rankById[player.id] + '위'
     };
     const answer = players.find(player => rankById[player.id] === targetRank);
-    return { ...base, inputKind: 'choice', title: '가중 순위 추론',
-      prompt: '참가 순서는 ' + players.map((player, index) => (index + 1) + '. ' + player.name).join(' · ') + '. 이 순서대로 가중치를 곱한 순위 합에 각 순위의 제곱을 더하세요. 합을 인원수로 나눈 나머지+1이 목표 순위입니다. 해당 참가자는?',
-      answerHint: '해당 순위의 참가자', options: rankOptions(players), rankById, targetRank,
-      solution: answer.id,
+    return { ...base, inputKind: 'number', title: '가중 순위 추론',
+      prompt: '참가 순서는 ' + players.map((player, index) => (index + 1) + '. ' + player.name).join(' · ') + '. 이 순서대로 가중치를 곱한 순위 합에 각 순위의 제곱을 더하세요. 합을 인원수로 나눈 나머지+1이 목표 순위입니다. 목표 순위를 정수로 입력하세요.',
+      placeholder: '목표 순위', maxLength: 2, rankById, targetRank,
+      solution: targetRank,
       revealText: targetRank + '위는 ' + answer.name + '입니다.' };
   }
 
@@ -566,9 +417,9 @@ function makeChallenge(type, players) {
     const cipher = [0,2,4,6,1,3,5,7].map(index => shifted[index]).join('');
     const fragments = shifts.map((shift, index) => '반복 키 ' + (index + 1) + '번: 각 문자를 ' + shift + '칸 이동합니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
-    return { ...base, inputKind: 'choice', title: '전치·반복키 암호',
-      prompt: '8글자 암호입니다. 반복 키로 이동한 뒤 홀수 위치를 앞에, 짝수 위치를 뒤에 붙였습니다. 역순으로 복호화하세요.\n암호문: ' + cipher,
-      options: makeChoices(words), solution,
+    return { ...base, inputKind: 'text', title: '전치·반복키 암호',
+      prompt: '8글자 암호입니다. 반복 키로 이동한 뒤 홀수 위치를 앞에, 짝수 위치를 뒤에 붙였습니다. 역순으로 복호화해 8글자 평문을 입력하세요.\n암호문: ' + cipher,
+      placeholder: '8글자 평문', maxLength: 8, solution,
       revealText: '정답: ' + solution };
   }
 
@@ -578,8 +429,8 @@ function makeChallenge(type, players) {
       ? { A: { red: 8, blue: 2 }, B: { red: 2, blue: 8 } }
       : { A: { red: 2, blue: 8 }, B: { red: 8, blue: 2 } };
     let sampleById = {};
-    let likelihoodSignal = 0;
-    for (let attempt = 0; attempt < 20 && likelihoodSignal === 0; attempt++) {
+    let redDifference = 0;
+    for (let attempt = 0; attempt < 20 && redDifference === 0; attempt++) {
       sampleById = Object.fromEntries(players.map(player => [player.id, { A: [], B: [] }]));
       const totals = { A: { red: 0, blue: 0 }, B: { red: 0, blue: 0 } };
       for (const player of players) for (const jar of ['A', 'B']) {
@@ -589,18 +440,23 @@ function makeChallenge(type, players) {
           totals[jar][color === '빨강' ? 'red' : 'blue']++;
         }
       }
-      likelihoodSignal = totals.A.red - totals.A.blue - totals.B.red + totals.B.blue;
+      redDifference = totals.A.red - totals.B.red;
     }
-    for (const player of players) privateById[player.id] = {
-      heading: '내 표본',
-      text: 'A: ' + sampleById[player.id].A.join(' ') +
-        ' · B: ' + sampleById[player.id].B.join(' ')
-    };
-    const solution = likelihoodSignal > 0 ? 'A' : 'B';
-    return { ...base, inputKind: 'choice', title: '표본 확률 분석',
-      prompt: 'A·B 중 한 곳은 빨강 8·파랑 2, 다른 곳은 빨강 2·파랑 8입니다. 각 항아리에서 4회씩 복원 추출했습니다. 사전확률은 1:1입니다. 전체 표본의 우도가 더 큰 항아리를 고르세요.',
-      options: makeChoices(['A', 'B']), solution,
-      revealText: '표본의 우도 기준: ' + solution };
+    for (const player of players) for (const jar of ['A', 'B']) {
+      privateById[player.id] = {
+        heading: '내 표본',
+        text: jar + ' 항아리: ' + sampleById[player.id][jar].join(' ')
+      };
+    }
+    const exponent = 2 * Math.abs(redDifference);
+    const likelihood = 4n ** BigInt(exponent);
+    const numerator = redDifference > 0 ? likelihood : 1n;
+    const denominator = likelihood + 1n;
+    const solution = numerator + '/' + denominator;
+    return { ...base, inputKind: 'text', title: '베이즈 표본 추론',
+      prompt: 'A와 B 중 하나는 빨강 8·파랑 2, 다른 하나는 빨강 2·파랑 8입니다. 각 참가자는 각 항아리에서 4회씩 복원 추출한 표본 일부를 받았습니다. 두 가설의 사전확률이 같을 때 “A가 빨강 8·파랑 2인 항아리”일 사후확률을 기약분수로 입력하세요. 표본을 합쳐 우도를 계산해야 합니다.',
+      placeholder: '예: 16/17', maxLength: 100, solution,
+      revealText: 'A 항아리가 빨강 8·파랑 2일 사후확률은 ' + solution + '입니다.' };
   }
 
   if (type === 'resource') {
@@ -631,13 +487,10 @@ function makeChallenge(type, players) {
     const feasible = packages.filter(item => item.feasible)
       .sort((a, b) => b.reward - a.reward || a.costEnergy + a.costData - b.costEnergy - b.costData || a.id.localeCompare(b.id));
     const best = feasible[0];
-    const distractors = shuffle(packages.filter(item => item.id !== best.id)).slice(0, 3);
-    const options = makeChoices([best, ...distractors].map(item => item.id),
-      Object.fromEntries([best, ...distractors].map(item => [item.id, item.id.split('+').join(' + ')])));
     const projectText = projects.map(project => project.id + ': E' + project.energy + '/D' + project.data + ', ' + project.reward + '점').join(' · ');
-    return { ...base, inputKind: 'choice', title: '다중 자원 최적화',
-      prompt: '개인 자원을 합산해 가능한 프로젝트 조합 중 보상이 가장 큰 것을 고르세요. 동점이면 자원 소모가 적은 조합, 그래도 같으면 이름이 앞선 조합을 고르세요.\n' + projectText,
-      options, solution: best.id,
+    return { ...base, inputKind: 'text', title: '다중 자원 최적화',
+      prompt: '개인 자원을 합산해 가능한 프로젝트 조합 중 보상이 가장 큰 것을 찾으세요. 동점이면 자원 소모가 적은 조합, 그래도 같으면 이름이 앞선 조합을 고르세요. 선택한 프로젝트 문자를 A+B처럼 알파벳 순으로 입력하세요.\n' + projectText,
+      placeholder: '예: A+C', maxLength: 9, solution: best.id,
       revealText: '최적 조합: ' + best.id + ' · 보상 ' + best.reward };
   }
 
@@ -665,9 +518,9 @@ function makeChallenge(type, players) {
     }
     const fragments = witnesses.map(witness => witness + '의 진술: 암호는 ' + statements[witness][0] + '부터 ' + statements[witness][1] + ' 사이입니다.');
     Object.assign(privateById, assignPrivate(players, fragments));
-    return { ...base, inputKind: 'choice', title: '거짓 진술 한 개',
-      prompt: '암호는 1~12입니다. 여덟 진술 중 하나만 거짓입니다. 참 진술의 구간에는 암호가 포함되고 거짓 진술의 구간에는 포함되지 않습니다. 누가 거짓인가요?',
-      answerHint: '거짓 진술자', options: makeChoices(witnesses), solution: liar, statements, secret,
+    return { ...base, inputKind: 'text', title: '거짓 진술 한 개',
+      prompt: '암호는 1~12입니다. 여덟 진술 중 하나만 거짓입니다. 참 진술의 구간에는 암호가 포함되고 거짓 진술의 구간에는 포함되지 않습니다. 거짓 진술자의 이름을 입력하세요.',
+      placeholder: '거짓 진술자', maxLength: 3, solution: liar, statements, secret,
       revealText: '거짓 진술자는 ' + liar + '입니다. 암호는 ' + secret + '입니다.' };
   }
 
@@ -726,9 +579,9 @@ function makeChallenge(type, players) {
     const fragments = keys.map(key => key + ' 통로: ' + edges[key]);
     Object.assign(privateById, assignPrivate(players, fragments));
     const solution = shortest[0].id;
-    return { ...base, inputKind: 'choice', title: '최단 경로',
-      prompt: 'S에서 G까지 갈 수 있는 25개 후보입니다. 통로 길이를 합산해 가장 짧은 경로를 고르세요.',
-      options: makeChoices(paths.map(path => path.id)), solution, totals,
+    return { ...base, inputKind: 'text', title: '최단 경로',
+      prompt: 'S에서 G까지 갈 수 있습니다. 통로 길이를 합산해 가장 짧은 경로를 찾고, 경로를 S-A-G처럼 입력하세요.',
+      placeholder: '예: S-A-C-G', maxLength: 9, solution, totals,
       revealText: '정답: ' + solution + ' · 길이 ' + totals[solution] };
   }
 
@@ -769,10 +622,6 @@ function makeChallenge(type, players) {
 function validateAnswer(game, playerId, value, meta) {
   const challenge = game.challenge;
   if (challenge.inputKind === 'strategy') return null;
-  if (challenge.inputKind === 'choice') {
-    const answer = String(value ?? '');
-    return challenge.options.some(option => option.value === answer) ? answer : null;
-  }
   if (challenge.inputKind === 'indianPoker') {
     if (!value || typeof value !== 'object') return null;
     const guess = Number(value.guess), wager = Number(value.wager);
@@ -785,15 +634,34 @@ function validateAnswer(game, playerId, value, meta) {
     if (!Number.isInteger(bid) || bid < 0 || bid > maxBid) return null;
     return { bid };
   }
-  const answer = String(value ?? '').trim().toUpperCase();
-  if (!answer || answer.length > 40) return null;
-  if (challenge.inputKind === 'memory') return /^\d{16}$/.test(answer) ? answer : null;
-  if (challenge.type === 'stateInference') return /^[01]{8}$/.test(answer) ? answer : null;
-  if (!/^-?\d{1,4}$/.test(answer)) return null;
-  const number = Number(answer);
-  return Number.isSafeInteger(number) ? number : null;
+  const answer = String(value ?? '').normalize('NFKC').trim();
+  if (!answer || answer.length > (challenge.maxLength || 40)) return null;
+  if (challenge.inputKind === 'essay') return answer.replace(/\s+/gu, ' ');
+  const comparable = answer.toUpperCase();
+  if (challenge.inputKind === 'memory') return /^\d{16}$/.test(comparable) ? comparable : null;
+  if (challenge.type === 'stateInference') return /^[01]{8}$/.test(comparable) ? comparable : null;
+  if (challenge.type === 'miniSudoku') return comparable.length === challenge.solution.length && /^[1-6]+$/.test(comparable) ? comparable : null;
+  if (challenge.type === 'codeLock') return /^\d{5}$/.test(comparable) && new Set(comparable).size === 5 ? comparable : null;
+  if (challenge.inputKind === 'number') {
+    if (!/^-?\d{1,4}$/.test(comparable)) return null;
+    const number = Number(comparable);
+    return Number.isSafeInteger(number) ? number : null;
+  }
+  if (challenge.inputKind === 'text') return comparable;
+  return null;
 }
 
+function normalizeAnswer(value) {
+  return String(value ?? '').normalize('NFKC').toUpperCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+function answerMatches(challenge, answer) {
+  const normalized = normalizeAnswer(answer);
+  if (challenge.answerKeywordGroups?.length) {
+    return challenge.answerKeywordGroups.every(group =>
+      group.some(keyword => normalized.includes(normalizeAnswer(keyword))));
+  }
+  return normalized === normalizeAnswer(challenge.solution);
+}
 function isPrime(value) {
   if (value < 2) return false;
   for (let divisor = 2; divisor * divisor <= value; divisor++) if (value % divisor === 0) return false;
@@ -850,7 +718,7 @@ function scoreChallenge(game, players) {
     return points;
   }
 
-  const correct = players.filter(player => submitted[player.id] != null && String(submitted[player.id]) === String(challenge.solution));
+  const correct = players.filter(player => submitted[player.id] != null && answerMatches(challenge, submitted[player.id]));
   for (const player of correct) points[player.id] = 4;
   if (correct.length) {
     const fastest = Math.min(...correct.map(player => game.submissions[player.id].submittedAt));
@@ -866,7 +734,6 @@ function answerLabel(challenge, answer, playerId, game) {
     const cardById = Object.fromEntries(challenge.cards.map(card => [card.id, card]));
     return game.moves.filter(move => move.playerId === playerId).map(move => cardById[move.cardId]?.value).join(', ') + ' 타일';
   }
-  if (challenge.inputKind === 'choice') return challenge.options.find(option => option.value === String(answer))?.label || String(answer);
   return '답 ' + String(answer);
 }
 
@@ -918,9 +785,9 @@ export class GameRoom {
     this.tail = Promise.resolve();
     this.ready = ctx.blockConcurrencyWhile(async () => {
       const snapshot = await ctx.storage.get('snapshot');
-      if (snapshot?.meta?.schemaVersion === 2) { this.meta = snapshot.meta; this.game = snapshot.game; }
+      if (snapshot?.meta?.schemaVersion === 3) { this.meta = snapshot.meta; this.game = snapshot.game; }
       else {
-        // Drop rooms whose saved challenge format predates the expanded challenge engine.
+        // Drop rooms with the old multiple-choice challenge format.
         await ctx.storage.deleteAll();
         this.meta = null; this.game = null;
       }
@@ -951,7 +818,7 @@ export class GameRoom {
     if (this.meta && this.meta.expires > Date.now()) return fail('이미 사용 중인 방 코드입니다.', 409);
     const playerId = crypto.randomUUID();
     const token = `${crypto.randomUUID()}${crypto.randomUUID()}`;
-    this.meta = { schemaVersion: 2, code: body.code, maxPlayers: body.maxPlayers, hostId: playerId, status: 'waiting', seq: 1,
+    this.meta = { schemaVersion: 3, code: body.code, maxPlayers: body.maxPlayers, hostId: playerId, status: 'waiting', seq: 1,
       chat: [], chatLastSent: {}, expires: Date.now() + 30 * 60_000, players: { [playerId]: { id: playerId, name: body.name, token,
         connected: false, score: 0, roundPoints: 0, finalScore: 0, eliminated: false, eliminatedRound: null, joinedAt: Date.now() } } };
     this.game = null;
@@ -1017,9 +884,8 @@ export class GameRoom {
       round: this.game.round, finalIndex: this.game.finalIndex,
       finalRoundCount: this.game.finalRoundCount || this.game.finalTypes?.length || 3, deadlineAt: this.game.deadlineAt,
       type: challenge.type, inputKind: challenge.inputKind,
-      title: challenge.title, prompt: challenge.prompt,
+      prompt: challenge.prompt,
       placeholder: challenge.placeholder, maxLength: challenge.maxLength,
-      options: challenge.inputKind === 'choice' ? challenge.options : undefined,
       studySequence: this.game.phase === 'study' ? challenge.memoryById?.[playerId] : undefined,
       market: challenge.type === 'strategy' ? availableCards : undefined,
       moves: challenge.type === 'strategy' ? moves : undefined,
