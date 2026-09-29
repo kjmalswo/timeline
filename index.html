@@ -45,7 +45,7 @@
 
     <section id="arena" class="screen">
       <div class="arena">
-        <header class="arena-head"><span id="roundChip" class="round-chip">1라운드</span><span class="grow"></span><span id="connectionArena" class="connection">연결 중</span><span id="timer" class="timer">--</span></header>
+        <header class="arena-head"><span id="roundChip" class="round-chip">라운드 1</span><span class="grow"></span><span id="connectionArena" class="connection">연결 중</span><span id="timer" class="timer">--</span></header>
         <div class="arena-grid">
           <article class="panel challenge">
             <h2 id="challengeTitle">문제 준비 중</h2><p id="challengePrompt" class="prompt"></p><div id="strategyBoard" class="strategy-board" hidden></div>
@@ -156,8 +156,8 @@
       const game=data.game; if(!game)return; showScreen('arena');
       if(game.you?.submitted) chosenAnswer=game.you.answer??null;
       else if(chosenPhaseId!==game.phaseId) { chosenAnswer=null; chosenPhaseId=game.phaseId; }
-      $('#roundChip').textContent=game.stage==='final'?'결승 '+game.finalIndex+'/'+(game.finalRoundCount||3):game.round+'라운드';
-      $('#challengeTitle').textContent=game.title||'문제를 확인하세요';
+      $('#roundChip').textContent='라운드 '+(game.stage==='final'?game.finalIndex:game.round);
+      $('#challengeTitle').textContent='문제';
       $('#challengePrompt').textContent=game.prompt||'';
       const privateCard=$('#privateCard'); privateCard.hidden=!game.privateInfo;
       if(game.privateInfo) { $('#privateHeading').textContent=game.privateInfo.heading||'내 단서'; $('#privateText').textContent=game.privateInfo.text||''; }
@@ -190,20 +190,17 @@
       const box=$('#answerBox'); box.replaceChildren();
       const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.yourTurn);
       box.hidden=!canAnswer; if(box.hidden)return;
-      if(game.inputKind==='choice') {
-        const list=document.createElement('div'); list.className='candidate-list';
-        for(const option of game.options||[]) {
-          const button=document.createElement('button'); button.type='button';
-          button.className='candidate '+(chosenAnswer===option.value?'selected':'');
-          button.innerHTML=escapeHtml(option.label)+'<small>선택</small>';
-          button.addEventListener('click',()=>{chosenAnswer=option.value; renderAnswer(game);});
-          list.append(button);
-        }
-        box.append(list);
+      if(game.inputKind==='essay') {
+        const textarea=document.createElement('textarea'); textarea.className='input';
+        textarea.rows=5; textarea.maxLength=game.maxLength||240; textarea.autocomplete='off';
+        textarea.placeholder=game.placeholder||'근거를 포함해 답을 작성하세요.';
+        textarea.style.minHeight='130px'; textarea.style.resize='vertical'; textarea.style.lineHeight='1.7';
+        textarea.value=typeof chosenAnswer==='string'?chosenAnswer:'';
         const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
-        submit.style.marginTop='12px'; submit.textContent='제출'; submit.disabled=!chosenAnswer;
-        submit.addEventListener('click',()=>submitAnswer(chosenAnswer)); box.append(submit);
-        return;
+        submit.style.marginTop='12px'; submit.textContent='답 제출'; submit.disabled=!textarea.value.trim();
+        textarea.addEventListener('input',()=>{chosenAnswer=textarea.value;submit.disabled=!textarea.value.trim();});
+        submit.addEventListener('click',()=>submitAnswer(textarea.value));
+        box.append(textarea,submit); return;
       }
 
       if(game.inputKind==='strategy') {
@@ -242,7 +239,7 @@
       const row=document.createElement('div'); row.className='answer-row';
       const input=document.createElement('input'); input.className='input'; input.id='answerInput';
       input.type='text'; input.autocomplete='off'; input.placeholder=game.placeholder||'답';
-      input.maxLength=game.maxLength||4; input.inputMode=game.inputKind==='text'?'text':'numeric';
+      input.maxLength=game.maxLength||4; input.inputMode=game.inputKind==='text'&&game.type!=='miniSudoku'?'text':'numeric';
       input.value=typeof chosenAnswer==='string'?chosenAnswer:'';
       input.addEventListener('input',()=>{chosenAnswer=input.value;});
       const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
@@ -255,9 +252,11 @@
       const game=snapshot.game;
       const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.type==='strategy'&&game.yourTurn);
       if(!canAnswer)return;
-      if(answer==null||String(answer).trim()==='') { toast('답을 입력하거나 선택하세요.'); return; }
+      if(answer==null||String(answer).trim()==='') { toast('답을 입력하세요.'); return; }
       if(game.inputKind==='memory'&&!/^\d{16}$/.test(String(answer).replace(/\s/g,''))) { toast('16자리 숫자를 입력해 주세요.'); return; }
       if(game.type==='stateInference'&&!/^[01]{8}$/.test(String(answer).trim())) { toast('8비트를 입력해 주세요.'); return; }
+      if(game.type==='miniSudoku'&&(String(answer).length!==(game.maxLength||0)||!/^[1-6]+$/.test(String(answer)))) { toast('빈칸 수만큼 1~6 숫자를 입력해 주세요.'); return; }
+      if(game.type==='codeLock'&&(!/^\d{5}$/.test(String(answer))||new Set(String(answer)).size!==5)) { toast('서로 다른 숫자 다섯 개를 입력해 주세요.'); return; }
       if(game.inputKind==='number'&&!/^-?\d{1,4}$/.test(String(answer).trim())) { toast('정수를 입력해 주세요.'); return; }
       if(game.inputKind==='indianPoker') {
         const guess=Number(answer.guess), wager=Number(answer.wager);
