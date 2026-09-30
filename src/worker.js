@@ -40,6 +40,74 @@ function chooseMainType(previous) {
   const pool = group.filter(type => type !== previous);
   return sample(pool.length ? pool : group);
 }
+
+const TRAINING_TYPE_POOLS = {
+  logic: ['sequence', 'symbolGrid', 'logicGrid', 'spatial', 'miniSudoku', 'codeLock', 'truthLie'],
+  information: ['turtleSoup', 'cipher', 'probability', 'path', 'stateInference'],
+  strategy: ['resource', 'strategy'],
+  memory: ['memory']
+};
+const TRAINING_CATEGORY_LABELS = {
+  logic: '논리·제약조건',
+  information: '정보·확률 추론',
+  strategy: '자원·전략',
+  memory: '기억·패턴'
+};
+const TRAINING_TIPS = {
+  sequence: '홀수항과 짝수항의 규칙을 나누고, 찾은 규칙을 다음 항에 대입해 확인하세요.',
+  symbolGrid: '식의 차이를 이용해 기호를 좁힌 뒤, 구한 값을 마지막 계산에 다시 대입하세요.',
+  logicGrid: '강한 제약부터 표로 정리하고, 답 후보가 모든 단서를 만족하는지 확인하세요.',
+  spatial: '각 변환을 순서대로 적용하고, 좌표가 격자 안에 있는지 마지막에 확인하세요.',
+  miniSudoku: '행·열·상자 제약을 따로 적용해 후보를 줄이고 빈칸을 검산하세요.',
+  codeLock: '후보를 줄인 뒤 암호가 모든 위치·숫자 단서를 만족하는지 재검증하세요.',
+  turtleSoup: '사건의 원인과 결과를 분리하고, 질문마다 가능한 가설이 얼마나 줄었는지 보세요.',
+  cipher: '변환의 순서를 거꾸로 풀고, 복호화 결과가 알려진 후보와 일치하는지 확인하세요.',
+  probability: '사전확률과 관측 우도를 분리해 비교하고, 직관 대신 전체 표본을 반영하세요.',
+  resource: '가능한 조합부터 걸러낸 뒤 보상을 비교하고, 자원 제약을 마지막에 다시 확인하세요.',
+  truthLie: '사람별 추측 대신 각 진술을 변수화하고, 거짓 진술이 정확히 하나인지 검증하세요.',
+  memory: '숫자를 일정한 묶음으로 나누어 기억한 뒤, 입력 전 원래 순서를 확인하세요.',
+  strategy: '내 목표와 남은 타일을 함께 보고, 지금 선택이 다음 선택지를 어떻게 바꾸는지 계산하세요.',
+  path: '후보 경로를 나열하고 간선 비용을 합산해 최소 경로를 직접 비교하세요.',
+  stateInference: '초기 상태와 연산을 분리해 기록하고, 연산을 순서대로 적용한 뒤 전체 비트를 검산하세요.'
+};
+function trainingCategory(type) {
+  return Object.keys(TRAINING_TYPE_POOLS).find(category => TRAINING_TYPE_POOLS[category].includes(type)) || 'logic';
+}
+function trainingAverage(history, category) {
+  const results = (history || []).filter(item => item.category === category && Number.isFinite(item.performance));
+  return results.length ? results.reduce((sum, item) => sum + item.performance, 0) / results.length : null;
+}
+function trainingLevel(history, category) {
+  const average = trainingAverage(history, category);
+  if (average == null) return { label: '★★★★ · 실전 기본', multiplier: 1 };
+  if (average < 0.45) return { label: '★★★ · 보완 집중 · 시간 여유', multiplier: 1.25 };
+  if (average >= 0.85) return { label: '★★★★★ · 시간 압박', multiplier: 0.8 };
+  return { label: '★★★★ · 실전 기본', multiplier: 1 };
+}
+function trainingDuration(type, history, category, phase = 'answer') {
+  const base = phase === 'study' ? 18_000
+    : type === 'memory' ? 40_000
+    : type === 'strategy' ? 20_000
+    : 75_000;
+  return Math.round(base * trainingLevel(history, category).multiplier);
+}
+function chooseTrainingType(history = []) {
+  const categories = Object.keys(TRAINING_TYPE_POOLS);
+  const previousType = history.at(-1)?.type;
+  if (history.length < categories.length) {
+    const uncovered = categories.filter(category => !history.some(item => item.category === category));
+    const category = sample(uncovered);
+    return sample(TRAINING_TYPE_POOLS[category].filter(type => type !== previousType));
+  }
+  const averages = categories.map(category => ({ category, average: trainingAverage(history, category) ?? 0 }));
+  const weakest = Math.min(...averages.map(item => item.average));
+  const previousCategory = history.at(-1)?.category;
+  let candidates = averages.filter(item => item.average <= weakest + 0.12 && item.category !== previousCategory);
+  if (!candidates.length) candidates = averages.filter(item => item.category !== previousCategory);
+  const category = sample(candidates).category;
+  const pool = TRAINING_TYPE_POOLS[category].filter(type => type !== previousType);
+  return sample(pool.length ? pool : TRAINING_TYPE_POOLS[category]);
+}
 function makeChoices(values, labels = {}) {
   return shuffle([...new Set(values.map(value => String(value)))])
     .map(value => ({ value, label: labels[value] == null ? value : String(labels[value]) }));
@@ -692,7 +760,8 @@ function makeChallenge(type, players) {
       { key: 'triple', text: '3의 배수 타일마다 4점을 얻습니다.' },
       { key: 'low', text: '6 이하 타일마다 4점을 얻습니다.' }
     ];
-    const cards = Array.from({ length: players.length * 2 }, (_, index) => ({
+    const cardCount = players.length === 1 ? 6 : players.length * 2;
+    const cards = Array.from({ length: cardCount }, (_, index) => ({
       id: 'T' + String(index + 1).padStart(2, '0'), value: randomInt(13) + 1
     }));
     const objectives = {};
@@ -799,6 +868,37 @@ function isPrime(value) {
   for (let divisor = 2; divisor * divisor <= value; divisor++) if (value % divisor === 0) return false;
   return true;
 }
+function strategyPoints(values, objective) {
+  const sum = values.reduce((total, value) => total + value, 0);
+  if (objective.key === 'sum') return Math.floor(sum / 3);
+  if (objective.key === 'even') return values.filter(value => value % 2 === 0).length * 3;
+  if (objective.key === 'odd') return values.filter(value => value % 2 === 1).length * 3;
+  if (objective.key === 'prime') return values.filter(isPrime).length * 4;
+  if (objective.key === 'triple') return values.filter(value => value % 3 === 0).length * 4;
+  if (objective.key === 'low') return values.filter(value => value <= 6).length * 4;
+  return 0;
+}
+function trainingPerformance(game, playerId) {
+  const challenge = game.challenge;
+  if (challenge.type === 'strategy') {
+    const cardById = Object.fromEntries(challenge.cards.map(card => [card.id, card]));
+    const picked = game.moves.filter(move => move.playerId === playerId && !move.actionId.startsWith('timeout-'))
+      .map(move => cardById[move.cardId]?.value).filter(Number.isInteger);
+    if (picked.length !== 2) return 0;
+    const objective = challenge.objectives[playerId];
+    const best = challenge.cards.flatMap((card, index) => challenge.cards.slice(index + 1)
+      .map(next => strategyPoints([card.value, next.value], objective))).reduce((max, value) => Math.max(max, value), 0);
+    return best ? Math.min(1, strategyPoints(picked, objective) / best) : 1;
+  }
+  const submission = game.submissions[playerId];
+  if (!submission) return 0;
+  if (challenge.type === 'memory') {
+    const target = challenge.memoryById[playerId];
+    const matched = [...String(submission.answer)].reduce((count, digit, index) => count + Number(digit === target[index]), 0);
+    return matched / 16;
+  }
+  return String(submission.answer) === String(challenge.solution) ? 1 : 0;
+}
 function scoreChallenge(game, players) {
   const challenge = game.challenge;
   const points = Object.fromEntries(players.map(player => [player.id, 0]));
@@ -839,13 +939,8 @@ function scoreChallenge(game, players) {
     for (const player of players) {
       const picked = game.moves.filter(move => move.playerId === player.id).map(move => cardById[move.cardId]?.value).filter(Number.isInteger);
       const objective = challenge.objectives[player.id];
-      const sum = picked.reduce((total, value) => total + value, 0);
-      if (objective.key === 'sum') points[player.id] = Math.floor(sum / 3);
-      else if (objective.key === 'even') points[player.id] = picked.filter(value => value % 2 === 0).length * 3;
-      else if (objective.key === 'odd') points[player.id] = picked.filter(value => value % 2 === 1).length * 3;
-      else if (objective.key === 'prime') points[player.id] = picked.filter(isPrime).length * 4;
-      else if (objective.key === 'triple') points[player.id] = picked.filter(value => value % 3 === 0).length * 4;
-      else if (objective.key === 'low') points[player.id] = picked.filter(value => value <= 6).length * 4;
+      const timedOut = game.trainingMode && game.moves.some(move => move.playerId === player.id && move.actionId.startsWith('timeout-'));
+      points[player.id] = timedOut ? 0 : strategyPoints(picked, objective);
     }
     return points;
   }
@@ -880,7 +975,7 @@ export default {
       const name = safeName(body.name);
       const maxPlayers = Number(body.maxPlayers);
       if (!name) return fail('참가자 이름을 입력해 주세요.');
-      if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > MAX_PLAYERS) return fail('방 인원은 2명에서 8명 사이로 설정해 주세요.');
+      if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > MAX_PLAYERS) return fail('훈련은 1명, 대전은 2명에서 8명까지 설정할 수 있습니다.');
       for (let attempt = 0; attempt < 12; attempt++) {
         const code = randomCode();
         const room = env.GAME_ROOMS.get(env.GAME_ROOMS.idFromName(code));
@@ -1018,6 +1113,10 @@ export class GameRoom {
       finalRoundCount: this.game.finalRoundCount || this.game.finalTypes?.length || 3, deadlineAt: this.game.deadlineAt,
       type: challenge.type, inputKind: challenge.inputKind,
       title: challenge.title, prompt: challenge.prompt,
+      trainingMode: Boolean(this.game.trainingMode), trainingCategory: this.game.trainingCategory || null,
+      trainingCategoryLabel: this.game.trainingCategory ? TRAINING_CATEGORY_LABELS[this.game.trainingCategory] : null,
+      trainingLevel: this.game.trainingLevel || null,
+      trainingHistory: this.game.phase === 'finished' && this.game.trainingMode ? this.game.trainingHistory : undefined,
       placeholder: challenge.placeholder, maxLength: challenge.maxLength,
       options: challenge.inputKind === 'choice' ? challenge.options : undefined,
       studySequence: this.game.phase === 'study' ? challenge.memoryById?.[playerId] : undefined,
@@ -1047,9 +1146,20 @@ export class GameRoom {
     this.meta.status = 'playing';
     this.game = { seq: this.meta.seq, phaseId: 0, phase: 'answer', stage: 'main', round: 1, finalIndex: 0,
       deadlineAt: 0, challenge: null, submissions: {}, moves: [], turnOrder: [], turnIndex: 0,
-      result: null, winnerId: null, lastMainType: null };
-    if (activePlayers(this.meta).length === 2) this.beginFinal();
+      result: null, winnerId: null, lastMainType: null, trainingMode: false, trainingHistory: [] };
+    if (this.meta.maxPlayers === 1) this.beginTraining();
+    else if (activePlayers(this.meta).length === 2) this.beginFinal();
     else this.beginChallenge('main', chooseMainType(null));
+  }
+
+  beginTraining() {
+    this.game.trainingMode = true;
+    this.game.stage = 'final';
+    this.game.finalIndex = 1;
+    this.game.finalRoundCount = 10;
+    this.game.finalTypes = [];
+    this.game.finalTieBreak = Object.fromEntries(activePlayers(this.meta).map(player => [player.id, randomInt(1_000_000)]));
+    this.beginChallenge('final', chooseTrainingType(this.game.trainingHistory));
   }
 
   beginChallenge(stage, type) {
@@ -1058,6 +1168,10 @@ export class GameRoom {
     const challenge = makeChallenge(type, players);
     this.game.stage = stage;
     this.game.challenge = challenge;
+    if (this.game.trainingMode) {
+      this.game.trainingCategory = trainingCategory(type);
+      this.game.trainingLevel = trainingLevel(this.game.trainingHistory, this.game.trainingCategory).label;
+    }
     this.game.submissions = {};
     this.game.moves = [];
     this.game.turnOrder = [];
@@ -1072,7 +1186,9 @@ export class GameRoom {
       this.game.turnOrder = [...firstLap, ...secondLap];
     }
     this.game.phaseId++;
-    this.game.deadlineAt = Date.now() + (type === 'memory' ? 18_000 : type === 'strategy' ? 20_000 : 75_000);
+    this.game.deadlineAt = Date.now() + (this.game.trainingMode
+      ? trainingDuration(type, this.game.trainingHistory, this.game.trainingCategory, this.game.phase === 'study' ? 'study' : 'answer')
+      : type === 'memory' ? 18_000 : type === 'strategy' ? 20_000 : 75_000);
     this.meta.expires = Date.now() + 60 * 60_000;
     this.bump();
   }
@@ -1081,6 +1197,7 @@ export class GameRoom {
     this.game.stage = 'final';
     this.game.finalIndex = 1;
     this.game.finalRoundCount = this.meta.maxPlayers === 2 ? 10 : 3;
+    this.game.trainingMode = false;
     this.game.finalTypes = shuffle([...FULL_INFO_TYPES, ...LIMITED_INFO_TYPES]).slice(0, this.game.finalRoundCount);
     this.game.finalTieBreak = Object.fromEntries(activePlayers(this.meta).map(player => [player.id, randomInt(1_000_000)]));
     this.beginChallenge('final', this.game.finalTypes[0]);
@@ -1118,9 +1235,15 @@ export class GameRoom {
       }
       if (message.type === 'start') {
         const allConnected = makePlayers(this.meta).every(item => this.connected(item.id));
-        if (playerId !== this.meta.hostId || this.meta.status !== 'waiting' || makePlayers(this.meta).length < 2 || !allConnected)
-          return this.send(playerId, { type: 'error', message: '2명 이상 참가하고 모든 참가자가 접속한 뒤 방장이 시작할 수 있습니다.' });
+        const minimumPlayers = this.meta.maxPlayers === 1 ? 1 : 2;
+        if (playerId !== this.meta.hostId || this.meta.status !== 'waiting' || makePlayers(this.meta).length < minimumPlayers || !allConnected)
+          return this.send(playerId, { type: 'error', message: '훈련은 혼자, 대전은 2명 이상 전원이 접속한 뒤 시작할 수 있습니다.' });
         await this.start(); await this.persistAndBroadcast(); return;
+      }
+      if (message.type === 'continueTraining') {
+        if (playerId !== this.meta.hostId || !this.game?.trainingMode || this.game.phase !== 'result')
+          return this.send(playerId, { type: 'error', message: '훈련 결과 화면에서만 다음 문제로 넘어갈 수 있습니다.' });
+        await this.advance(); await this.persistAndBroadcast(); return;
       }
       if (message.type === 'leave') {
         if (this.meta.status !== 'waiting') return this.send(playerId, { type: 'error', message: '진행 중인 게임에서는 방을 나갈 수 없습니다.' });
@@ -1216,6 +1339,19 @@ export class GameRoom {
     this.game.phaseId++;
     this.bump();
 
+    if (this.game.trainingMode) {
+      const player = players[0];
+      const performance = trainingPerformance(this.game, player.id);
+      const category = this.game.trainingCategory;
+      const categoryLabel = TRAINING_CATEGORY_LABELS[category];
+      const outcome = performance >= 0.999 ? '정답·최선 선택' : performance > 0 ? '부분 해결' : '미해결';
+      const record = { round: this.game.finalIndex, type: challenge.type, title: challenge.title,
+        category, categoryLabel, performance, points: player.roundPoints, outcome };
+      this.game.trainingHistory.push(record);
+      this.game.result.trainingFeedback = { categoryLabel, level: this.game.trainingLevel, outcome,
+        performance: Math.round(performance * 100), tip: TRAINING_TIPS[challenge.type] };
+    }
+
     if (this.game.stage === 'final' && this.game.finalIndex >= (this.game.finalRoundCount || this.game.finalTypes?.length || 3)) {
       const finalists = activePlayers(this.meta).sort((a, b) => b.finalScore - a.finalScore ||
         this.game.finalTieBreak[a.id] - this.game.finalTieBreak[b.id]);
@@ -1224,14 +1360,21 @@ export class GameRoom {
       this.game.deadlineAt = 0;
       this.meta.status = 'finished';
       this.meta.expires = Date.now() + 5 * 60_000;
-      this.game.result.headline = (this.meta.players[this.game.winnerId]?.name || '우승자') + ' 최종 우승';
+      this.game.result.headline = this.game.trainingMode
+        ? '개인 훈련 완료'
+        : (this.meta.players[this.game.winnerId]?.name || '우승자') + ' 최종 우승';
       return;
     }
     this.game.phase = 'result';
-    this.game.deadlineAt = Date.now() + 8_000;
+    this.game.deadlineAt = Date.now() + (this.game.trainingMode ? 20_000 : 8_000);
   }
 
   async advance() {
+    if (this.game.trainingMode) {
+      this.game.finalIndex++;
+      this.beginChallenge('final', chooseTrainingType(this.game.trainingHistory));
+      return;
+    }
     if (this.game.stage === 'main') {
       if (activePlayers(this.meta).length === 2) this.beginFinal();
       else {
@@ -1249,7 +1392,9 @@ export class GameRoom {
     if (this.game.phase === 'study') {
       this.game.phase = 'answer';
       this.game.phaseId++;
-      this.game.deadlineAt = Date.now() + 40_000;
+      this.game.deadlineAt = Date.now() + (this.game.trainingMode
+        ? trainingDuration('memory', this.game.trainingHistory, this.game.trainingCategory, 'answer')
+        : 40_000);
       this.bump();
     } else if (this.game.phase === 'turn' && this.game.challenge.type === 'strategy') {
       const playerId = this.game.turnOrder[this.game.turnIndex];
