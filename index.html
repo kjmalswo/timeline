@@ -186,7 +186,7 @@
         const history=(game.moves||[]).map(move=>'<li>'+escapeHtml(move.name)+' · '+escapeHtml(move.value)+'</li>').join('');
         board.innerHTML='<div class="label">남은 타일</div><div class="strategy-market">'+market+'</div><div class="label">선택 기록</div><ol class="strategy-log">'+history+'</ol>';
       }
-      renderAnswer(game); renderChat(data.chat||[]);
+      renderAnswer(game); renderChat(game.chat||[]);
       const waiting=$('#waitingBox');
       const waitingForTurn=game.phase==='turn'&&!game.yourTurn;
       waiting.hidden=!(waitingForTurn||(game.phase==='answer'&&game.you?.submitted));
