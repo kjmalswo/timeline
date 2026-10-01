@@ -62,9 +62,27 @@
     .arena-head { display:flex; align-items:center; gap:12px; margin-bottom:18px; min-height:50px }
     .round-chip { display:inline-flex; align-items:center; border:1px solid #73653e; background:#252a46; border-radius:8px; padding:9px 13px; font-size:.9rem; font-weight:800; color:var(--gold) }
     .phase-label { color:var(--muted); font-size:.8rem }
-    .timer-wrap { display:flex; align-items:center; gap:10px; padding-left:14px; border-left:1px solid var(--line) }
-    .timer { font-variant-numeric:tabular-nums; font-size:1.5rem; font-weight:800; color:var(--gold); min-width:64px; text-align:right }
+    .timer-wrap { position:fixed; z-index:8; top:max(18px,env(safe-area-inset-top)); right:max(18px,env(safe-area-inset-right)); width:210px; display:grid; gap:5px; padding:14px 18px; border:2px solid var(--gold); border-radius:16px; background:#151b3df5; box-shadow:0 8px 30px #0008; text-align:center }
+    .timer-wrap .label { color:var(--text) }
+    .timer { font-variant-numeric:tabular-nums; font-size:3rem; line-height:1.15; font-weight:850; color:var(--gold); letter-spacing:.04em }
+    .timer-wrap.urgent { border-color:var(--red); box-shadow:0 0 28px #ff40504a }
     .timer.urgent { color:var(--red) }
+    .timer-status { min-height:1.2em; color:var(--muted); font-size:.78rem }
+    .timer-wrap.urgent .timer-status { color:var(--red) }
+    .sound-toggle { min-height:36px; border:1px solid var(--line); border-radius:8px; padding:7px; background:var(--bg); font-size:.78rem }
+    .arena-head { padding-right:230px; min-height:130px }
+    body.time-pressure::after { content:''; position:fixed; inset:0; z-index:6; pointer-events:none; background:radial-gradient(ellipse at center,transparent 40%,#dc162940 72%,#dc1629b3 100%); opacity:var(--urgency-opacity,.45) }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap }
+    .example { margin:18px 0 0; padding:14px 16px; background:#202641; border-left:3px solid var(--blue); border-radius:6px; font-size:.94rem; line-height:1.7 }
+    .answer-hint { margin:0 0 14px; color:var(--muted); line-height:1.6 }
+    .board-gallery { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px }
+    .shape-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; width:min(100%,170px); margin:10px auto }
+    .shape-cell { aspect-ratio:1; border:1px solid #5c6da6; background:var(--bg) }
+    .shape-cell.filled { background:var(--gold); border-color:#fff0b8 }
+    .shape-caption { color:var(--muted); text-align:center; font-size:.85rem }
+    .board-option { display:block }
+    .board-option .shape-grid { pointer-events:none }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important; animation:none!important } }
     .arena-grid { display:grid; grid-template-columns:minmax(0,1fr) 290px; align-items:start; gap:18px }
     .challenge { min-width:0; padding:clamp(20px,3vw,34px); border-top:3px solid var(--gold) }
     .challenge h2 { font-size:clamp(1.4rem,3vw,2rem); line-height:1.35; margin:0 0 26px; overflow-wrap:anywhere }
@@ -78,24 +96,14 @@
     .puzzle-data { margin-top:18px; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--bg); overflow-wrap:anywhere }
     .data-lines { display:grid; gap:10px; font-variant-numeric:tabular-nums; line-height:1.6 }
     .data-lines.numbered { margin:0; padding-left:24px }
-    .sequence-data { display:flex; flex-wrap:wrap; gap:8px }
-    .sequence-number { padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:1.15rem; font-variant-numeric:tabular-nums }
-    .sequence-number.unknown { color:var(--gold); border-color:var(--gold) }
-    .sudoku-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); max-width:360px; margin:auto; border:2px solid var(--blue); background:var(--line); gap:1px }
-    .sudoku-cell { display:flex; align-items:center; justify-content:center; aspect-ratio:1; background:var(--panel); font-size:clamp(1rem,4vw,1.4rem); font-variant-numeric:tabular-nums }
-    .sudoku-cell.blank { background:#293566; color:var(--gold) }
-    .sudoku-cell.box-right { border-right:2px solid var(--blue) }
-    .sudoku-cell.box-bottom { border-bottom:2px solid var(--blue) }
     .table-wrap { overflow-x:auto }
     .puzzle-table { width:100%; border-collapse:collapse; font-size:.9rem; font-variant-numeric:tabular-nums }
     .puzzle-table caption { display:table-caption; caption-side:top; text-align:left; padding-bottom:10px }
     .puzzle-table th,.puzzle-table td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left }
     .puzzle-table th { color:var(--muted); font-size:.76rem }
     .puzzle-table tr:last-child td { border-bottom:0 }
-    .private-card,.study-card { margin:24px 0 0; padding:18px; border-radius:12px; border:1px solid #786842; background:#202641 }
+    .private-card { margin:24px 0 0; padding:18px; border-radius:12px; border:1px solid #786842; background:#202641 }
     .private-card .section-label { margin-bottom:12px }
-    .study-card { text-align:center; border-color:var(--line); background:var(--bg) }
-    .study-sequence { display:flex; justify-content:center; flex-wrap:wrap; gap:10px 16px; font-size:clamp(1.4rem,4.6vw,2.4rem); font-variant-numeric:tabular-nums; font-weight:800; letter-spacing:.08em; padding-top:8px }
     .answer-box { margin-top:26px; padding-top:24px; border-top:1px solid var(--line) }
     .answer-row { display:flex; align-items:end; gap:10px }
     .answer-row .input { flex:1 }
@@ -136,10 +144,6 @@
     .toast.show { opacity:1; transform:translate(-50%,0) }
     .connection { font-size:.74rem; color:var(--green) }
     .connection.offline { color:var(--red) }
-    .strategy-board { margin:24px 0 0; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--bg) }
-    .strategy-market { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 16px }
-    .strategy-tile { min-width:42px; padding:9px 12px; border:1px solid #786842; border-radius:8px; color:var(--gold); text-align:center; font-weight:800 }
-    .strategy-log { margin:8px 0 0; padding-left:20px; color:var(--muted); font-size:.86rem; line-height:1.7 }
     .training-feedback { margin-top:14px; padding:13px; border-radius:10px; border:1px solid var(--line); background:var(--bg); line-height:1.6 }
     .training-feedback strong { color:var(--gold) }
     .training-feedback p { margin:7px 0 0; color:var(--muted) }
@@ -163,9 +167,16 @@
       .arena-head { flex-wrap:wrap; gap:8px }
       .arena-head .connection { display:none }
       .round-chip { font-size:.8rem; padding:8px 10px }
-      .timer-wrap { gap:6px; padding-left:8px }
-      .timer-wrap .label { display:none }
-      .timer { font-size:1.3rem; min-width:58px }
+      #arena.screen { padding-top:calc(118px + env(safe-area-inset-top)) }
+      .timer-wrap { top:0; left:0; right:0; width:auto; padding:calc(10px + env(safe-area-inset-top)) 12px 10px; gap:4px 10px; grid-template-columns:1fr auto 1fr; border-radius:0 0 14px 14px }
+      .timer-wrap .label { align-self:center; font-size:.75rem }
+      .timer { font-size:2.3rem }
+      .timer-status { grid-column:1/4; grid-row:2 }
+      .sound-toggle { grid-column:3; grid-row:1; align-self:center }
+      .arena-head { padding-right:0; min-height:46px }
+      .board-gallery { gap:8px }
+      .shape-grid { gap:2px }
+      .shape-caption { font-size:.76rem }
       .arena-side,.roster,.form-row,.home-actions { grid-template-columns:1fr }
       .candidate-list { grid-template-columns:1fr }
       .answer-row { flex-wrap:wrap }
@@ -185,7 +196,7 @@
       <div class="wrap">
         <header class="hero"><h1><span>TIMELINE</span></h1></header>
         <div class="panel home-panel">
-          <div class="field"><label for="playerName">닉네임</label><input id="playerName" class="input" maxlength="18" autocomplete="nickname"><p class="hint" style="margin:0">생성과 참가에 공통 사용</p></div>
+          <div class="field"><label for="playerName">닉네임</label><input id="playerName" class="input" maxlength="18" autocomplete="nickname"><p class="hint" style="margin:0">방을 만들거나 참가할 때 사용할 이름이에요.</p></div>
           <h2 class="home-section-title">새 방 만들기</h2>
           <div class="form-row">
             <div class="field"><label for="maxPlayers">게임 방식</label><select id="maxPlayers" class="input"></select></div>
@@ -216,21 +227,21 @@
         <header class="arena-head">
           <span id="roundChip" class="round-chip">1라운드</span><span id="phaseLabel" class="phase-label"></span>
           <span class="grow"></span><span id="connectionArena" class="connection">연결 중</span>
-          <div class="timer-wrap"><span class="label">남은 시간</span><span id="timer" class="timer" role="timer" aria-label="남은 시간">--</span></div>
+          <div id="timerPanel" class="timer-wrap"><span id="timerLabel" class="label">남은 풀이 시간</span><span id="timer" class="timer" role="timer" aria-label="남은 시간" aria-live="off">--</span><span id="timerStatus" class="timer-status"></span><button id="soundToggle" class="sound-toggle" type="button" aria-pressed="true">효과음 켜짐</button></div>
         </header>
         <div class="arena-grid">
           <article class="panel challenge">
-            <h2 id="challengeTitle">문제 준비 중</h2>
+            <h2 id="challengeTitle" tabindex="-1">문제 준비 중</h2>
             <section class="question-section" aria-labelledby="questionLabel">
               <h3 id="questionLabel" class="section-label">문제</h3><p id="challengePrompt" class="prompt"></p>
+              <section id="conditionsCard" class="condition-section" aria-labelledby="conditionsLabel" hidden>
+                <h3 id="conditionsLabel" class="section-label">풀이 규칙</h3><ul id="conditionList" class="condition-list"></ul>
+              </section>
+              <p id="ruleExample" class="example" hidden></p>
               <div id="puzzleData" class="puzzle-data" hidden></div>
             </section>
-            <section id="conditionsCard" class="condition-section" aria-labelledby="conditionsLabel" hidden>
-              <h3 id="conditionsLabel" class="section-label">조건 / 힌트</h3><ul id="conditionList" class="condition-list"></ul>
-            </section>
-            <div id="strategyBoard" class="strategy-board" hidden></div>
             <section id="privateCard" class="private-card" aria-labelledby="privateHeading" hidden><h3 id="privateHeading" class="section-label">내 단서</h3><ul id="privateText" class="clue-list"></ul></section>
-            <div id="studyCard" class="study-card" hidden><div class="section-label">기억할 숫자</div><div id="studySequence" class="study-sequence"></div></div>
+            <p id="submissionHint" class="answer-hint" style="margin-top:24px"></p>
             <div id="answerBox" class="answer-box" hidden></div>
             <div id="waitingBox" class="waiting-box" hidden></div>
             <div id="resultBox" class="result-box" hidden></div>
@@ -251,6 +262,7 @@
       <div class="panel finish-card"><h1 id="winnerName">우승자</h1><div id="finishRank" class="finish-rank"></div><button id="backHome" class="btn primary">타이틀로 돌아가기</button></div>
     </section>
   </main>
+  <div id="timeAnnouncement" class="sr-only" role="status" aria-live="polite"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>
   (() => {
@@ -265,7 +277,7 @@
     $('#maxPlayers').value='2';
     try { const saved = sessionStorage.getItem('timeline.roomSession'); if (saved) { session=JSON.parse(saved); if (session?.code&&session?.token) connect(); else session=null; } } catch { session=null; }
 
-    function showScreen(id) { for (const item of screens) $('#'+item).classList.toggle('active',item===id); }
+    function showScreen(id) { for (const item of screens) $('#'+item).classList.toggle('active',item===id); if(id!=='arena') stopTimePressure(); }
     function toast(message) { const node=$('#toast'); node.textContent=message; node.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>node.classList.remove('show'),2800); }
     function setConnection(connected) { for (const id of ['connectionLobby','connectionArena']) { const node=$('#'+id); node.textContent=connected?'연결됨':'재접속 중'; node.classList.toggle('offline',!connected); } }
     async function api(path, body) {
@@ -343,116 +355,36 @@
       if(send({type:'chat',text}))input.value='';
     }
 
-    // Presentation uses only the public prompt and the current player's server-provided clues.
-    // Unknown formats stay intact so a new server question cannot silently lose its rules.
     function challengeContent(game) {
-      const prompt=String(game.prompt||'').trim(), lines=prompt.split('\n');
-      const details=lines.slice(1).filter(line=>line.trim());
-      const fallback={question:prompt,conditions:[],details:[],layout:'lines'};
-      const content=(question,conditions=[],layout='lines',data=details)=>({question,conditions,details:data,layout});
-      switch(game.type) {
-        case 'sequence':
-          if(!prompt.startsWith('홀수항은')||!details.length)return fallback;
-          return content('11번째 항의 값은?', ['홀수항: 두 번째 차분이 일정함','짝수항: 같은 수를 곱함'], 'sequence');
-        case 'symbolGrid':
-          if(!prompt.startsWith('네 기호는')||!details.length)return fallback;
-          return content('△ × ◇ + □ × ○의 값은?', ['네 기호는 서로 다른 한 자리 수'], 'equations');
-        case 'logicGrid':
-          if(!prompt.startsWith('다섯 참가자의')||!details.length)return fallback;
-          return content('3위 참가자의 표식은?', ['다섯 참가자의 순위와 표식은 모두 다름'], 'ordered');
-        case 'spatial': {
-          const start=lines[0].match(/격자에서 ([A-E][1-5])를/);
-          if(!start||!details.length)return fallback;
-          return content('변환 후 좌표는?', ['격자: A~E열 · 1~5행','시작 좌표: '+start[1],'아래 변환을 순서대로 적용'], 'ordered');
-        }
-        case 'miniSudoku':
-          if(!prompt.startsWith('각 행·열·2×3')||!details.length)return fallback;
-          return content('빈칸에 들어갈 숫자 배열은?', ['각 행·열·2×3 상자에 1~6을 한 번씩 배치','빈칸은 위쪽 행부터, 각 행의 왼쪽 → 오른쪽 순서'], 'sudoku');
-        case 'codeLock':
-          if(!prompt.startsWith('0~9 중')||!details.length)return fallback;
-          return content('5자리 암호는?', ['0~9 중 서로 다른 숫자 5개','자리까지: 숫자와 위치 모두 일치','숫자만: 숫자는 맞지만 위치가 다름'], 'code');
-        case 'indianPoker':
-          if(!prompt.startsWith('2~A 각 8장'))return fallback;
-          return content('내 카드의 숫자와 베팅을 정하세요.', ['더블덱 104장 · 2~A 각 8장','카드 예상: 2~14 (J=11 · Q=12 · K=13 · A=14)','베팅: 0~5','적중: 4 + 베팅점 · 오답: 베팅만큼 감점','최고 카드: +1점'], 'lines', []);
-        case 'turtleSoup':
-          return fallback; // The short scenario itself is necessary evidence.
-        case 'rankInference': {
-          const prefix='참가 순서는 ', marker='. 이 순서대로';
-          const end=prompt.indexOf(marker);
-          if(!prompt.startsWith(prefix)||end<0)return fallback;
-          return content('목표 순위의 참가자는?', ['가중치 = 참가 순서의 번호','합계 = Σ(가중치 × 순위 + 순위²)','목표 순위 = (합계 % 인원수) + 1'], 'lines', ['참가 순서: '+prompt.slice(prefix.length,end)]);
-        }
-        case 'cipher':
-          if(!prompt.startsWith('8글자 암호입니다.')||!details.length)return fallback;
-          return content('암호를 복호화한 8글자 단어는?', ['암호화: 반복 키로 문자 이동 → 홀수 위치를 앞, 짝수 위치를 뒤에 배치','복호화: 배치를 복원한 뒤 반복 키의 이동을 되돌림'], 'lines');
-        case 'probability':
-          if(!prompt.startsWith('A·B 중 한 곳은'))return fallback;
-          return content('전체 표본 기준으로 빨강이 8개일 가능성이 더 높은 항아리는?', ['A·B 중 한 곳: 빨강 8 · 파랑 2','다른 곳: 빨강 2 · 파랑 8','각 참가자가 항아리마다 4회 복원 추출','사전확률 1:1 · 모든 참가자의 표본 우도를 비교'], 'lines', []);
-        case 'resource':
-          if(!prompt.startsWith('개인 자원을 합산해')||!details.length)return fallback;
-          return content('보상이 가장 큰 프로젝트 조합은?', ['참가자들의 에너지·데이터를 합산','총 자원 범위 안에서 프로젝트 선택','동점: 자원 소모가 적은 조합 → 이름이 앞선 조합'], 'projects');
-        case 'auction':
-          if(!prompt.startsWith('각자 한 번 입찰합니다.'))return fallback;
-          return content('입찰액을 정하세요.', ['각자 한 번 비공개 입찰','최고가 낙찰 · 동점은 추첨','낙찰 점수 = 내 가치 − 입찰액','입찰 한도는 내 입찰 정보에 표시'], 'lines', []);
-        case 'truthLie':
-          if(!prompt.startsWith('암호는 1~12입니다.'))return fallback;
-          return content('거짓 진술자는?', ['암호: 1~12','여덟 진술 중 정확히 하나만 거짓','참 진술의 구간: 암호 포함','거짓 진술의 구간: 암호 미포함'], 'lines', []);
-        case 'memory':
-          if(!prompt.startsWith('16자리 숫자를 기억한 뒤'))return fallback;
-          return content(game.phase==='study'?'16자리 숫자를 순서대로 기억하세요.':'기억한 16자리 숫자를 입력하세요.', ['숫자와 순서가 모두 일치해야 함','암기 시간이 끝나면 숫자가 사라짐'], 'lines', []);
-        case 'strategy':
-          if(!prompt.startsWith('각자 목표에 맞춰'))return fallback;
-          return content('내 목표에 맞는 타일을 선택하세요.', ['각자 두 번 선택','남은 타일과 선택 기록은 공개'], 'lines', []);
-        case 'path':
-          if(!prompt.startsWith('S에서 G까지 갈 수 있는'))return fallback;
-          return content('S → G의 가장 짧은 경로는?', ['25개 후보 중 선택','경로의 통로 길이를 합산'], 'lines', []);
-        case 'stateInference':
-          if(!prompt.startsWith('개인 단서를 합쳐')||!details.length)return fallback;
-          return content('연산 후 8비트 상태는?', ['개인 단서로 시작 상태 복원','아래 6개 연산을 순서대로 적용','0과 1로 된 8자리로 입력'], 'ordered');
-        default:
-          return fallback;
-      }
+      return game.presentation || {question:game.prompt||'',conditions:[],details:[],example:''};
+    }
+    function renderShape(cells,label) {
+      const description=cells.map((row,r)=>'행 '+(r+1)+': '+row.map(v=>v?'블록':'빈칸').join(', ')).join('; ');
+      return '<div class="shape-grid" role="img" aria-label="'+escapeHtml(label+'. '+description)+'">'+cells.flat().map(v=>'<span aria-hidden="true" class="shape-cell '+(v?'filled':'')+'"></span>').join('')+'</div>';
     }
     function renderPuzzleData(content) {
-      const escaped=value=>escapeHtml(value), details=content.details;
-      if(content.layout==='sequence') {
-        return '<div class="sequence-data">'+details.join(' · ').split(' · ').map(value=>
-          '<span class="sequence-number '+(value.trim()==='?'?'unknown':'')+'">'+escaped(value.trim())+'</span>').join('')+'</div>';
+      let html=(content.details||[]).length?'<ul class="data-lines">'+content.details.map(line=>'<li>'+escapeHtml(line)+'</li>').join('')+'</ul>':'';
+      if(content.table) {
+        const table=content.table;
+        html+='<div class="table-wrap"><table class="puzzle-table"><caption>'+escapeHtml(table.caption)+'</caption><thead><tr>'+table.headers.map(h=>'<th scope="col">'+escapeHtml(h)+'</th>').join('')+'</tr></thead><tbody>'+table.rows.map(row=>'<tr>'+row.map((cell,i)=>i===0?'<th scope="row">'+escapeHtml(cell)+'</th>':'<td>'+escapeHtml(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
       }
-      if(content.layout==='sudoku') {
-        const rows=details.filter(line=>!/^[-+]+$/.test(line.trim())).map(line=>line.replace(/│/g,'').trim().split(/\s+/));
-        if(rows.length===6&&rows.every(row=>row.length===6&&row.every(value=>/^[1-6·]$/.test(value)))) {
-          return '<div class="sudoku-grid" role="table" aria-label="6행 6열 스도쿠">'+rows.map((row,r)=>
-            '<div role="row" style="display:contents">'+row.map((value,c)=>'<span role="cell" aria-label="'+(r+1)+'행 '+(c+1)+'열 '+(value==='·'?'빈칸':value)+'" class="sudoku-cell '+(value==='·'?'blank ':'')+(c===2?'box-right ':'')+(r===1||r===3?'box-bottom':'')+'">'+(value==='·'?'?':escaped(value))+'</span>').join('')+'</div>').join('')+'</div>';
-        }
-      }
-      if(content.layout==='code') {
-        const rows=details.map(line=>line.match(/^\d+\. (\d{5}): 자리까지 (\d+) · 숫자만 (\d+)$/));
-        if(rows.every(Boolean))return '<div class="table-wrap"><table class="puzzle-table"><caption class="section-label">암호 단서</caption><thead><tr><th scope="col">시도</th><th scope="col">자리까지</th><th scope="col">숫자만</th></tr></thead><tbody>'+rows.map(row=>'<tr><td>'+escaped(row[1])+'</td><td>'+escaped(row[2])+'</td><td>'+escaped(row[3])+'</td></tr>').join('')+'</tbody></table></div>';
-      }
-      if(content.layout==='projects') {
-        const rows=details.join(' · ').split(' · ').map(line=>line.match(/^([A-E]): E(\d+)\/D(\d+), (\d+)점$/));
-        if(rows.every(Boolean))return '<div class="table-wrap"><table class="puzzle-table"><caption class="section-label">프로젝트</caption><thead><tr><th scope="col">이름</th><th scope="col">에너지</th><th scope="col">데이터</th><th scope="col">보상</th></tr></thead><tbody>'+rows.map(row=>'<tr>'+row.slice(1).map(value=>'<td>'+escaped(value)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
-      }
-      const ordered=content.layout==='ordered', tag=ordered?'ol':'div', item=ordered?'li':'div';
-      return '<'+tag+' class="data-lines '+(ordered?'numbered':'')+'">'+details.map(line=>'<'+item+'>'+escaped(ordered?line.replace(/^\d+\.\s*/,''):line)+'</'+item+'>').join('')+'</'+tag+'>';
+      if(content.boards) html+='<div class="board-gallery">'+content.boards.map(b=>'<div><div class="shape-caption">'+escapeHtml(b.caption)+'</div>'+renderShape(b.cells,b.caption)+'</div>').join('')+'</div>';
+      return html;
     }
     function renderChallenge(game) {
       const content=challengeContent(game);
       $('#challengeTitle').textContent=game.title||'문제';
       $('#challengePrompt').textContent=content.question;
-      $('#conditionsCard').hidden=!content.conditions.length;
-      $('#conditionList').innerHTML=content.conditions.map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
-      const data=$('#puzzleData'); data.hidden=!content.details.length;
-      data.innerHTML=content.details.length?renderPuzzleData(content):'';
-      const privateCard=$('#privateCard'), info=game.privateInfo;
-      privateCard.hidden=!info||game.type==='memory';
-      $('#privateHeading').textContent=game.type==='indianPoker'?'상대 공개 카드':info?.heading||'내 단서';
-      const clueText=String(info?.text||'');
-      const visibleClue=game.type==='indianPoker'?clueText.replace(/^상대 공개 카드: /,''):clueText;
-      $('#privateText').innerHTML=visibleClue.split('\n').filter(Boolean).map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
-      const study=$('#studyCard'); study.hidden=game.phase!=='study';
-      $('#studySequence').innerHTML=game.phase==='study'?String(game.studySequence||'').match(/.{1,4}/g)?.map(group=>'<span>'+escapeHtml(group)+'</span>').join('')||'':'';
+      $('#conditionsCard').hidden=!content.conditions?.length;
+      $('#conditionList').innerHTML=(content.conditions||[]).map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
+      $('#ruleExample').hidden=!content.example; $('#ruleExample').textContent=content.example?'예를 들면 · '+content.example:'';
+      $('#submissionHint').textContent=content.submissionHint||'보기 하나를 고른 뒤 답을 제출해 주세요.';
+      $('#submissionHint').hidden=game.phase!=='answer'||Boolean(game.you?.submitted);
+      const html=renderPuzzleData(content),data=$('#puzzleData'); data.hidden=!html; data.innerHTML=html;
+      // Retained only to display an existing room's personal note during an upgrade.
+      const info=game.privateInfo; $('#privateCard').hidden=!info;
+      $('#privateHeading').textContent=info?.heading||'내 단서';
+      $('#privateText').innerHTML=String(info?.text||'').split('\n').filter(Boolean).map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
     }
 
     function renderGame(data) {
@@ -460,24 +392,16 @@
       if(game.you?.submitted) chosenAnswer=game.you.answer??null;
       else if(chosenPhaseId!==game.phaseId) { chosenAnswer=null; chosenPhaseId=game.phaseId; }
       $('#roundChip').textContent=game.trainingMode?'훈련 '+game.finalIndex+'/'+(game.finalRoundCount||10):game.stage==='final'?'결승 '+game.finalIndex+'/'+(game.finalRoundCount||3):game.round+'라운드';
-      $('#phaseLabel').textContent=game.phase==='study'?'암기':game.phase==='result'?'결과':game.phase==='turn'?(game.yourTurn?'내 차례':'차례 대기'):game.you?.submitted?'제출 완료':'답안 입력';
+      $('#phaseLabel').textContent=game.phase==='result'?'해설':game.you?.submitted?'제출 완료':'답안 입력';
       renderChallenge(game);
-      const board=$('#strategyBoard'); board.hidden=game.type!=='strategy';
-      if(game.type==='strategy') {
-        const market=(game.market||[]).map(card=>'<span class="strategy-tile">'+Number(card.value)+'</span>').join('');
-        const history=(game.moves||[]).map(move=>'<li>'+escapeHtml(move.name)+' · '+escapeHtml(move.value)+'</li>').join('');
-        board.innerHTML='<div class="label">남은 타일</div><div class="strategy-market">'+market+'</div><div class="label">선택 기록</div><ol class="strategy-log">'+history+'</ol>';
-      }
-      const answerKey=JSON.stringify([game.phaseId,game.phase,game.you?.submitted,game.yourTurn,game.inputKind,game.options,game.market]);
+      const answerKey=JSON.stringify([game.phaseId,game.phase,game.you?.submitted,game.inputKind,game.options]);
       if(answerViewKey!==answerKey) { answerViewKey=answerKey; renderAnswer(game); }
       const chat=$('#chatPanel'); chat.hidden=Boolean(game.trainingMode);
-      if(chatPhaseId!==game.phaseId) { chatPhaseId=game.phaseId; chat.open=!game.trainingMode&&Boolean(game.privateInfo)&&!['memory','indianPoker','auction','strategy'].includes(game.type); }
+      if(chatPhaseId!==game.phaseId) { chatPhaseId=game.phaseId; chat.open=false; }
       renderChat(game.chat||[]);
       const waiting=$('#waitingBox');
-      const waitingForTurn=game.phase==='turn'&&!game.yourTurn;
-      waiting.hidden=!(waitingForTurn||(game.phase==='answer'&&game.you?.submitted));
-      if(waitingForTurn) waiting.textContent='차례: '+(game.turnPlayerName||'참가자')+' · '+game.turnNumber+'/'+game.turnCount;
-      else if(!waiting.hidden) waiting.textContent='제출 완료 · 답 대기';
+      waiting.hidden=!(game.phase==='answer'&&game.you?.submitted);
+      if(!waiting.hidden) waiting.textContent='답을 제출했어요. 다른 참가자가 답을 고르고 있어요.';
       const result=$('#resultBox'); result.hidden=!game.result;
       if(game.result) {
         const feedback=game.result.trainingFeedback;
@@ -493,106 +417,100 @@
       $('#scoreList').innerHTML=ranked.map((player,index)=>'<div class="score-row '+(player.id===data.youId?'me ':'')+(player.eliminated?'out':'')+'"><span class="rank">'+String(index+1).padStart(2,'0')+'</span><span class="score-name">'+escapeHtml(player.name)+(player.id===data.youId?'<span class="me-tag">나</span>':'')+(player.team?' · '+escapeHtml(player.team)+'팀':'')+'</span><span class="score-points">'+(game.stage==='final'?player.finalScore:player.score)+'</span><span class="score-sub">'+(player.eliminated?player.eliminatedRound+'라운드 탈락':game.stage==='final'?'본선 '+player.score+'점':'이번 라운드 '+(player.roundPoints>=0?'+':'')+player.roundPoints+'점')+'</span></div>').join('');
       const active=(data.players||[]).filter(player=>!player.eliminated);
       $('#roomStatus').textContent=game.trainingMode?'1인 훈련':active.length+'명 생존 · '+(data.players||[]).length+'명 참가';
-      setConnection(socket?.readyState===WebSocket.OPEN); updateTimer(game.deadlineAt);
-    }
-    function answerField(text,input) {
-      const field=document.createElement('div'); field.className='answer-field';
-      const label=document.createElement('label'); label.htmlFor=input.id; label.textContent=text;
-      field.append(label,input); return field;
+      setConnection(socket?.readyState===WebSocket.OPEN); updateTimer(game,data);
     }
     function renderAnswer(game) {
       const box=$('#answerBox'); box.replaceChildren();
-      const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.yourTurn);
-      box.hidden=!canAnswer; if(box.hidden)return;
-      if(game.inputKind==='choice') {
-        const list=document.createElement('div'); list.className='candidate-list'+((game.options||[]).some(option=>option.label.length>28)?' long-options':'');
-        for(const [index,option] of (game.options||[]).entries()) {
-          const button=document.createElement('button'); button.type='button';
-          button.className='candidate '+(chosenAnswer===option.value?'selected':'');
-          button.setAttribute('aria-pressed',String(chosenAnswer===option.value));
-          button.innerHTML='<span class="option-index">'+(index+1)+'</span><span class="option-text">'+escapeHtml(option.label)+'</span>';
-          button.addEventListener('click',()=>{chosenAnswer=option.value; renderAnswer(game);});
-          list.append(button);
-        }
-        box.append(list);
-        const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
-        submit.classList.add('submit-answer'); submit.textContent='답 제출'; submit.disabled=chosenAnswer==null;
-        submit.addEventListener('click',()=>submitAnswer(chosenAnswer)); box.append(submit);
-        return;
+      box.hidden=game.phase!=='answer'||Boolean(game.you?.submitted)||Boolean(snapshot?.players?.find(p=>p.id===snapshot.youId)?.eliminated);
+      if(box.hidden)return;
+      const list=document.createElement('div'); list.className='candidate-list'+((game.options||[]).some(o=>o.label.length>36)?' long-options':'');
+      list.setAttribute('role','group'); list.setAttribute('aria-label','답 선택');
+      const buttons=[];
+      const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary submit-answer';
+      submit.textContent='답 제출'; submit.disabled=chosenAnswer==null;
+      for(const [index,option] of (game.options||[]).entries()) {
+        const button=document.createElement('button'); button.type='button';
+        button.className='candidate '+(option.board?'board-option ':'')+(chosenAnswer===option.value?'selected':'');
+        button.setAttribute('aria-pressed',String(chosenAnswer===option.value));
+        button.innerHTML='<span class="option-index">'+(index+1)+'</span> <span class="option-text">'+escapeHtml(option.label)+'</span>'+(option.board?renderShape(option.board,option.label):'');
+        button.addEventListener('click',()=>{
+          chosenAnswer=option.value;
+          buttons.forEach(([node,value])=>{node.classList.toggle('selected',value===chosenAnswer);node.setAttribute('aria-pressed',String(value===chosenAnswer));});
+          submit.disabled=false;
+        });
+        buttons.push([button,option.value]); list.append(button);
       }
-
-      if(game.inputKind==='strategy') {
-        const list=document.createElement('div'); list.className='candidate-list';
-        for(const card of game.market||[]) {
-          const button=document.createElement('button'); button.type='button'; button.className='candidate';
-          button.textContent='타일 '+card.value+' 선택';
-          button.addEventListener('click',()=>submitAnswer(card.id)); list.append(button);
-        }
-        box.append(list); return;
-      }
-
-      if(game.inputKind==='indianPoker') {
-        const row=document.createElement('div'); row.className='answer-row';
-        const guess=document.createElement('input'); guess.className='input'; guess.type='number';
-        guess.min='2'; guess.max='14'; guess.step='1'; guess.inputMode='numeric'; guess.placeholder='예상 2~14';
-        guess.autocomplete='off'; guess.id='cardGuess';
-        const wager=document.createElement('input'); wager.className='input'; wager.type='number';
-        wager.min='0'; wager.max='5'; wager.step='1'; wager.inputMode='numeric'; wager.placeholder='베팅 0~5';
-        wager.autocomplete='off'; wager.id='cardWager';
-        const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.textContent='제출';
-        submit.addEventListener('click',()=>submitAnswer({guess:guess.value,wager:wager.value}));
-        const guessField=answerField('카드 예상 (2~14)',guess), wagerField=answerField('베팅 (0~5)',wager);
-        row.append(guessField,wagerField,submit); box.append(row); return;
-      }
-
-      if(game.inputKind==='bid') {
-        const row=document.createElement('div'); row.className='answer-row';
-        const bid=document.createElement('input'); bid.className='input'; bid.type='number';
-        bid.min='0'; bid.max='10'; bid.step='1'; bid.inputMode='numeric'; bid.placeholder='입찰액';
-        bid.autocomplete='off'; bid.id='bidInput';
-        const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.textContent='봉인 입찰';
-        submit.addEventListener('click',()=>submitAnswer({bid:bid.value}));
-        row.append(answerField('입찰액',bid),submit); box.append(row); return;
-      }
-
-      const row=document.createElement('div'); row.className='answer-row';
-      const input=document.createElement('input'); input.className='input'; input.id='answerInput';
-      input.type='text'; input.autocomplete='off'; input.placeholder=game.placeholder||'답';
-      input.maxLength=game.maxLength||4; input.inputMode=game.inputKind==='text'?'text':'numeric';
-      input.value=typeof chosenAnswer==='string'?chosenAnswer:'';
-      input.addEventListener('input',()=>{chosenAnswer=input.value;});
-      const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
-      submit.textContent='답 제출'; submit.addEventListener('click',()=>submitAnswer(input.value));
-      row.append(answerField(game.inputKind==='memory'?'16자리 숫자':game.type==='stateInference'?'8비트 답안':game.inputKind==='number'?'정수 답안':'답안',input),submit); box.append(row);
-      input.addEventListener('keydown',event=>{if(event.key==='Enter')submitAnswer(input.value);});
+      submit.addEventListener('click',()=>submitAnswer(chosenAnswer)); box.append(list,submit);
     }
     function submitAnswer(answer) {
-      if(!snapshot?.game)return;
-      const game=snapshot.game;
-      const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.type==='strategy'&&game.yourTurn);
-      if(!canAnswer)return;
-      if(answer==null||String(answer).trim()==='') { toast('답을 입력하거나 선택하세요.'); return; }
-      if(game.inputKind==='memory'&&!/^\d{16}$/.test(String(answer).replace(/\s/g,''))) { toast('16자리 숫자를 입력해 주세요.'); return; }
-      if(game.type==='stateInference'&&!/^[01]{8}$/.test(String(answer).trim())) { toast('8비트를 입력해 주세요.'); return; }
-      if(game.inputKind==='number'&&!/^-?\d{1,4}$/.test(String(answer).trim())) { toast('정수를 입력해 주세요.'); return; }
-      if(game.inputKind==='indianPoker') {
-        const guess=Number(answer.guess), wager=Number(answer.wager);
-        if(!Number.isInteger(guess)||guess<2||guess>14||!Number.isInteger(wager)||wager<0||wager>5) { toast('예상 2~14, 베팅 0~5를 입력해 주세요.'); return; }
-      }
-      if(game.inputKind==='bid'&&!/^\d{1,2}$/.test(String(answer.bid??''))) { toast('입찰액을 입력해 주세요.'); return; }
-      const payload=typeof answer==='object'?answer:String(answer).trim();
-      if(!send({type:'action',phaseId:game.phaseId,actionId:crypto.randomUUID(),answer:payload}))return;
-      const button=$('#answerBox button'); if(button)button.disabled=true;
+      const game=snapshot?.game;
+      if(!game||game.phase!=='answer'||game.you?.submitted)return;
+      if(!game.options?.some(o=>o.value===answer)) {toast('보기에서 답 하나를 골라 주세요.');return;}
+      if(!send({type:'action',phaseId:game.phaseId,actionId:crypto.randomUUID(),answer}))return;
+      $('#answerBox .submit-answer').disabled=true;
     }
-    function updateTimer(deadline) {
-      clearInterval(clockTimer); const draw=()=>{const remaining=Math.max(0,Math.ceil((Number(deadline)-Date.now())/1000)); $('#timer').classList.toggle('urgent',remaining<=5); $('#timer').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;}; draw(); clockTimer=setInterval(draw,250);
+
+    let soundEnabled=localStorage.getItem('timeline.sound')!=='off',audioContext=null;
+    let lastBeat=null,alertPhase=null,announced=new Set();
+    function refreshSoundButton() {
+      $('#soundToggle').textContent=soundEnabled?'효과음 켜짐':'효과음 꺼짐';
+      $('#soundToggle').setAttribute('aria-pressed',String(soundEnabled));
     }
+    function unlockAudio() {
+      if(!soundEnabled)return;
+      const Audio=window.AudioContext||window.webkitAudioContext;
+      if(!Audio)return;
+      try {audioContext ||= new Audio(); if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});} catch {}
+    }
+    function playTimeTick(remaining) {
+      if(!soundEnabled||audioContext?.state!=='running')return;
+      const oscillator=audioContext.createOscillator(),gain=audioContext.createGain(),now=audioContext.currentTime;
+      oscillator.type='sine'; oscillator.frequency.setValueAtTime(remaining<=10?1000:720,now);
+      gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(.07,now+.008);gain.gain.exponentialRampToValueAtTime(.001,now+.075);
+      oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.start(now);oscillator.stop(now+.08);
+      oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+    }
+    function stopTimePressure() {
+      clearInterval(clockTimer); clockTimer=null;lastBeat=null;
+      document.body.classList.remove('time-pressure'); $('#timerPanel').classList.remove('urgent');$('#timer').classList.remove('urgent');
+      $('#timeAnnouncement').textContent='';
+    }
+    function updateTimer(game,data) {
+      clearInterval(clockTimer);
+      const phaseKey=data.code+':'+game.phaseId;
+      if(alertPhase!==phaseKey) {alertPhase=phaseKey;lastBeat=null;announced=new Set();}
+      const player=data.players?.find(p=>p.id===data.youId);
+      $('#timerLabel').textContent=game.phase==='result'?'다음 문제까지':'남은 풀이 시간';
+      const draw=()=>{
+        const ms=Math.max(0,Number(game.deadlineAt)-Date.now()),remaining=Math.ceil(ms/1000);
+        const urgent=game.phase==='answer'&&!game.you?.submitted&&!player?.eliminated&&remaining>0&&remaining<=30;
+        $('#timer').textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
+        $('#timer').setAttribute('aria-label',(game.phase==='result'?'다음 문제까지 ':'남은 풀이 시간 ')+Math.floor(remaining/60)+'분 '+remaining%60+'초');
+        $('#timer').classList.toggle('urgent',urgent);$('#timerPanel').classList.toggle('urgent',urgent);
+        document.body.classList.toggle('time-pressure',urgent);
+        document.body.style.setProperty('--urgency-opacity',String(.35+(30-remaining)/30*.5));
+        $('#timerStatus').textContent=urgent?'마지막 '+remaining+'초':game.you?.submitted?'제출 완료':game.phase==='result'?'해설을 읽어 보세요':'천천히 규칙부터 읽어 보세요';
+        if(urgent&&!document.hidden) {
+          const threshold=remaining<=10?10:30;
+          if(!announced.has(threshold)) {announced.add(threshold);$('#timeAnnouncement').textContent='풀이 시간이 '+remaining+'초 남았어요.';}
+          const beat=Math.ceil(ms/(remaining<=10?500:1000));
+          if(beat!==lastBeat) {lastBeat=beat;if(socket?.readyState===WebSocket.OPEN)playTimeTick(remaining);}
+        } else lastBeat=null;
+      };
+      draw();clockTimer=setInterval(draw,100);
+    }
+    document.addEventListener('pointerdown',unlockAudio,{passive:true});
+    document.addEventListener('keydown',unlockAudio);
+    document.addEventListener('visibilitychange',()=>{lastBeat=null;});
+    $('#soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;localStorage.setItem('timeline.sound',soundEnabled?'on':'off');refreshSoundButton();if(soundEnabled)unlockAudio();});
+    refreshSoundButton();
+
     function renderFinish(data) {
-      clearInterval(clockTimer); showScreen('finished');
+      stopTimePressure(); showScreen('finished');
       if(data.game.trainingMode) {
         $('#winnerName').textContent='훈련 완료';
         const history=data.game.trainingHistory||[];
-        const rows=Object.keys({logic:1,information:1,strategy:1,memory:1}).map(category=>{
+        const rows=Object.keys({logic:1,information:1,strategy:1,observation:1}).map(category=>{
           const entries=history.filter(item=>item.category===category);
           if(!entries.length)return '';
           const average=Math.round(entries.reduce((sum,item)=>sum+item.performance,0)/entries.length*100);
@@ -601,7 +519,7 @@
         }).filter(Boolean).join('');
         const finalResult=data.game.result||{};
         const lastFeedback=finalResult.trainingFeedback;
-        $('#finishRank').innerHTML='<p class="training-summary">정답 비교, 기억 일치율, 최선 점수 대비 달성률로 계산한 이번 세션 결과입니다. 지능을 평가하는 점수는 아닙니다.</p>'+
+        $('#finishRank').innerHTML='<p class="training-summary">이번 훈련에서 정답을 맞히거나 숫자 독식에 성공한 비율이에요. 취약한 분야는 다음 훈련에서 다시 도전해 보세요.</p>'+
           (finalResult.subline?'<p class="result-note">마지막 문제 해설: '+escapeHtml(finalResult.subline)+'</p>':'')+
           (lastFeedback?'<div class="training-feedback"><strong>마지막 복기 · '+escapeHtml(lastFeedback.categoryLabel)+' · '+escapeHtml(lastFeedback.outcome)+' ('+lastFeedback.performance+'%)</strong><p>'+escapeHtml(lastFeedback.tip)+'</p></div>':'')+rows;
         return;
