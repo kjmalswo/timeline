@@ -9,6 +9,7 @@
     :root{color-scheme:dark;--bg:#0b0e15;--panel:#121824;--panel2:#171f2e;--line:#283449;--text:#f2f5fa;--muted:#9aa8bc;--blue:#77a7ff;--gold:#f3c76a;--red:#ff7483;--green:#64d7b0;--radius:18px;font-family:Inter,"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#26344a 0,#111722 42%,var(--bg) 78%);color:var(--text);min-height:100vh}button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disabled{cursor:not-allowed;opacity:.48}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.screen{display:none;min-height:100vh;padding:clamp(20px,5vw,54px) 18px}.screen.active{display:flex;align-items:center;justify-content:center}.wrap{width:min(980px,100%);margin:auto}.hero{text-align:center;margin:0 auto 34px}.hero h1{font-size:clamp(2.8rem,9vw,6.4rem);letter-spacing:.16em;margin:.28em 0 .1em;text-shadow:0 8px 40px #000}.hero h1 span{color:var(--gold)}.hero p{color:var(--muted);letter-spacing:.1em;font-size:.9rem}.panel{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(145deg,rgba(26,35,51,.96),rgba(16,22,33,.96));box-shadow:0 22px 80px #0005}.home-panel{padding:clamp(20px,4vw,34px);max-width:680px;margin:auto}.field{display:grid;gap:8px;margin-bottom:18px}.home-section-title{font-size:.95rem;margin:0 0 14px;color:#e1e8f2}.field label,.label{font-size:.78rem;font-weight:800;color:#c4cedc}.input,select{width:100%;border:1px solid #35435a;border-radius:12px;background:#0e1420;color:var(--text);padding:13px 14px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}.divider{border:0;border-top:1px solid var(--line);margin:26px 0}.btn{border:1px solid #3a4962;border-radius:12px;padding:12px 16px;background:#202b3c;font-weight:800;transition:transform .15s,border-color .15s,background .15s}.btn:hover:not(:disabled){transform:translateY(-1px);border-color:#7895c2}.btn.primary{background:var(--gold);border-color:var(--gold);color:#17130b}.btn.blue{background:#315da7;border-color:#4779cd}.btn.ghost{background:transparent}.btn.danger{color:var(--red)}.btn.block{width:100%}.hint{font-size:.8rem;line-height:1.6;color:var(--muted)}.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.topline{display:flex;align-items:center;gap:14px;margin-bottom:18px}.topline h2{font-size:1.05rem;letter-spacing:.06em;margin:0}.grow{flex:1}.room-code{font-size:clamp(1.8rem,6vw,3rem);font-weight:900;letter-spacing:.28em;text-align:center;color:var(--gold);margin:12px 0}.center{text-align:center}.lobby{max-width:760px;padding:clamp(20px,4vw,34px);margin:auto}.lobby-sub{color:var(--muted);text-align:center;margin:0 0 22px}.roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:18px 0 24px}.seat{display:flex;align-items:center;gap:10px;padding:12px;background:#0d1420;border:1px solid var(--line);border-radius:12px;min-height:54px}.seat-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.seat-meta{margin-left:auto;color:var(--muted);font-size:.72rem}.seat-meta.offline{color:var(--red)}.lobby-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.arena{width:min(1080px,100%);margin:auto}.arena-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}.round-chip{display:inline-flex;align-items:center;border:1px solid var(--line);background:#111a28;border-radius:999px;padding:7px 11px;font-size:.78rem;font-weight:850;color:var(--gold)}.timer{font-variant-numeric:tabular-nums;font-size:1.1rem;font-weight:900;color:var(--gold);min-width:48px;text-align:right}.timer.urgent{color:var(--red)}.arena-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px}.challenge{padding:clamp(20px,4vw,34px);min-height:400px}.challenge h2{font-size:clamp(1.5rem,4vw,2.3rem);margin:0 0 8px}.prompt{font-size:1rem;line-height:1.75;color:#d4deeb;max-width:720px}.stage-note{color:var(--muted);font-size:.78rem;margin-top:12px}.private-card,.study-card{margin:22px 0;padding:16px;border-radius:13px;border:1px solid #4d4260;background:#241e31}.private-card strong{color:#dbb6ff}.study-card{text-align:center;border-color:#4b5f7e;background:#111e31}.study-sequence{font-size:clamp(1.4rem,6vw,3.5rem);letter-spacing:.16em;font-variant-numeric:tabular-nums;font-weight:900;color:#fff;padding:15px 0 5px}.answer-box{margin-top:24px}.answer-box[hidden],.private-card[hidden],.study-card[hidden],.result-box[hidden],.waiting-box[hidden]{display:none}.answer-row{display:flex;gap:9px;margin-top:10px}.answer-row .input{max-width:250px}.candidate-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}.candidate{padding:13px;text-align:left;border:1px solid var(--line);border-radius:12px;background:#111a28}.candidate.selected{border-color:var(--gold);background:#2a271e}.candidate small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px}.waiting-box{margin-top:22px;padding:16px;background:#0d1420;border:1px solid var(--line);border-radius:12px;color:#cbd6e5}.result-box{margin-top:20px;padding:17px;border:1px solid #695a37;background:#211d14;border-radius:13px}.result-box h3{margin:0 0 9px;color:var(--gold)}.result-box ul{margin:0;padding-left:20px;color:#d7deea;line-height:1.8}.side-panel{padding:17px;height:max-content}.side-panel h3{font-size:.8rem;letter-spacing:.1em;color:var(--muted);margin:0 0 12px}.score-list{display:grid;gap:8px}.score-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;background:#0d1420}.score-row.me{border:1px solid #4d6591}.score-row.out{opacity:.48}.rank{color:var(--gold);font-weight:900;font-size:.78rem}.score-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.83rem}.score-points{font-weight:900;font-variant-numeric:tabular-nums}.score-sub{grid-column:2/4;color:var(--muted);font-size:.68rem;margin-top:-5px}.roster-status{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:.72rem;color:var(--muted);line-height:1.6}.finish-card{padding:clamp(25px,6vw,55px);text-align:center;max-width:700px;margin:auto}.finish-card h1{font-size:clamp(2rem,6vw,3.6rem);margin:10px 0}.finish-rank{display:grid;gap:8px;max-width:420px;margin:24px auto}.toast{position:fixed;z-index:10;left:50%;bottom:20px;transform:translate(-50%,18px);opacity:0;pointer-events:none;padding:11px 16px;border:1px solid #43516a;border-radius:12px;background:#182132;box-shadow:0 10px 40px #0008;transition:.2s;max-width:calc(100vw - 30px);text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}.connection{font-size:.74rem;color:var(--green)}.connection.offline{color:var(--red)}
     @media(max-width:760px){.arena-grid{grid-template-columns:1fr}.side-panel{order:2}.score-list{grid-template-columns:repeat(2,minmax(0,1fr))}.challenge{min-height:0}.roster{grid-template-columns:1fr}.arena-head{flex-wrap:wrap}.arena-head .grow{flex-basis:10px}.form-row,.home-actions{grid-template-columns:1fr}.candidate-list{grid-template-columns:1fr 1fr}.screen{align-items:flex-start!important;padding-top:max(20px,env(safe-area-inset-top))!important;padding-bottom:max(20px,env(safe-area-inset-bottom))!important}}
   .strategy-board{margin:18px 0;padding:14px;border:1px solid #31435b;border-radius:14px;background:#0b1421}.strategy-market{display:flex;flex-wrap:wrap;gap:8px;margin:9px 0 13px}.strategy-tile{min-width:42px;padding:8px 12px;border:1px solid #b68b4c;border-radius:9px;background:#20202a;color:#f2c46d;text-align:center;font-weight:800}.strategy-log{margin:0;padding-left:20px;color:#aebbd0;font-size:.86rem;line-height:1.7}
+  .training-frame{margin:18px 0;padding:14px 16px;border:1px solid #3d526f;border-radius:13px;background:#101b2b;color:#cbd7e8;font-size:.86rem;line-height:1.6}.training-frame p{margin:6px 0}.training-frame strong{display:inline-block;min-width:86px;color:var(--gold)}.prompt{white-space:pre-line}.training-feedback{margin-top:14px;padding:13px;border-radius:11px;border:1px solid #3d526f;background:#111b2a;line-height:1.55}.training-feedback strong{color:var(--gold)}.training-feedback p{margin:7px 0 0;color:#d4deeb}.training-summary{margin:0 0 8px;color:var(--muted);font-size:.8rem;line-height:1.5}
   .chat-panel{width:min(1200px,100%);margin:16px auto 0;padding:18px}.chat-panel h3{margin:0 0 12px}.chat-messages{height:170px;overflow:auto;padding:10px 12px;margin-bottom:12px;border:1px solid #27364b;border-radius:11px;background:#09111d}.chat-line{padding:5px 0;color:#d7e1ef;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.chat-line strong{color:#f2c46d;margin-right:7px}.chat-line time{color:#718198;font-size:.72rem;margin-right:8px}.result-note{color:#c6d2e2;line-height:1.55}.chat-panel .answer-row{grid-template-columns:minmax(0,1fr) auto}
   </style>
 </head>
@@ -21,7 +22,8 @@
           <div class="field"><label for="playerName">닉네임</label><input id="playerName" class="input" maxlength="18" autocomplete="nickname"><p class="hint" style="margin:0">생성과 참가에 공통 사용</p></div>
           <h2 class="home-section-title">새 방 만들기</h2>
           <div class="form-row">
-            <div class="field"><label for="maxPlayers">방 최대 인원</label><select id="maxPlayers" class="input"></select></div>
+            <div class="field"><label for="maxPlayers">게임 방식</label><select id="maxPlayers" class="input"></select></div>
+          <p class="hint">1인 훈련은 10문제로 진행합니다. 분야별 풀이 성과에 따라 다음 유형과 제한 시간이 조정됩니다.</p>
             <div class="field"><button id="createRoom" class="btn primary block">만들기</button></div>
           </div>
           <hr class="divider">
@@ -48,12 +50,21 @@
         <header class="arena-head"><span id="roundChip" class="round-chip">1라운드</span><span class="grow"></span><span id="connectionArena" class="connection">연결 중</span><span id="timer" class="timer">--</span></header>
         <div class="arena-grid">
           <article class="panel challenge">
-            <h2 id="challengeTitle">문제 준비 중</h2><p id="challengePrompt" class="prompt"></p><div id="strategyBoard" class="strategy-board" hidden></div>
+            <h2 id="challengeTitle">문제 준비 중</h2><div id="trainingSituationLabel" class="label" hidden>상황</div><p id="challengePrompt" class="prompt"></p>
+            <div id="trainingFrame" class="training-frame" hidden>
+              <p><strong>규칙</strong><span>답과 행동은 정해진 횟수만 제출할 수 있습니다. 시간이 끝나면 남은 제출은 미완료로 기록됩니다.</span></p>
+              <p><strong>목표</strong><span>정답과 누적 승점을 쌓고, 이번 분야의 풀이 성과를 높이세요.</span></p>
+              <p><strong>제한시간</strong><span>상단 타이머가 0이 되면 미제출 처리됩니다.</span></p>
+              <p><strong>사고 순서</strong><span>승리조건 → 자원 → 제약 → 병목 → 정보 → 상대 대응 → 최악의 경우 → 최종 검증</span></p>
+              <p><strong>난이도</strong><span id="trainingLevel"></span></p>
+            </div>
+            <div id="strategyBoard" class="strategy-board" hidden></div>
             <div id="privateCard" class="private-card" hidden><strong id="privateHeading">나만의 단서</strong><p id="privateText" style="margin:8px 0 0;line-height:1.65"></p></div>
             <div id="studyCard" class="study-card" hidden><div class="label">순서를 기억하세요</div><div id="studySequence" class="study-sequence"></div></div>
             <div id="answerBox" class="answer-box" hidden></div>
             <div id="waitingBox" class="waiting-box" hidden></div>
             <div id="resultBox" class="result-box" hidden></div>
+            <button id="nextTraining" class="btn primary" style="margin-top:12px" hidden>다음 문제</button>
           </article>
           <aside class="panel side-panel"><h3 id="scoreHeading">현재 승점</h3><div id="scoreList" class="score-list"></div><div id="roomStatus" class="roster-status"></div></aside>
         </div>
@@ -75,7 +86,8 @@
     let reconnectDelay = 700, lastSeq = -1, chosenAnswer = null, chosenPhaseId = null, toastTimer = null;
     const savedName = localStorage.getItem('timeline.playerName');
     if (savedName) nameInput.value = savedName;
-    for (let n=2;n<=8;n++) { const option=document.createElement('option'); option.value=String(n); option.textContent=`${n}명`; $('#maxPlayers').append(option); }
+    for (let n=1;n<=8;n++) { const option=document.createElement('option'); option.value=String(n); option.textContent=n===1?'1명 · 개인 훈련':`${n}명 · 생존 대전`; $('#maxPlayers').append(option); }
+    $('#maxPlayers').value='2';
     try { const saved = sessionStorage.getItem('timeline.roomSession'); if (saved) { session=JSON.parse(saved); if (session?.code&&session?.token) connect(); else session=null; } } catch { session=null; }
 
     function showScreen(id) { for (const item of screens) $('#'+item).classList.toggle('active',item===id); }
@@ -131,11 +143,14 @@
     function escapeHtml(value) { return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
     function renderLobby(data) {
       showScreen('lobby'); $('#lobbyCode').textContent=data.code; const connected=(data.players||[]).filter(player=>player.connected).length;
-      $('#lobbySub').textContent=`${data.players.length}/${data.maxPlayers}명 · 접속 ${connected}명`;
+      $('#lobbySub').textContent=data.maxPlayers===1?'개인 훈련 · 10문제 · 분야별 성과에 따라 유형과 시간이 조정됩니다.':`${data.players.length}/${data.maxPlayers}명 · 접속 ${connected}명`;
       const rows=(data.players||[]).map(player=>`<div class="seat"><span class="seat-name">${escapeHtml(player.name)}${player.id===data.hostId?' · 방장':''}</span><span class="seat-meta ${player.connected?'':'offline'}">${player.connected?'접속':'오프라인'}</span></div>`);
-      $('#roster').innerHTML=rows.join(''); const canStart=data.isHost&&data.players.length>=2&&data.players.every(player=>player.connected);
+      $('#roster').innerHTML=rows.join('');
+      const canStart=data.isHost&&data.players.length>=(data.maxPlayers===1?1:2)&&data.players.every(player=>player.connected);
       $('#startGame').hidden=!data.isHost; $('#startGame').disabled=!canStart;
-      $('#lobbyHint').hidden=!data.isHost||canStart; $('#lobbyHint').textContent='2명 이상 · 전원 접속 후 시작';
+      $('#startGame').textContent=data.maxPlayers===1?'훈련 시작':'게임 시작';
+      $('#lobbyHint').hidden=!data.isHost||canStart;
+      $('#lobbyHint').textContent=data.maxPlayers===1?'접속 후 훈련을 시작할 수 있습니다.':'2명 이상 · 전원 접속 후 시작';
       setConnection(socket?.readyState===WebSocket.OPEN);
     }
     function renderChat(messages) {
@@ -156,9 +171,12 @@
       const game=data.game; if(!game)return; showScreen('arena');
       if(game.you?.submitted) chosenAnswer=game.you.answer??null;
       else if(chosenPhaseId!==game.phaseId) { chosenAnswer=null; chosenPhaseId=game.phaseId; }
-      $('#roundChip').textContent=game.stage==='final'?'결승 '+game.finalIndex+'/'+(game.finalRoundCount||3):game.round+'라운드';
-      $('#challengeTitle').textContent=game.title||'문제를 확인하세요';
+      $('#roundChip').textContent=game.trainingMode?'훈련 '+game.finalIndex+'/'+(game.finalRoundCount||10):game.stage==='final'?'결승 '+game.finalIndex+'/'+(game.finalRoundCount||3):game.round+'라운드';
+      $('#challengeTitle').textContent=game.trainingMode?'문제 '+game.finalIndex+'. '+(game.title||'문제')+' — '+(game.trainingLevel||'★★★★').split(' · ')[0]:game.title||'문제를 확인하세요';
       $('#challengePrompt').textContent=game.prompt||'';
+      $('#trainingSituationLabel').hidden=!game.trainingMode;
+      const trainingFrame=$('#trainingFrame'); trainingFrame.hidden=!game.trainingMode;
+      if(game.trainingMode) $('#trainingLevel').textContent=game.trainingCategoryLabel+' · '+game.trainingLevel;
       const privateCard=$('#privateCard'); privateCard.hidden=!game.privateInfo;
       if(game.privateInfo) { $('#privateHeading').textContent=game.privateInfo.heading||'내 단서'; $('#privateText').textContent=game.privateInfo.text||''; }
       const study=$('#studyCard'); study.hidden=game.phase!=='study'; $('#studySequence').textContent=game.studySequence||'';
@@ -168,17 +186,23 @@
         const history=(game.moves||[]).map(move=>'<li>'+escapeHtml(move.name)+' · '+escapeHtml(move.value)+'</li>').join('');
         board.innerHTML='<div class="label">남은 타일</div><div class="strategy-market">'+market+'</div><div class="label">선택 기록</div><ol class="strategy-log">'+history+'</ol>';
       }
-      renderAnswer(game); renderChat(data.chat||[]);
+      renderAnswer(game); renderChat(game.chat||[]);
       const waiting=$('#waitingBox');
       const waitingForTurn=game.phase==='turn'&&!game.yourTurn;
       waiting.hidden=!(waitingForTurn||(game.phase==='answer'&&game.you?.submitted));
       if(waitingForTurn) waiting.textContent='차례: '+(game.turnPlayerName||'참가자')+' · '+game.turnNumber+'/'+game.turnCount;
       else if(!waiting.hidden) waiting.textContent='제출 완료 · 답 대기';
       const result=$('#resultBox'); result.hidden=!game.result;
-      if(game.result) result.innerHTML='<h3>'+escapeHtml(game.result.headline)+'</h3>'+
-        (game.result.subline?'<p class="result-note">'+escapeHtml(game.result.subline)+'</p>':'')+
-        '<ul>'+(game.result.lines||[]).map(line=>'<li>'+escapeHtml(line.text)+'</li>').join('')+'</ul>';
-      $('#scoreHeading').textContent=game.stage==='final'?'결승 점수':'점수';
+      if(game.result) {
+        const feedback=game.result.trainingFeedback;
+        result.innerHTML='<h3>'+escapeHtml(game.result.headline)+'</h3>'+
+          (game.result.subline?'<p class="result-note">'+escapeHtml(game.result.subline)+'</p>':'')+
+          '<ul>'+(game.result.lines||[]).map(line=>'<li>'+escapeHtml(line.text)+'</li>').join('')+'</ul>'+
+          (feedback?'<div class="training-feedback"><strong>훈련 복기 · '+escapeHtml(feedback.categoryLabel)+' · '+escapeHtml(feedback.outcome)+' ('+feedback.performance+'%)</strong><p>'+escapeHtml(feedback.tip)+'</p></div>':'');
+      }
+      const nextTraining=$('#nextTraining');
+      nextTraining.hidden=!(game.trainingMode&&game.phase==='result');
+      $('#scoreHeading').textContent=game.trainingMode?'훈련 누적 점수':game.stage==='final'?'결승 점수':'점수';
       const ranked=[...(data.players||[])].sort((a,b)=>game.stage==='final'?b.finalScore-a.finalScore||b.score-a.score:b.score-a.score);
       $('#scoreList').innerHTML=ranked.map((player,index)=>'<div class="score-row '+(player.id===data.youId?'me ':'')+(player.eliminated?'out':'')+'"><span class="rank">'+String(index+1).padStart(2,'0')+'</span><span class="score-name">'+escapeHtml(player.name)+(player.id===data.youId?' (나)':'')+(player.team?' · '+escapeHtml(player.team)+'팀':'')+'</span><span class="score-points">'+(game.stage==='final'?player.finalScore:player.score)+'</span><span class="score-sub">'+(player.eliminated?player.eliminatedRound+'라운드 탈락':game.stage==='final'?'본선 '+player.score+'점 · 이번 결승 '+player.finalScore+'점':'이번 라운드 '+(player.roundPoints>=0?'+':'')+player.roundPoints+'점')+'</span></div>').join('');
       const active=(data.players||[]).filter(player=>!player.eliminated);
@@ -272,7 +296,25 @@
       clearInterval(clockTimer); const draw=()=>{const remaining=Math.max(0,Math.ceil((Number(deadline)-Date.now())/1000)); $('#timer').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;}; draw(); clockTimer=setInterval(draw,250);
     }
     function renderFinish(data) {
-      clearInterval(clockTimer); showScreen('finished'); const winner=data.players.find(player=>player.id===data.game.winnerId); $('#winnerName').textContent=winner?.name||'우승자';
+      clearInterval(clockTimer); showScreen('finished');
+      if(data.game.trainingMode) {
+        $('#winnerName').textContent='훈련 완료';
+        const history=data.game.trainingHistory||[];
+        const rows=Object.keys({logic:1,information:1,strategy:1,memory:1}).map(category=>{
+          const entries=history.filter(item=>item.category===category);
+          if(!entries.length)return '';
+          const average=Math.round(entries.reduce((sum,item)=>sum+item.performance,0)/entries.length*100);
+          const label=entries[0].categoryLabel;
+          return '<div class="score-row"><span class="rank">'+entries.length+'회</span><span class="score-name">'+escapeHtml(label)+'</span><span class="score-points">'+average+'%</span><span class="score-sub">'+entries.map(item=>'문제 '+item.round+' · '+escapeHtml(item.outcome)).join(' / ')+'</span></div>';
+        }).filter(Boolean).join('');
+        const finalResult=data.game.result||{};
+        const lastFeedback=finalResult.trainingFeedback;
+        $('#finishRank').innerHTML='<p class="training-summary">정답 비교, 기억 일치율, 최선 점수 대비 달성률로 계산한 이번 세션 결과입니다. 지능을 평가하는 점수는 아닙니다.</p>'+
+          (finalResult.subline?'<p class="result-note">마지막 문제 해설: '+escapeHtml(finalResult.subline)+'</p>':'')+
+          (lastFeedback?'<div class="training-feedback"><strong>마지막 복기 · '+escapeHtml(lastFeedback.categoryLabel)+' · '+escapeHtml(lastFeedback.outcome)+' ('+lastFeedback.performance+'%)</strong><p>'+escapeHtml(lastFeedback.tip)+'</p></div>':'')+rows;
+        return;
+      }
+      const winner=data.players.find(player=>player.id===data.game.winnerId); $('#winnerName').textContent=winner?.name||'우승자';
       
       const ranked=[...data.players].sort((a,b)=>b.finalScore-a.finalScore||b.score-a.score);
       $('#finishRank').innerHTML=ranked.map((player,index)=>`<div class="score-row ${player.id===data.game.winnerId?'me':''}"><span class="rank">${String(index+1).padStart(2,'0')}</span><span class="score-name">${escapeHtml(player.name)}</span><span class="score-points">${player.finalScore}점</span></div>`).join('');
@@ -282,6 +324,7 @@
     roomInput.addEventListener('input',()=>roomInput.value=roomInput.value.toUpperCase()); roomInput.addEventListener('keydown',event=>{if(event.key==='Enter')joinRoom();});
     $('#startGame').addEventListener('click',()=>send({type:'start'}));
     $('#copyCode').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(snapshot?.code||'');toast('초대 코드를 복사했습니다.');}catch{toast(`초대 코드: ${snapshot?.code||''}`);}});
+    $('#nextTraining').addEventListener('click',()=>send({type:'continueTraining'}));
     $('#backHome').addEventListener('click',()=>{if(socket)socket.close(1000,'완료');socket=null;session=null;snapshot=null;sessionStorage.removeItem('timeline.roomSession');$('#createRoom').disabled=false;$('#joinRoom').disabled=false;showScreen('home');});
     document.querySelectorAll('[data-home]').forEach(button=>button.addEventListener('click',()=>{if(snapshot?.status==='waiting')send({type:'leave'});if(socket)socket.close(1000,'나가기');socket=null;session=null;sessionStorage.removeItem('timeline.roomSession');$('#createRoom').disabled=false;$('#joinRoom').disabled=false;showScreen('home');}));
   })();
