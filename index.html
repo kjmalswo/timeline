@@ -3,14 +3,180 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101522">
+  <meta name="theme-color" content="#151b3d">
   <title>TIMELINE — 두뇌 서바이벌</title>
   <style>
-    :root{color-scheme:dark;--bg:#0b0e15;--panel:#121824;--panel2:#171f2e;--line:#283449;--text:#f2f5fa;--muted:#9aa8bc;--blue:#77a7ff;--gold:#f3c76a;--red:#ff7483;--green:#64d7b0;--radius:18px;font-family:Inter,"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#26344a 0,#111722 42%,var(--bg) 78%);color:var(--text);min-height:100vh}button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disabled{cursor:not-allowed;opacity:.48}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.screen{display:none;min-height:100vh;padding:clamp(20px,5vw,54px) 18px}.screen.active{display:flex;align-items:center;justify-content:center}.wrap{width:min(980px,100%);margin:auto}.hero{text-align:center;margin:0 auto 34px}.hero h1{font-size:clamp(2.8rem,9vw,6.4rem);letter-spacing:.16em;margin:.28em 0 .1em;text-shadow:0 8px 40px #000}.hero h1 span{color:var(--gold)}.hero p{color:var(--muted);letter-spacing:.1em;font-size:.9rem}.panel{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(145deg,rgba(26,35,51,.96),rgba(16,22,33,.96));box-shadow:0 22px 80px #0005}.home-panel{padding:clamp(20px,4vw,34px);max-width:680px;margin:auto}.field{display:grid;gap:8px;margin-bottom:18px}.home-section-title{font-size:.95rem;margin:0 0 14px;color:#e1e8f2}.field label,.label{font-size:.78rem;font-weight:800;color:#c4cedc}.input,select{width:100%;border:1px solid #35435a;border-radius:12px;background:#0e1420;color:var(--text);padding:13px 14px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}.divider{border:0;border-top:1px solid var(--line);margin:26px 0}.btn{border:1px solid #3a4962;border-radius:12px;padding:12px 16px;background:#202b3c;font-weight:800;transition:transform .15s,border-color .15s,background .15s}.btn:hover:not(:disabled){transform:translateY(-1px);border-color:#7895c2}.btn.primary{background:var(--gold);border-color:var(--gold);color:#17130b}.btn.blue{background:#315da7;border-color:#4779cd}.btn.ghost{background:transparent}.btn.danger{color:var(--red)}.btn.block{width:100%}.hint{font-size:.8rem;line-height:1.6;color:var(--muted)}.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.topline{display:flex;align-items:center;gap:14px;margin-bottom:18px}.topline h2{font-size:1.05rem;letter-spacing:.06em;margin:0}.grow{flex:1}.room-code{font-size:clamp(1.8rem,6vw,3rem);font-weight:900;letter-spacing:.28em;text-align:center;color:var(--gold);margin:12px 0}.center{text-align:center}.lobby{max-width:760px;padding:clamp(20px,4vw,34px);margin:auto}.lobby-sub{color:var(--muted);text-align:center;margin:0 0 22px}.roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:18px 0 24px}.seat{display:flex;align-items:center;gap:10px;padding:12px;background:#0d1420;border:1px solid var(--line);border-radius:12px;min-height:54px}.seat-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.seat-meta{margin-left:auto;color:var(--muted);font-size:.72rem}.seat-meta.offline{color:var(--red)}.lobby-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.arena{width:min(1080px,100%);margin:auto}.arena-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}.round-chip{display:inline-flex;align-items:center;border:1px solid var(--line);background:#111a28;border-radius:999px;padding:7px 11px;font-size:.78rem;font-weight:850;color:var(--gold)}.timer{font-variant-numeric:tabular-nums;font-size:1.1rem;font-weight:900;color:var(--gold);min-width:48px;text-align:right}.timer.urgent{color:var(--red)}.arena-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px}.challenge{padding:clamp(20px,4vw,34px);min-height:400px}.challenge h2{font-size:clamp(1.5rem,4vw,2.3rem);margin:0 0 8px}.prompt{font-size:1rem;line-height:1.75;color:#d4deeb;max-width:720px}.stage-note{color:var(--muted);font-size:.78rem;margin-top:12px}.private-card,.study-card{margin:22px 0;padding:16px;border-radius:13px;border:1px solid #4d4260;background:#241e31}.private-card strong{color:#dbb6ff}.study-card{text-align:center;border-color:#4b5f7e;background:#111e31}.study-sequence{font-size:clamp(1.4rem,6vw,3.5rem);letter-spacing:.16em;font-variant-numeric:tabular-nums;font-weight:900;color:#fff;padding:15px 0 5px}.answer-box{margin-top:24px}.answer-box[hidden],.private-card[hidden],.study-card[hidden],.result-box[hidden],.waiting-box[hidden]{display:none}.answer-row{display:flex;gap:9px;margin-top:10px}.answer-row .input{max-width:250px}.candidate-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}.candidate{padding:13px;text-align:left;border:1px solid var(--line);border-radius:12px;background:#111a28}.candidate.selected{border-color:var(--gold);background:#2a271e}.candidate small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px}.waiting-box{margin-top:22px;padding:16px;background:#0d1420;border:1px solid var(--line);border-radius:12px;color:#cbd6e5}.result-box{margin-top:20px;padding:17px;border:1px solid #695a37;background:#211d14;border-radius:13px}.result-box h3{margin:0 0 9px;color:var(--gold)}.result-box ul{margin:0;padding-left:20px;color:#d7deea;line-height:1.8}.side-panel{padding:17px;height:max-content}.side-panel h3{font-size:.8rem;letter-spacing:.1em;color:var(--muted);margin:0 0 12px}.score-list{display:grid;gap:8px}.score-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;background:#0d1420}.score-row.me{border:1px solid #4d6591}.score-row.out{opacity:.48}.rank{color:var(--gold);font-weight:900;font-size:.78rem}.score-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.83rem}.score-points{font-weight:900;font-variant-numeric:tabular-nums}.score-sub{grid-column:2/4;color:var(--muted);font-size:.68rem;margin-top:-5px}.roster-status{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:.72rem;color:var(--muted);line-height:1.6}.finish-card{padding:clamp(25px,6vw,55px);text-align:center;max-width:700px;margin:auto}.finish-card h1{font-size:clamp(2rem,6vw,3.6rem);margin:10px 0}.finish-rank{display:grid;gap:8px;max-width:420px;margin:24px auto}.toast{position:fixed;z-index:10;left:50%;bottom:20px;transform:translate(-50%,18px);opacity:0;pointer-events:none;padding:11px 16px;border:1px solid #43516a;border-radius:12px;background:#182132;box-shadow:0 10px 40px #0008;transition:.2s;max-width:calc(100vw - 30px);text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}.connection{font-size:.74rem;color:var(--green)}.connection.offline{color:var(--red)}
-    @media(max-width:760px){.arena-grid{grid-template-columns:1fr}.side-panel{order:2}.score-list{grid-template-columns:repeat(2,minmax(0,1fr))}.challenge{min-height:0}.roster{grid-template-columns:1fr}.arena-head{flex-wrap:wrap}.arena-head .grow{flex-basis:10px}.form-row,.home-actions{grid-template-columns:1fr}.candidate-list{grid-template-columns:1fr 1fr}.screen{align-items:flex-start!important;padding-top:max(20px,env(safe-area-inset-top))!important;padding-bottom:max(20px,env(safe-area-inset-bottom))!important}}
-  .strategy-board{margin:18px 0;padding:14px;border:1px solid #31435b;border-radius:14px;background:#0b1421}.strategy-market{display:flex;flex-wrap:wrap;gap:8px;margin:9px 0 13px}.strategy-tile{min-width:42px;padding:8px 12px;border:1px solid #b68b4c;border-radius:9px;background:#20202a;color:#f2c46d;text-align:center;font-weight:800}.strategy-log{margin:0;padding-left:20px;color:#aebbd0;font-size:.86rem;line-height:1.7}
-  .training-frame{margin:18px 0;padding:14px 16px;border:1px solid #3d526f;border-radius:13px;background:#101b2b;color:#cbd7e8;font-size:.86rem;line-height:1.6}.training-frame p{margin:6px 0}.training-frame strong{display:inline-block;min-width:86px;color:var(--gold)}.prompt{white-space:pre-line}.training-feedback{margin-top:14px;padding:13px;border-radius:11px;border:1px solid #3d526f;background:#111b2a;line-height:1.55}.training-feedback strong{color:var(--gold)}.training-feedback p{margin:7px 0 0;color:#d4deeb}.training-summary{margin:0 0 8px;color:var(--muted);font-size:.8rem;line-height:1.5}
-  .chat-panel{width:min(1200px,100%);margin:16px auto 0;padding:18px}.chat-panel h3{margin:0 0 12px}.chat-messages{height:170px;overflow:auto;padding:10px 12px;margin-bottom:12px;border:1px solid #27364b;border-radius:11px;background:#09111d}.chat-line{padding:5px 0;color:#d7e1ef;font-size:.88rem;line-height:1.45;overflow-wrap:anywhere}.chat-line strong{color:#f2c46d;margin-right:7px}.chat-line time{color:#718198;font-size:.72rem;margin-right:8px}.result-note{color:#c6d2e2;line-height:1.55}.chat-panel .answer-row{grid-template-columns:minmax(0,1fr) auto}
+    :root {
+      color-scheme:dark;
+      --bg:#0c1028; --panel:#151b3d; --panel2:#1b234d; --line:#343f72;
+      --text:#f5f6ff; --muted:#b0b9d9; --blue:#a1afff; --indigo:#4355b9;
+      --gold:#e8c778; --red:#ff8c9e; --green:#8bd7bd; --radius:18px;
+      font-family:Inter,"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+    }
+    * { box-sizing:border-box }
+    [hidden] { display:none!important }
+    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 50% 0,#242f68 0,var(--bg) 65%); color:var(--text) }
+    button,input,select { font:inherit }
+    button { color:inherit; cursor:pointer }
+    button:disabled { cursor:not-allowed; opacity:.48 }
+    button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible { outline:2px solid var(--gold); outline-offset:3px }
+    .screen { display:none; min-height:100vh; padding:clamp(20px,5vw,54px) 18px }
+    .screen.active { display:flex; align-items:center; justify-content:center }
+    .wrap { width:min(980px,100%); margin:auto }
+    .hero { text-align:center; margin:0 auto 34px }
+    .hero h1 { font-size:clamp(2.4rem,8vw,6rem); letter-spacing:.12em; margin:.28em 0 .1em }
+    .hero h1 span { color:var(--gold) }
+    .panel { border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); box-shadow:0 18px 60px #05081b55 }
+    .home-panel { padding:clamp(20px,4vw,34px); max-width:680px; margin:auto }
+    .field { display:grid; gap:8px; margin-bottom:18px }
+    .home-section-title { font-size:.95rem; margin:0 0 14px }
+    .field label,.label { font-size:.8rem; font-weight:700; color:var(--muted) }
+    .input,select { width:100%; min-width:0; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--text); padding:13px 14px }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:end }
+    .divider { border:0; border-top:1px solid var(--line); margin:26px 0 }
+    .btn { min-height:46px; border:1px solid var(--line); border-radius:10px; padding:12px 16px; background:var(--panel2); font-weight:700; transition:background .15s,border-color .15s }
+    .btn:hover:not(:disabled) { border-color:var(--blue); background:#29366e }
+    .btn.primary { background:var(--gold); border-color:var(--gold); color:#171c37 }
+    .btn.primary:hover:not(:disabled) { background:#f4d995; border-color:#f4d995 }
+    .btn.blue { background:var(--indigo); border-color:#697bd9 }
+    .btn.ghost { background:transparent }
+    .btn.danger { color:var(--red) }
+    .btn.block { width:100% }
+    .hint { font-size:.8rem; line-height:1.6; color:var(--muted) }
+    .home-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+    .topline { display:flex; align-items:center; gap:14px; margin-bottom:18px }
+    .topline h2 { font-size:1.05rem; margin:0 }
+    .grow { flex:1 }
+    .room-code { font-size:clamp(1.8rem,6vw,3rem); font-weight:800; letter-spacing:.28em; text-align:center; color:var(--gold); margin:12px 0 }
+    .center { text-align:center }
+    .lobby { width:min(760px,100%); padding:clamp(20px,4vw,34px); margin:auto }
+    .lobby-sub { color:var(--muted); text-align:center; margin:0 0 22px }
+    .roster { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin:18px 0 24px }
+    .seat { display:flex; align-items:center; gap:10px; padding:12px; background:var(--bg); border:1px solid var(--line); border-radius:10px; min-height:54px }
+    .seat-name { font-weight:700; overflow-wrap:anywhere }
+    .seat-meta { margin-left:auto; color:var(--muted); font-size:.72rem; white-space:nowrap }
+    .seat-meta.offline { color:var(--red) }
+    .lobby-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap }
+    #arena.screen { align-items:flex-start }
+    .arena { width:min(1140px,100%); margin:auto }
+    .arena-head { display:flex; align-items:center; gap:12px; margin-bottom:18px; min-height:50px }
+    .round-chip { display:inline-flex; align-items:center; border:1px solid #73653e; background:#252a46; border-radius:8px; padding:9px 13px; font-size:.9rem; font-weight:800; color:var(--gold) }
+    .phase-label { color:var(--muted); font-size:.8rem }
+    .timer-wrap { display:flex; align-items:center; gap:10px; padding-left:14px; border-left:1px solid var(--line) }
+    .timer { font-variant-numeric:tabular-nums; font-size:1.5rem; font-weight:800; color:var(--gold); min-width:64px; text-align:right }
+    .timer.urgent { color:var(--red) }
+    .arena-grid { display:grid; grid-template-columns:minmax(0,1fr) 290px; align-items:start; gap:18px }
+    .challenge { min-width:0; padding:clamp(20px,3vw,34px); border-top:3px solid var(--gold) }
+    .challenge h2 { font-size:clamp(1.4rem,3vw,2rem); line-height:1.35; margin:0 0 26px; overflow-wrap:anywhere }
+    .section-label { display:block; margin:0 0 10px; font-size:.78rem; font-weight:800; letter-spacing:.06em; color:var(--gold) }
+    .prompt { font-size:clamp(1.05rem,2vw,1.2rem); font-weight:650; line-height:1.65; margin:0; white-space:pre-line; overflow-wrap:anywhere }
+    .question-section { padding-bottom:24px; border-bottom:1px solid var(--line) }
+    .condition-section { margin-top:24px }
+    .condition-list,.clue-list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
+    .condition-list li,.clue-list li { position:relative; padding-left:15px; font-size:.94rem; line-height:1.65; overflow-wrap:anywhere }
+    .condition-list li::before,.clue-list li::before { content:""; position:absolute; left:0; top:.7em; width:4px; height:4px; border-radius:50%; background:var(--gold) }
+    .puzzle-data { margin-top:18px; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--bg); overflow-wrap:anywhere }
+    .data-lines { display:grid; gap:10px; font-variant-numeric:tabular-nums; line-height:1.6 }
+    .data-lines.numbered { margin:0; padding-left:24px }
+    .sequence-data { display:flex; flex-wrap:wrap; gap:8px }
+    .sequence-number { padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:1.15rem; font-variant-numeric:tabular-nums }
+    .sequence-number.unknown { color:var(--gold); border-color:var(--gold) }
+    .sudoku-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); max-width:360px; margin:auto; border:2px solid var(--blue); background:var(--line); gap:1px }
+    .sudoku-cell { display:flex; align-items:center; justify-content:center; aspect-ratio:1; background:var(--panel); font-size:clamp(1rem,4vw,1.4rem); font-variant-numeric:tabular-nums }
+    .sudoku-cell.blank { background:#293566; color:var(--gold) }
+    .sudoku-cell.box-right { border-right:2px solid var(--blue) }
+    .sudoku-cell.box-bottom { border-bottom:2px solid var(--blue) }
+    .table-wrap { overflow-x:auto }
+    .puzzle-table { width:100%; border-collapse:collapse; font-size:.9rem; font-variant-numeric:tabular-nums }
+    .puzzle-table caption { display:table-caption; caption-side:top; text-align:left; padding-bottom:10px }
+    .puzzle-table th,.puzzle-table td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left }
+    .puzzle-table th { color:var(--muted); font-size:.76rem }
+    .puzzle-table tr:last-child td { border-bottom:0 }
+    .private-card,.study-card { margin:24px 0 0; padding:18px; border-radius:12px; border:1px solid #786842; background:#202641 }
+    .private-card .section-label { margin-bottom:12px }
+    .study-card { text-align:center; border-color:var(--line); background:var(--bg) }
+    .study-sequence { display:flex; justify-content:center; flex-wrap:wrap; gap:10px 16px; font-size:clamp(1.4rem,4.6vw,2.4rem); font-variant-numeric:tabular-nums; font-weight:800; letter-spacing:.08em; padding-top:8px }
+    .answer-box { margin-top:26px; padding-top:24px; border-top:1px solid var(--line) }
+    .answer-row { display:flex; align-items:end; gap:10px }
+    .answer-row .input { flex:1 }
+    .answer-field { display:grid; flex:1; min-width:0; gap:8px }
+    .answer-field label { font-size:.8rem; color:var(--muted); font-weight:700 }
+    .candidate-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+    .candidate { min-width:0; min-height:52px; display:flex; align-items:center; gap:10px; padding:14px; text-align:left; border:1px solid var(--line); border-radius:10px; background:var(--bg); font-size:.95rem; line-height:1.5; overflow-wrap:anywhere }
+    .candidate:hover:not(:disabled) { background:var(--panel2); border-color:var(--blue) }
+    .candidate.selected { border-color:var(--gold); background:#2b304b }
+    .option-index { display:inline-flex; flex:none; align-items:center; justify-content:center; width:25px; height:25px; border:1px solid var(--line); border-radius:6px; color:var(--muted); font-size:.74rem }
+    .candidate.selected .option-index { color:#171c37; background:var(--gold); border-color:var(--gold) }
+    .option-text { min-width:0; overflow-wrap:anywhere }
+    .candidate-list.long-options { grid-template-columns:1fr }
+    .submit-answer { width:100%; margin-top:14px }
+    .waiting-box { margin-top:24px; padding:16px; background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--muted); line-height:1.5 }
+    .result-box { margin-top:24px; padding:18px; border:1px solid #786842; background:#202641; border-radius:12px }
+    .result-box h3 { margin:0 0 9px; color:var(--gold) }
+    .result-box ul { margin:0; padding-left:20px; line-height:1.8 }
+    .result-note { color:var(--muted); line-height:1.65; overflow-wrap:anywhere }
+    .arena-side { display:grid; gap:18px; min-width:0 }
+    .side-panel { padding:20px; height:max-content }
+    .side-panel h3 { font-size:.84rem; color:var(--muted); margin:0 0 16px }
+    .score-list { display:grid; gap:8px }
+    .score-row { display:grid; grid-template-columns:24px minmax(0,1fr) auto; align-items:center; gap:8px; padding:12px 10px; border:1px solid transparent; border-radius:10px; background:var(--bg) }
+    .score-row.me { border-color:#786842; background:#202641 }
+    .score-row.out { color:var(--muted) }
+    .rank { color:var(--muted); font-weight:800; font-size:.78rem }
+    .score-row.me .rank,.score-row.me .score-points { color:var(--gold) }
+    .score-name { font-weight:700; overflow-wrap:anywhere; font-size:.87rem; line-height:1.45 }
+    .me-tag { display:inline-block; color:var(--gold); font-size:.7rem; margin-left:5px }
+    .score-points { font-weight:800; font-size:1.1rem; font-variant-numeric:tabular-nums }
+    .score-sub { grid-column:2/4; color:var(--muted); font-size:.72rem; line-height:1.5 }
+    .roster-status { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:.75rem; color:var(--muted) }
+    .finish-card { width:min(700px,100%); padding:clamp(25px,6vw,55px); text-align:center; margin:auto }
+    .finish-card h1 { font-size:clamp(2rem,6vw,3.6rem); margin:10px 0 }
+    .finish-rank { display:grid; gap:8px; max-width:420px; margin:24px auto; text-align:left }
+    .toast { position:fixed; z-index:10; left:50%; bottom:20px; transform:translate(-50%,18px); opacity:0; pointer-events:none; padding:11px 16px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); box-shadow:0 10px 40px #0008; transition:.2s; max-width:calc(100vw - 30px); text-align:center }
+    .toast.show { opacity:1; transform:translate(-50%,0) }
+    .connection { font-size:.74rem; color:var(--green) }
+    .connection.offline { color:var(--red) }
+    .strategy-board { margin:24px 0 0; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--bg) }
+    .strategy-market { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 16px }
+    .strategy-tile { min-width:42px; padding:9px 12px; border:1px solid #786842; border-radius:8px; color:var(--gold); text-align:center; font-weight:800 }
+    .strategy-log { margin:8px 0 0; padding-left:20px; color:var(--muted); font-size:.86rem; line-height:1.7 }
+    .training-feedback { margin-top:14px; padding:13px; border-radius:10px; border:1px solid var(--line); background:var(--bg); line-height:1.6 }
+    .training-feedback strong { color:var(--gold) }
+    .training-feedback p { margin:7px 0 0; color:var(--muted) }
+    .training-summary { margin:0 0 8px; color:var(--muted); font-size:.8rem; line-height:1.6 }
+    .chat-panel { padding:18px; min-width:0 }
+    .chat-panel summary { cursor:pointer; color:var(--muted); font-size:.84rem; font-weight:700 }
+    .chat-messages { height:180px; overflow:auto; padding:10px; margin:16px 0 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg) }
+    .chat-line { padding:6px 0; font-size:.84rem; line-height:1.6; overflow-wrap:anywhere }
+    .chat-line strong { color:var(--gold); margin-right:7px }
+    .chat-line time { color:var(--muted); font-size:.7rem; margin-right:8px }
+    .chat-panel .answer-row { align-items:center }
+    .chat-panel .input { padding:12px 10px }
+    .chat-panel .btn { padding:12px }
+    @media(max-width:860px) {
+      .arena-grid { grid-template-columns:1fr }
+      .arena-side { grid-template-columns:1fr 1fr; align-items:start }
+      .challenge { min-height:0 }
+    }
+    @media(max-width:560px) {
+      .screen { align-items:flex-start!important; padding: max(18px,env(safe-area-inset-top)) 12px max(18px,env(safe-area-inset-bottom)) }
+      .arena-head { flex-wrap:wrap; gap:8px }
+      .arena-head .connection { display:none }
+      .round-chip { font-size:.8rem; padding:8px 10px }
+      .timer-wrap { gap:6px; padding-left:8px }
+      .timer-wrap .label { display:none }
+      .timer { font-size:1.3rem; min-width:58px }
+      .arena-side,.roster,.form-row,.home-actions { grid-template-columns:1fr }
+      .candidate-list { grid-template-columns:1fr }
+      .answer-row { flex-wrap:wrap }
+      .answer-row > .btn { flex:1 0 100% }
+      .answer-field { flex-basis:calc(50% - 5px) }
+      .chat-panel .answer-row { flex-wrap:nowrap }
+      .chat-panel .answer-row > .btn { flex:0 0 auto }
+      .challenge { padding:22px 18px }
+      .puzzle-data { padding:14px }
+      .score-list { grid-template-columns:1fr }
+    }
   </style>
 </head>
 <body>
@@ -23,7 +189,7 @@
           <h2 class="home-section-title">새 방 만들기</h2>
           <div class="form-row">
             <div class="field"><label for="maxPlayers">게임 방식</label><select id="maxPlayers" class="input"></select></div>
-          <p class="hint">1인 훈련은 10문제로 진행합니다. 분야별 풀이 성과에 따라 다음 유형과 제한 시간이 조정됩니다.</p>
+
             <div class="field"><button id="createRoom" class="btn primary block">만들기</button></div>
           </div>
           <hr class="divider">
@@ -47,28 +213,37 @@
 
     <section id="arena" class="screen">
       <div class="arena">
-        <header class="arena-head"><span id="roundChip" class="round-chip">1라운드</span><span class="grow"></span><span id="connectionArena" class="connection">연결 중</span><span id="timer" class="timer">--</span></header>
+        <header class="arena-head">
+          <span id="roundChip" class="round-chip">1라운드</span><span id="phaseLabel" class="phase-label"></span>
+          <span class="grow"></span><span id="connectionArena" class="connection">연결 중</span>
+          <div class="timer-wrap"><span class="label">남은 시간</span><span id="timer" class="timer" role="timer" aria-label="남은 시간">--</span></div>
+        </header>
         <div class="arena-grid">
           <article class="panel challenge">
-            <h2 id="challengeTitle">문제 준비 중</h2><div id="trainingSituationLabel" class="label" hidden>상황</div><p id="challengePrompt" class="prompt"></p>
-            <div id="trainingFrame" class="training-frame" hidden>
-              <p><strong>규칙</strong><span>답과 행동은 정해진 횟수만 제출할 수 있습니다. 시간이 끝나면 남은 제출은 미완료로 기록됩니다.</span></p>
-              <p><strong>목표</strong><span>정답과 누적 승점을 쌓고, 이번 분야의 풀이 성과를 높이세요.</span></p>
-              <p><strong>제한시간</strong><span>상단 타이머가 0이 되면 미제출 처리됩니다.</span></p>
-              <p><strong>사고 순서</strong><span>승리조건 → 자원 → 제약 → 병목 → 정보 → 상대 대응 → 최악의 경우 → 최종 검증</span></p>
-              <p><strong>난이도</strong><span id="trainingLevel"></span></p>
-            </div>
+            <h2 id="challengeTitle">문제 준비 중</h2>
+            <section class="question-section" aria-labelledby="questionLabel">
+              <h3 id="questionLabel" class="section-label">문제</h3><p id="challengePrompt" class="prompt"></p>
+              <div id="puzzleData" class="puzzle-data" hidden></div>
+            </section>
+            <section id="conditionsCard" class="condition-section" aria-labelledby="conditionsLabel" hidden>
+              <h3 id="conditionsLabel" class="section-label">조건 / 힌트</h3><ul id="conditionList" class="condition-list"></ul>
+            </section>
             <div id="strategyBoard" class="strategy-board" hidden></div>
-            <div id="privateCard" class="private-card" hidden><strong id="privateHeading">나만의 단서</strong><p id="privateText" style="margin:8px 0 0;line-height:1.65"></p></div>
-            <div id="studyCard" class="study-card" hidden><div class="label">순서를 기억하세요</div><div id="studySequence" class="study-sequence"></div></div>
+            <section id="privateCard" class="private-card" aria-labelledby="privateHeading" hidden><h3 id="privateHeading" class="section-label">내 단서</h3><ul id="privateText" class="clue-list"></ul></section>
+            <div id="studyCard" class="study-card" hidden><div class="section-label">기억할 숫자</div><div id="studySequence" class="study-sequence"></div></div>
             <div id="answerBox" class="answer-box" hidden></div>
             <div id="waitingBox" class="waiting-box" hidden></div>
             <div id="resultBox" class="result-box" hidden></div>
             <button id="nextTraining" class="btn primary" style="margin-top:12px" hidden>다음 문제</button>
           </article>
-          <aside class="panel side-panel"><h3 id="scoreHeading">현재 승점</h3><div id="scoreList" class="score-list"></div><div id="roomStatus" class="roster-status"></div></aside>
+          <aside class="arena-side">
+            <section class="panel side-panel"><h3 id="scoreHeading">현재 승점</h3><div id="scoreList" class="score-list"></div><div id="roomStatus" class="roster-status"></div></section>
+            <details id="chatPanel" class="panel chat-panel">
+              <summary>공개 대화</summary><div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+              <div class="answer-row"><input id="chatInput" class="input" aria-label="공개 대화 메시지" maxlength="240" autocomplete="off" placeholder="메시지"><button id="sendChat" class="btn">전송</button></div>
+            </details>
+          </aside>
         </div>
-        <section class="panel chat-panel"><h3>공개 대화</h3><div id="chatMessages" class="chat-messages" aria-live="polite"></div><div class="answer-row"><input id="chatInput" class="input" maxlength="240" autocomplete="off" placeholder="메시지"><button id="sendChat" class="btn">전송</button></div></section>
       </div>
     </section>
 
@@ -83,7 +258,7 @@
     const screens = ['home','lobby','arena','finished'];
     const home = $('#home'), nameInput = $('#playerName'), roomInput = $('#roomCodeInput');
     let session = null, snapshot = null, socket = null, reconnectTimer = null, clockTimer = null;
-    let reconnectDelay = 700, lastSeq = -1, chosenAnswer = null, chosenPhaseId = null, toastTimer = null;
+    let reconnectDelay = 700, lastSeq = -1, chosenAnswer = null, chosenPhaseId = null, toastTimer = null, answerViewKey = '', chatPhaseId = null;
     const savedName = localStorage.getItem('timeline.playerName');
     if (savedName) nameInput.value = savedName;
     for (let n=1;n<=8;n++) { const option=document.createElement('option'); option.value=String(n); option.textContent=n===1?'1명 · 개인 훈련':`${n}명 · 생존 대전`; $('#maxPlayers').append(option); }
@@ -130,7 +305,7 @@
     }
     function send(message) { if(socket?.readyState!==WebSocket.OPEN) { toast('재접속 후 다시 시도해 주세요.'); return false; } socket.send(JSON.stringify(message)); return true; }
     function handleMessage(message) {
-      if (message.type==='error') { chosenAnswer=null; toast(message.message||'요청을 처리하지 못했습니다.'); if(snapshot?.game) renderGame(snapshot); return; }
+      if (message.type==='error') { chosenAnswer=null; answerViewKey=''; toast(message.message||'요청을 처리하지 못했습니다.'); if(snapshot?.game) renderGame(snapshot); return; }
       if (!['room','state'].includes(message.type)) return;
       const sequence=message.game?.seq??message.seq;
       if (sequence!=null && sequence<lastSeq) return;
@@ -159,7 +334,7 @@
         const time=new Date(Number(message.at)||Date.now()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
         return '<div class="chat-line"><time>'+escapeHtml(time)+'</time><strong>'+escapeHtml(message.name)+'</strong>'+escapeHtml(message.text)+'</div>';
       });
-      box.innerHTML=rows.join('')||'<div class="chat-line" style="color:#718198">대화 없음</div>';
+      box.innerHTML=rows.join('')||'<div class="chat-line" style="color:var(--muted)">대화 없음</div>';
       box.scrollTop=box.scrollHeight;
     }
     function sendChat() {
@@ -167,26 +342,137 @@
       if(!text)return;
       if(send({type:'chat',text}))input.value='';
     }
+
+    // Presentation uses only the public prompt and the current player's server-provided clues.
+    // Unknown formats stay intact so a new server question cannot silently lose its rules.
+    function challengeContent(game) {
+      const prompt=String(game.prompt||'').trim(), lines=prompt.split('\n');
+      const details=lines.slice(1).filter(line=>line.trim());
+      const fallback={question:prompt,conditions:[],details:[],layout:'lines'};
+      const content=(question,conditions=[],layout='lines',data=details)=>({question,conditions,details:data,layout});
+      switch(game.type) {
+        case 'sequence':
+          if(!prompt.startsWith('홀수항은')||!details.length)return fallback;
+          return content('11번째 항의 값은?', ['홀수항: 두 번째 차분이 일정함','짝수항: 같은 수를 곱함'], 'sequence');
+        case 'symbolGrid':
+          if(!prompt.startsWith('네 기호는')||!details.length)return fallback;
+          return content('△ × ◇ + □ × ○의 값은?', ['네 기호는 서로 다른 한 자리 수'], 'equations');
+        case 'logicGrid':
+          if(!prompt.startsWith('다섯 참가자의')||!details.length)return fallback;
+          return content('3위 참가자의 표식은?', ['다섯 참가자의 순위와 표식은 모두 다름'], 'ordered');
+        case 'spatial': {
+          const start=lines[0].match(/격자에서 ([A-E][1-5])를/);
+          if(!start||!details.length)return fallback;
+          return content('변환 후 좌표는?', ['격자: A~E열 · 1~5행','시작 좌표: '+start[1],'아래 변환을 순서대로 적용'], 'ordered');
+        }
+        case 'miniSudoku':
+          if(!prompt.startsWith('각 행·열·2×3')||!details.length)return fallback;
+          return content('빈칸에 들어갈 숫자 배열은?', ['각 행·열·2×3 상자에 1~6을 한 번씩 배치','빈칸은 위쪽 행부터, 각 행의 왼쪽 → 오른쪽 순서'], 'sudoku');
+        case 'codeLock':
+          if(!prompt.startsWith('0~9 중')||!details.length)return fallback;
+          return content('5자리 암호는?', ['0~9 중 서로 다른 숫자 5개','자리까지: 숫자와 위치 모두 일치','숫자만: 숫자는 맞지만 위치가 다름'], 'code');
+        case 'indianPoker':
+          if(!prompt.startsWith('2~A 각 8장'))return fallback;
+          return content('내 카드의 숫자와 베팅을 정하세요.', ['더블덱 104장 · 2~A 각 8장','카드 예상: 2~14 (J=11 · Q=12 · K=13 · A=14)','베팅: 0~5','적중: 4 + 베팅점 · 오답: 베팅만큼 감점','최고 카드: +1점'], 'lines', []);
+        case 'turtleSoup':
+          return fallback; // The short scenario itself is necessary evidence.
+        case 'rankInference': {
+          const prefix='참가 순서는 ', marker='. 이 순서대로';
+          const end=prompt.indexOf(marker);
+          if(!prompt.startsWith(prefix)||end<0)return fallback;
+          return content('목표 순위의 참가자는?', ['가중치 = 참가 순서의 번호','합계 = Σ(가중치 × 순위 + 순위²)','목표 순위 = (합계 % 인원수) + 1'], 'lines', ['참가 순서: '+prompt.slice(prefix.length,end)]);
+        }
+        case 'cipher':
+          if(!prompt.startsWith('8글자 암호입니다.')||!details.length)return fallback;
+          return content('암호를 복호화한 8글자 단어는?', ['암호화: 반복 키로 문자 이동 → 홀수 위치를 앞, 짝수 위치를 뒤에 배치','복호화: 배치를 복원한 뒤 반복 키의 이동을 되돌림'], 'lines');
+        case 'probability':
+          if(!prompt.startsWith('A·B 중 한 곳은'))return fallback;
+          return content('전체 표본 기준으로 빨강이 8개일 가능성이 더 높은 항아리는?', ['A·B 중 한 곳: 빨강 8 · 파랑 2','다른 곳: 빨강 2 · 파랑 8','각 참가자가 항아리마다 4회 복원 추출','사전확률 1:1 · 모든 참가자의 표본 우도를 비교'], 'lines', []);
+        case 'resource':
+          if(!prompt.startsWith('개인 자원을 합산해')||!details.length)return fallback;
+          return content('보상이 가장 큰 프로젝트 조합은?', ['참가자들의 에너지·데이터를 합산','총 자원 범위 안에서 프로젝트 선택','동점: 자원 소모가 적은 조합 → 이름이 앞선 조합'], 'projects');
+        case 'auction':
+          if(!prompt.startsWith('각자 한 번 입찰합니다.'))return fallback;
+          return content('입찰액을 정하세요.', ['각자 한 번 비공개 입찰','최고가 낙찰 · 동점은 추첨','낙찰 점수 = 내 가치 − 입찰액','입찰 한도는 내 입찰 정보에 표시'], 'lines', []);
+        case 'truthLie':
+          if(!prompt.startsWith('암호는 1~12입니다.'))return fallback;
+          return content('거짓 진술자는?', ['암호: 1~12','여덟 진술 중 정확히 하나만 거짓','참 진술의 구간: 암호 포함','거짓 진술의 구간: 암호 미포함'], 'lines', []);
+        case 'memory':
+          if(!prompt.startsWith('16자리 숫자를 기억한 뒤'))return fallback;
+          return content(game.phase==='study'?'16자리 숫자를 순서대로 기억하세요.':'기억한 16자리 숫자를 입력하세요.', ['숫자와 순서가 모두 일치해야 함','암기 시간이 끝나면 숫자가 사라짐'], 'lines', []);
+        case 'strategy':
+          if(!prompt.startsWith('각자 목표에 맞춰'))return fallback;
+          return content('내 목표에 맞는 타일을 선택하세요.', ['각자 두 번 선택','남은 타일과 선택 기록은 공개'], 'lines', []);
+        case 'path':
+          if(!prompt.startsWith('S에서 G까지 갈 수 있는'))return fallback;
+          return content('S → G의 가장 짧은 경로는?', ['25개 후보 중 선택','경로의 통로 길이를 합산'], 'lines', []);
+        case 'stateInference':
+          if(!prompt.startsWith('개인 단서를 합쳐')||!details.length)return fallback;
+          return content('연산 후 8비트 상태는?', ['개인 단서로 시작 상태 복원','아래 6개 연산을 순서대로 적용','0과 1로 된 8자리로 입력'], 'ordered');
+        default:
+          return fallback;
+      }
+    }
+    function renderPuzzleData(content) {
+      const escaped=value=>escapeHtml(value), details=content.details;
+      if(content.layout==='sequence') {
+        return '<div class="sequence-data">'+details.join(' · ').split(' · ').map(value=>
+          '<span class="sequence-number '+(value.trim()==='?'?'unknown':'')+'">'+escaped(value.trim())+'</span>').join('')+'</div>';
+      }
+      if(content.layout==='sudoku') {
+        const rows=details.filter(line=>!/^[-+]+$/.test(line.trim())).map(line=>line.replace(/│/g,'').trim().split(/\s+/));
+        if(rows.length===6&&rows.every(row=>row.length===6&&row.every(value=>/^[1-6·]$/.test(value)))) {
+          return '<div class="sudoku-grid" role="table" aria-label="6행 6열 스도쿠">'+rows.map((row,r)=>
+            '<div role="row" style="display:contents">'+row.map((value,c)=>'<span role="cell" aria-label="'+(r+1)+'행 '+(c+1)+'열 '+(value==='·'?'빈칸':value)+'" class="sudoku-cell '+(value==='·'?'blank ':'')+(c===2?'box-right ':'')+(r===1||r===3?'box-bottom':'')+'">'+(value==='·'?'?':escaped(value))+'</span>').join('')+'</div>').join('')+'</div>';
+        }
+      }
+      if(content.layout==='code') {
+        const rows=details.map(line=>line.match(/^\d+\. (\d{5}): 자리까지 (\d+) · 숫자만 (\d+)$/));
+        if(rows.every(Boolean))return '<div class="table-wrap"><table class="puzzle-table"><caption class="section-label">암호 단서</caption><thead><tr><th scope="col">시도</th><th scope="col">자리까지</th><th scope="col">숫자만</th></tr></thead><tbody>'+rows.map(row=>'<tr><td>'+escaped(row[1])+'</td><td>'+escaped(row[2])+'</td><td>'+escaped(row[3])+'</td></tr>').join('')+'</tbody></table></div>';
+      }
+      if(content.layout==='projects') {
+        const rows=details.join(' · ').split(' · ').map(line=>line.match(/^([A-E]): E(\d+)\/D(\d+), (\d+)점$/));
+        if(rows.every(Boolean))return '<div class="table-wrap"><table class="puzzle-table"><caption class="section-label">프로젝트</caption><thead><tr><th scope="col">이름</th><th scope="col">에너지</th><th scope="col">데이터</th><th scope="col">보상</th></tr></thead><tbody>'+rows.map(row=>'<tr>'+row.slice(1).map(value=>'<td>'+escaped(value)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+      }
+      const ordered=content.layout==='ordered', tag=ordered?'ol':'div', item=ordered?'li':'div';
+      return '<'+tag+' class="data-lines '+(ordered?'numbered':'')+'">'+details.map(line=>'<'+item+'>'+escaped(ordered?line.replace(/^\d+\.\s*/,''):line)+'</'+item+'>').join('')+'</'+tag+'>';
+    }
+    function renderChallenge(game) {
+      const content=challengeContent(game);
+      $('#challengeTitle').textContent=game.title||'문제';
+      $('#challengePrompt').textContent=content.question;
+      $('#conditionsCard').hidden=!content.conditions.length;
+      $('#conditionList').innerHTML=content.conditions.map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
+      const data=$('#puzzleData'); data.hidden=!content.details.length;
+      data.innerHTML=content.details.length?renderPuzzleData(content):'';
+      const privateCard=$('#privateCard'), info=game.privateInfo;
+      privateCard.hidden=!info||game.type==='memory';
+      $('#privateHeading').textContent=game.type==='indianPoker'?'상대 공개 카드':info?.heading||'내 단서';
+      const clueText=String(info?.text||'');
+      const visibleClue=game.type==='indianPoker'?clueText.replace(/^상대 공개 카드: /,''):clueText;
+      $('#privateText').innerHTML=visibleClue.split('\n').filter(Boolean).map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
+      const study=$('#studyCard'); study.hidden=game.phase!=='study';
+      $('#studySequence').innerHTML=game.phase==='study'?String(game.studySequence||'').match(/.{1,4}/g)?.map(group=>'<span>'+escapeHtml(group)+'</span>').join('')||'':'';
+    }
+
     function renderGame(data) {
       const game=data.game; if(!game)return; showScreen('arena');
       if(game.you?.submitted) chosenAnswer=game.you.answer??null;
       else if(chosenPhaseId!==game.phaseId) { chosenAnswer=null; chosenPhaseId=game.phaseId; }
       $('#roundChip').textContent=game.trainingMode?'훈련 '+game.finalIndex+'/'+(game.finalRoundCount||10):game.stage==='final'?'결승 '+game.finalIndex+'/'+(game.finalRoundCount||3):game.round+'라운드';
-      $('#challengeTitle').textContent=game.trainingMode?'문제 '+game.finalIndex+'. '+(game.title||'문제')+' — '+(game.trainingLevel||'★★★★').split(' · ')[0]:game.title||'문제를 확인하세요';
-      $('#challengePrompt').textContent=game.prompt||'';
-      $('#trainingSituationLabel').hidden=!game.trainingMode;
-      const trainingFrame=$('#trainingFrame'); trainingFrame.hidden=!game.trainingMode;
-      if(game.trainingMode) $('#trainingLevel').textContent=game.trainingCategoryLabel+' · '+game.trainingLevel;
-      const privateCard=$('#privateCard'); privateCard.hidden=!game.privateInfo;
-      if(game.privateInfo) { $('#privateHeading').textContent=game.privateInfo.heading||'내 단서'; $('#privateText').textContent=game.privateInfo.text||''; }
-      const study=$('#studyCard'); study.hidden=game.phase!=='study'; $('#studySequence').textContent=game.studySequence||'';
+      $('#phaseLabel').textContent=game.phase==='study'?'암기':game.phase==='result'?'결과':game.phase==='turn'?(game.yourTurn?'내 차례':'차례 대기'):game.you?.submitted?'제출 완료':'답안 입력';
+      renderChallenge(game);
       const board=$('#strategyBoard'); board.hidden=game.type!=='strategy';
       if(game.type==='strategy') {
         const market=(game.market||[]).map(card=>'<span class="strategy-tile">'+Number(card.value)+'</span>').join('');
         const history=(game.moves||[]).map(move=>'<li>'+escapeHtml(move.name)+' · '+escapeHtml(move.value)+'</li>').join('');
         board.innerHTML='<div class="label">남은 타일</div><div class="strategy-market">'+market+'</div><div class="label">선택 기록</div><ol class="strategy-log">'+history+'</ol>';
       }
-      renderAnswer(game); renderChat(game.chat||[]);
+      const answerKey=JSON.stringify([game.phaseId,game.phase,game.you?.submitted,game.yourTurn,game.inputKind,game.options,game.market]);
+      if(answerViewKey!==answerKey) { answerViewKey=answerKey; renderAnswer(game); }
+      const chat=$('#chatPanel'); chat.hidden=Boolean(game.trainingMode);
+      if(chatPhaseId!==game.phaseId) { chatPhaseId=game.phaseId; chat.open=!game.trainingMode&&Boolean(game.privateInfo)&&!['memory','indianPoker','auction','strategy'].includes(game.type); }
+      renderChat(game.chat||[]);
       const waiting=$('#waitingBox');
       const waitingForTurn=game.phase==='turn'&&!game.yourTurn;
       waiting.hidden=!(waitingForTurn||(game.phase==='answer'&&game.you?.submitted));
@@ -204,28 +490,33 @@
       nextTraining.hidden=!(game.trainingMode&&game.phase==='result');
       $('#scoreHeading').textContent=game.trainingMode?'훈련 누적 점수':game.stage==='final'?'결승 점수':'점수';
       const ranked=[...(data.players||[])].sort((a,b)=>game.stage==='final'?b.finalScore-a.finalScore||b.score-a.score:b.score-a.score);
-      $('#scoreList').innerHTML=ranked.map((player,index)=>'<div class="score-row '+(player.id===data.youId?'me ':'')+(player.eliminated?'out':'')+'"><span class="rank">'+String(index+1).padStart(2,'0')+'</span><span class="score-name">'+escapeHtml(player.name)+(player.id===data.youId?' (나)':'')+(player.team?' · '+escapeHtml(player.team)+'팀':'')+'</span><span class="score-points">'+(game.stage==='final'?player.finalScore:player.score)+'</span><span class="score-sub">'+(player.eliminated?player.eliminatedRound+'라운드 탈락':game.stage==='final'?'본선 '+player.score+'점 · 이번 결승 '+player.finalScore+'점':'이번 라운드 '+(player.roundPoints>=0?'+':'')+player.roundPoints+'점')+'</span></div>').join('');
+      $('#scoreList').innerHTML=ranked.map((player,index)=>'<div class="score-row '+(player.id===data.youId?'me ':'')+(player.eliminated?'out':'')+'"><span class="rank">'+String(index+1).padStart(2,'0')+'</span><span class="score-name">'+escapeHtml(player.name)+(player.id===data.youId?'<span class="me-tag">나</span>':'')+(player.team?' · '+escapeHtml(player.team)+'팀':'')+'</span><span class="score-points">'+(game.stage==='final'?player.finalScore:player.score)+'</span><span class="score-sub">'+(player.eliminated?player.eliminatedRound+'라운드 탈락':game.stage==='final'?'본선 '+player.score+'점':'이번 라운드 '+(player.roundPoints>=0?'+':'')+player.roundPoints+'점')+'</span></div>').join('');
       const active=(data.players||[]).filter(player=>!player.eliminated);
-      $('#roomStatus').textContent='생존 '+active.length+'명';
-      $('#timer').classList.toggle('urgent',Number(game.deadlineAt)-Date.now()<5000);
+      $('#roomStatus').textContent=game.trainingMode?'1인 훈련':active.length+'명 생존 · '+(data.players||[]).length+'명 참가';
       setConnection(socket?.readyState===WebSocket.OPEN); updateTimer(game.deadlineAt);
+    }
+    function answerField(text,input) {
+      const field=document.createElement('div'); field.className='answer-field';
+      const label=document.createElement('label'); label.htmlFor=input.id; label.textContent=text;
+      field.append(label,input); return field;
     }
     function renderAnswer(game) {
       const box=$('#answerBox'); box.replaceChildren();
       const canAnswer=(game.phase==='answer'&&!game.you?.submitted)||(game.phase==='turn'&&game.yourTurn);
       box.hidden=!canAnswer; if(box.hidden)return;
       if(game.inputKind==='choice') {
-        const list=document.createElement('div'); list.className='candidate-list';
-        for(const option of game.options||[]) {
+        const list=document.createElement('div'); list.className='candidate-list'+((game.options||[]).some(option=>option.label.length>28)?' long-options':'');
+        for(const [index,option] of (game.options||[]).entries()) {
           const button=document.createElement('button'); button.type='button';
           button.className='candidate '+(chosenAnswer===option.value?'selected':'');
-          button.innerHTML=escapeHtml(option.label)+'<small>선택</small>';
+          button.setAttribute('aria-pressed',String(chosenAnswer===option.value));
+          button.innerHTML='<span class="option-index">'+(index+1)+'</span><span class="option-text">'+escapeHtml(option.label)+'</span>';
           button.addEventListener('click',()=>{chosenAnswer=option.value; renderAnswer(game);});
           list.append(button);
         }
         box.append(list);
         const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
-        submit.style.marginTop='12px'; submit.textContent='제출'; submit.disabled=!chosenAnswer;
+        submit.classList.add('submit-answer'); submit.textContent='답 제출'; submit.disabled=chosenAnswer==null;
         submit.addEventListener('click',()=>submitAnswer(chosenAnswer)); box.append(submit);
         return;
       }
@@ -234,7 +525,7 @@
         const list=document.createElement('div'); list.className='candidate-list';
         for(const card of game.market||[]) {
           const button=document.createElement('button'); button.type='button'; button.className='candidate';
-          button.textContent='타일 '+card.value+' 가져가기';
+          button.textContent='타일 '+card.value+' 선택';
           button.addEventListener('click',()=>submitAnswer(card.id)); list.append(button);
         }
         box.append(list); return;
@@ -244,23 +535,24 @@
         const row=document.createElement('div'); row.className='answer-row';
         const guess=document.createElement('input'); guess.className='input'; guess.type='number';
         guess.min='2'; guess.max='14'; guess.step='1'; guess.inputMode='numeric'; guess.placeholder='예상 2~14';
-        guess.autocomplete='off';
+        guess.autocomplete='off'; guess.id='cardGuess';
         const wager=document.createElement('input'); wager.className='input'; wager.type='number';
         wager.min='0'; wager.max='5'; wager.step='1'; wager.inputMode='numeric'; wager.placeholder='베팅 0~5';
-        wager.autocomplete='off';
+        wager.autocomplete='off'; wager.id='cardWager';
         const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.textContent='제출';
         submit.addEventListener('click',()=>submitAnswer({guess:guess.value,wager:wager.value}));
-        row.append(guess,wager,submit); box.append(row); return;
+        const guessField=answerField('카드 예상 (2~14)',guess), wagerField=answerField('베팅 (0~5)',wager);
+        row.append(guessField,wagerField,submit); box.append(row); return;
       }
 
       if(game.inputKind==='bid') {
         const row=document.createElement('div'); row.className='answer-row';
         const bid=document.createElement('input'); bid.className='input'; bid.type='number';
         bid.min='0'; bid.max='10'; bid.step='1'; bid.inputMode='numeric'; bid.placeholder='입찰액';
-        bid.autocomplete='off';
+        bid.autocomplete='off'; bid.id='bidInput';
         const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary'; submit.textContent='봉인 입찰';
         submit.addEventListener('click',()=>submitAnswer({bid:bid.value}));
-        row.append(bid,submit); box.append(row); return;
+        row.append(answerField('입찰액',bid),submit); box.append(row); return;
       }
 
       const row=document.createElement('div'); row.className='answer-row';
@@ -271,7 +563,7 @@
       input.addEventListener('input',()=>{chosenAnswer=input.value;});
       const submit=document.createElement('button'); submit.type='button'; submit.className='btn primary';
       submit.textContent='답 제출'; submit.addEventListener('click',()=>submitAnswer(input.value));
-      row.append(input,submit); box.append(row);
+      row.append(answerField(game.inputKind==='memory'?'16자리 숫자':game.type==='stateInference'?'8비트 답안':game.inputKind==='number'?'정수 답안':'답안',input),submit); box.append(row);
       input.addEventListener('keydown',event=>{if(event.key==='Enter')submitAnswer(input.value);});
     }
     function submitAnswer(answer) {
@@ -293,7 +585,7 @@
       const button=$('#answerBox button'); if(button)button.disabled=true;
     }
     function updateTimer(deadline) {
-      clearInterval(clockTimer); const draw=()=>{const remaining=Math.max(0,Math.ceil((Number(deadline)-Date.now())/1000)); $('#timer').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;}; draw(); clockTimer=setInterval(draw,250);
+      clearInterval(clockTimer); const draw=()=>{const remaining=Math.max(0,Math.ceil((Number(deadline)-Date.now())/1000)); $('#timer').classList.toggle('urgent',remaining<=5); $('#timer').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;}; draw(); clockTimer=setInterval(draw,250);
     }
     function renderFinish(data) {
       clearInterval(clockTimer); showScreen('finished');
@@ -331,3 +623,4 @@
   </script>
 </body>
 </html>
+
