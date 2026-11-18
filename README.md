@@ -20,7 +20,20 @@ npm run dev
 - **인쇄**에서 책 전체를 인쇄하거나 브라우저의 인쇄 창에서 PDF로 저장할 수 있습니다. 페이지 나눔은 인쇄할 때 적용됩니다.
 - 게스트가 이 브라우저에서 작성한 원고는 로그인 후 계정에 저장됩니다. 두 기기에서 같은 원고를 수정하면 저장된 버전을 열거나 내 수정본을 별도 책으로 보관할 수 있습니다.
 
-## 운영 서버
+## Cloudflare 자동 배포
+
+GitHub `main` 브랜치에 연결된 Cloudflare Workers 프로젝트 `timeline`으로 배포합니다. 빌드가 성공하면 `dist/index.html`과 편집기 파일이 서비스되고, 같은 주소의 로그인 및 저장 API는 Cloudflare에서 실행됩니다. 계정과 원고는 SQLite 기반 Durable Object `YeobaekLibrary`에 보관합니다.
+
+| Workers Builds 설정 | 값 |
+| --- | --- |
+| 프로덕션 브랜치 | `main` |
+| 루트 디렉터리 | `/` |
+| 빌드 명령 | `npm ci && npm run build` |
+| 배포 명령 | `npx wrangler deploy` |
+
+`npm run dev:worker`로 Cloudflare 런타임에서 실행할 수 있습니다. `npm run test:worker`는 로그인, 서식 있는 긴 원고의 저장 및 복원, Workers 재시작 후 데이터 유지를 임시 저장소에서 검증합니다. 배포 파일은 `npm run deploy:check`로 확인할 수 있습니다.
+
+## Node.js로 직접 운영
 
 한 서버에서 앱과 API를 함께 서비스합니다. 서버를 배포할 때 고정 HTTPS 주소와 재배포 이후에도 유지되는 데이터 디렉터리가 필요합니다.
 

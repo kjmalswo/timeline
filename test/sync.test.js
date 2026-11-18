@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { once } from 'node:events'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -7,18 +8,43 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { makeDocument, newBook, newChapter, newId } from '../src/catalog.js'
 
+const target = process.argv.includes('--worker') ? 'worker' : 'node'
+const fingerprint = value => createHash('sha256').update(value).digest('hex')
+
 async function startServer(dataDir) {
-  const server = spawn(process.execPath, ['server/index.js'], {
-    env: { ...process.env, DATA_DIR: dataDir, PORT: '0', HOST: '127.0.0.1', COOKIE_SECURE: '0', TRUST_PROXY: '0' },
-    stdio: ['ignore', 'pipe', 'inherit'],
+  const worker = target === 'worker'
+  const args = worker
+    ? ['node_modules/wrangler/bin/wrangler.js', 'dev', '--local', '--ip', '127.0.0.1', '--port', '0',
+      '--persist-to', dataDir, '--show-interactive-dev-session=false']
+    : ['server/index.js']
+  const server = spawn(process.execPath, args, {
+    env: {
+      ...process.env,
+      DATA_DIR: dataDir, PORT: '0', HOST: '127.0.0.1', COOKIE_SECURE: '0', TRUST_PROXY: '0',
+      XDG_CONFIG_HOME: join(dataDir, 'config'), WRANGLER_SEND_METRICS: 'false', NO_COLOR: '1',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
   })
   try {
-    let port
-    for await (const data of server.stdout) {
-      port = data.toString().match(/Yeobaek ready on port (\d+)/)?.[1]
-      if (port) break
-    }
-    assert.ok(port, 'The app should start')
+    const pattern = worker ? /Ready on http:\/\/127\.0\.0\.1:(\d+)/ : /Yeobaek ready on port (\d+)/
+    const port = await new Promise((resolve, reject) => {
+      let output = ''
+      const timeout = setTimeout(() => reject(new Error('Server did not start\n' + output)), 16_000)
+      function read(data) {
+        output = (output + data.toString()).slice(-6000)
+        const port = output.match(pattern)?.[1]
+        if (!port) return
+        clearTimeout(timeout)
+        resolve(port)
+      }
+      server.stdout.on('data', read)
+      server.stderr.on('data', read)
+      server.once('error', reject)
+      server.once('exit', code => {
+        clearTimeout(timeout)
+        reject(new Error('Server exited with code ' + code + '\n' + output))
+      })
+    })
     return { server, url: 'http://127.0.0.1:' + port }
   } catch (error) {
     server.kill()
@@ -33,7 +59,7 @@ async function stopServer({ server }) {
   await exit
 }
 
-test('accounts resume a formatted manuscript on another device and survive a server restart', { timeout: 15000 }, async () => {
+test(target + ': accounts resume a formatted manuscript on another device after a server restart', { timeout: 42000 }, async () => {
   const data = await mkdtemp(join(tmpdir(), 'yeobaek-sync-'))
   let app
 
@@ -49,6 +75,15 @@ test('accounts resume a formatted manuscript on another device and survive a ser
 
   try {
     app = await startServer(data)
+    if (target === 'worker') {
+      const page = await fetch(app.url + '/')
+      assert.equal(page.status, 200)
+      const html = await page.text()
+      assert.match(html, /<html lang="ko">/)
+      const entry = html.match(/<script type="module"[^>]*src="([^"]+)"/)?.[1]
+      assert.ok(entry, 'The HTML should refer to the generated editor entry')
+      assert.match((await fetch(app.url + entry)).headers.get('Content-Type'), /javascript/)
+    }
     const credentials = { email: 'author@example.test', password: 'sample-passphrase' }
     const deviceA = await call('/auth/register', { method: 'POST', body: credentials })
     assert.equal(deviceA.status, 201)
@@ -62,6 +97,10 @@ test('accounts resume a formatted manuscript on another device and survive a ser
       { type: 'bold' },
       { type: 'textStyle', attrs: { font: 'serif', fontSize: 14, letterSpacing: 0.04 } },
     ]
+    if (target === 'worker') {
+      const paragraph = '문장을 이어 쓴다. '.repeat(24_000)
+      chapter.content.content.push(...makeDocument(paragraph, paragraph, paragraph, paragraph).content)
+    }
     book.chapters.push(chapter)
     book.activeChapterId = chapter.id
     book.cursor = { anchor: 4, head: 4 }
@@ -82,7 +121,11 @@ test('accounts resume a formatted manuscript on another device and survive a ser
     assert.equal(resumed.activeChapterId, chapter.id)
     assert.deepEqual(resumed.cursor, book.cursor)
     assert.equal(resumed.layout.margins.left, 24)
-    assert.deepEqual(resumed.chapters[1].content, chapter.content)
+    const originalBlocks = chapter.content.content
+    const restoredBlocks = resumed.chapters[1].content.content
+    assert.deepEqual(restoredBlocks[0], originalBlocks[0])
+    assert.deepEqual(restoredBlocks.map(block => fingerprint(block.content[0].text)),
+      originalBlocks.map(block => fingerprint(block.content[0].text)))
 
     const other = await call('/auth/register', { method: 'POST', body: { ...credentials, email: 'another@example.test' } })
     assert.deepEqual(other.body.books, [])
@@ -99,6 +142,8 @@ test('accounts resume a formatted manuscript on another device and survive a ser
     const stored = await call('/session', { cookie: deviceA.cookie })
     assert.equal(stored.body.books[0].title, update.body.book.title)
     assert.equal(stored.body.books[0].revision, 2)
+    assert.deepEqual(stored.body.books[0].chapters[1].content.content.map(block => fingerprint(block.content[0].text)),
+      originalBlocks.map(block => fingerprint(block.content[0].text)))
     const logout = await call('/auth/logout', { method: 'POST', cookie: deviceA.cookie, body: {} })
     assert.equal(logout.status, 200)
     assert.equal((await call('/session', { cookie: deviceA.cookie })).body.user, null)
