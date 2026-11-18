@@ -3,16 +3,26 @@ import { generateHTML } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import {
-  AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Bold, ChevronDown, Cloud,
+  AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Bold, BookOpen, ChevronDown, Cloud,
   CloudAlert, CloudCheck, FileText, Italic, List, ListOrdered, ListTree, Plus, Printer,
   Redo2, SlidersHorizontal, Trash2, Underline, Undo2, X,
 } from 'lucide-react'
 import { bookCharacters, characterCount, COVERS, FONTS, newChapter, PAPERS, TEMPLATES } from './catalog.js'
 import { AccountButton } from './dashboard.jsx'
 import { Dialog } from './dialogs.jsx'
+import { revealVerticalCaret, WritingSpread } from './spread.jsx'
 import { BLOCK_INDENTS, COLORS, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
 
 const formatNumber = new Intl.NumberFormat('ko-KR')
+const paperViewKey = 'yeobaek.paper-view'
+
+function preferredSpread() {
+  try {
+    return localStorage.getItem(paperViewKey) === 'spread'
+  } catch {
+    return false
+  }
+}
 const alignments = [
   ['left', '왼쪽 정렬', AlignLeft], ['center', '가운데 정렬', AlignCenter],
   ['right', '오른쪽 정렬', AlignRight], ['justify', '양쪽 정렬', AlignJustify],
@@ -255,10 +265,12 @@ function PrintManuscript({ book }) {
 
 export function WritingEditor({ book, chapter, library, onBack, onAccount, onSaveStatus }) {
   const [inspect, setInspect] = useState(false)
+  const [showSpread, setShowSpread] = useState(preferredSpread)
   const [chaptersOpen, setChaptersOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [printing, setPrinting] = useState(null)
   const [focusChapter, setFocusChapter] = useState(null)
+  const previousSpread = useRef(showSpread)
   const callbacks = useRef({})
   const lastCursor = useRef(book.cursor)
   const documentKey = chapter.id + ':' + (library.versions[book.id] ?? 0)
@@ -303,15 +315,23 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
       const max = doc.content.size
       const selection = TextSelection.between(doc.resolve(Math.min(cursor.anchor, max)), doc.resolve(Math.min(cursor.head, max)))
       current.view.dispatch(tr.setSelection(selection))
+      if (showSpread) return
       requestAnimationFrame(() => {
-        if (!current.isDestroyed) {
-          const { node } = current.view.domAtPos(selection.head)
-          const element = node instanceof HTMLElement ? node : node.parentElement
-          element?.scrollIntoView({ block: 'nearest' })
-        }
+        if (!current.isDestroyed) revealVerticalCaret(current)
       })
     },
   }, [documentKey])
+
+  useEffect(() => {
+    const returnedToSingle = previousSpread.current && !showSpread
+    previousSpread.current = showSpread
+    if (returnedToSingle && editor) {
+      const frame = requestAnimationFrame(() => {
+        if (!editor.isDestroyed) revealVerticalCaret(editor)
+      })
+      return () => cancelAnimationFrame(frame)
+    }
+  }, [editor, showSpread])
 
   useEffect(() => {
     if (!printing) return
@@ -330,6 +350,26 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     '--trim-width': paper.width + 'mm', '--trim-height': paper.height + 'mm',
     '--m-top': top + 'mm', '--m-right': right + 'mm', '--m-bottom': bottom + 'mm', '--m-left': left + 'mm',
   }
+
+  function toggleSpread() {
+    const next = !showSpread
+    setShowSpread(next)
+    setFocusChapter(null)
+    try {
+      localStorage.setItem(paperViewKey, next ? 'spread' : 'single')
+    } catch {}
+  }
+
+  const chapterHeading = (
+    <>
+      <span className="chapter-kicker">제 {chapterIndex + 1}장</span>
+      <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter}
+        onSave={title => patch(current => ({
+          ...current,
+          chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, title } : item),
+        }))} />
+    </>
+  )
 
   function selectChapter(id) {
     if (id !== chapter.id) patch(current => ({ ...current, cursor: null, activeChapterId: id }))
@@ -374,6 +414,10 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
           </div>
           <div className="editor-header-right">
             <SaveStatus user={library.user} state={library.statuses[book.id]} onFix={onSaveStatus} />
+            <button className="button button-secondary editor-action" type="button" onClick={toggleSpread}
+              aria-pressed={showSpread} title="양면 보기" aria-label="양면 보기">
+              <BookOpen size={17} /> <span>양면 보기</span>
+            </button>
             <button className="button button-secondary editor-action" type="button" onClick={() => setInspect(!inspect)} aria-pressed={inspect} title="판형 설정" aria-label="판형 설정">
               <SlidersHorizontal size={17} /> <span>판형 설정</span>
             </button>
@@ -389,15 +433,14 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
             onSelect={selectChapter} onAdd={addChapter} onMove={moveChapter} onDelete={() => setConfirmDelete(true)} />
           {chaptersOpen && <button type="button" className="rail-backdrop" aria-label="장의 목록 닫기" onClick={() => setChaptersOpen(false)} />}
           <div className="paper-stage" key={chapter.id}>
-            <article className="paper-article" style={articleStyle}>
-              <span className="chapter-kicker">제 {chapterIndex + 1}장</span>
-              <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter}
-                onSave={title => patch(current => ({
-                  ...current,
-                  chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, title } : item),
-                }))} />
-              <EditorContent className="paper-body" editor={editor} />
-            </article>
+            {showSpread ? (
+              <WritingSpread editor={editor} paper={paper} layout={book.layout} style={articleStyle}>{chapterHeading}</WritingSpread>
+            ) : (
+              <article className="paper-article" style={articleStyle}>
+                {chapterHeading}
+                <EditorContent className="paper-body" editor={editor} />
+              </article>
+            )}
           </div>
           {inspect && <Inspector book={book} onClose={() => setInspect(false)}
             onLayout={partial => patch(current => ({ ...current, layout: { ...current.layout, ...partial } }))}

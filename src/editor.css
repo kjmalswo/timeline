@@ -213,6 +213,95 @@
   pointer-events: none;
   text-indent: 0;
 }
+
+.writing-spread {
+  --spread-text-width: calc(var(--trim-width) - var(--m-left) - var(--m-right));
+  --spread-text-height: calc(var(--trim-height) - var(--m-top) - var(--m-bottom));
+  --spread-column-gap: calc(var(--m-right) + var(--spread-gap) + var(--m-left));
+}
+.spread-turns {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  margin: 0 auto 12px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+}
+.spread-turns span {
+  min-width: 72px;
+  text-align: center;
+  color: #635571;
+  font-size: 12px;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+}
+.spread-window {
+  width: min(100%, var(--spread-window-width));
+  margin-inline: auto;
+  padding-bottom: 14px;
+  overflow: auto hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+.spread-strip {
+  position: relative;
+  width: max-content;
+  zoom: var(--spread-scale);
+}
+.spread-pages { display: grid; grid-auto-flow: column; grid-auto-columns: var(--trim-width); gap: var(--spread-gap); }
+.spread-sheet {
+  display: grid;
+  position: relative;
+  height: var(--trim-height);
+  justify-items: center;
+  align-items: end;
+  padding-bottom: min(3mm, calc(var(--m-bottom) / 4));
+  border: 1px solid #e5dfe9;
+  background: #fffefc;
+  box-shadow: 0 7px 13px #34244917;
+  color: #776c7e;
+  font: 11px var(--paper-font);
+  pointer-events: none;
+}
+.spread-sheet:nth-child(odd) {
+  border-radius: 5px 1px 1px 5px;
+  background: linear-gradient(to left, #ede8ed, #fffefc 22px);
+}
+.spread-sheet:nth-child(even) {
+  border-radius: 1px 5px 5px 1px;
+  background: linear-gradient(to right, #eae4ec, #fffefc 24px);
+}
+.spread-manuscript {
+  position: absolute;
+  top: var(--m-top);
+  left: var(--m-left);
+  width: calc(var(--spread-text-width) * 2 + var(--spread-column-gap));
+}
+.spread-opening {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 1;
+  display: flow-root;
+  width: var(--spread-text-width);
+}
+.spread-body .tiptap {
+  height: var(--spread-text-height);
+  min-height: 0;
+  column-count: 2;
+  column-gap: var(--spread-column-gap);
+  column-fill: auto;
+  orphans: 2;
+  widows: 2;
+}
+.spread-body .tiptap::before { content: ''; display: block; height: var(--spread-heading-space); break-inside: avoid; }
+.spread-body .tiptap > :is(h1, h2, h3) { break-after: avoid-column; }
+
 .editor-footer {
   display: flex;
   align-items: center;
