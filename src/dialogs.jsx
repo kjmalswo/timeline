@@ -86,7 +86,9 @@ export function CreateDialog({ onClose, onCreate }) {
   )
 }
 
-export function AuthDialog({ onClose, onAuthenticate, hasDrafts, onSuccess }) {
+export function AuthDialog({ onClose, onAuthenticate, hasDrafts, onSuccess,
+  description = '원고를 클라우드에 저장하고 다른 기기에서 이어 쓰세요.',
+}) {
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -114,7 +116,7 @@ export function AuthDialog({ onClose, onAuthenticate, hasDrafts, onSuccess }) {
   }
 
   return (
-    <Dialog title={mode === 'login' ? '여백에 로그인' : '여백 계정 만들기'} description="원고를 클라우드에 저장하고 다른 기기에서 이어 쓰세요."
+    <Dialog title={mode === 'login' ? '여백에 로그인' : '여백 계정 만들기'} description={description}
       onClose={() => { if (!busy) onClose() }} className="auth-dialog">
       <div className="auth-tabs" aria-label="계정 이용 방식">
         <button type="button" aria-pressed={mode === 'login'} disabled={busy} onClick={() => changeMode('login')}>로그인</button>

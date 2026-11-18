@@ -59,7 +59,10 @@ async function stopServer({ server }) {
   await exit
 }
 
-test(target + ': accounts resume a formatted manuscript on another device after a server restart', { timeout: 42000 }, async () => {
+const examplePhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aO8sAAAAASUVORK5CYII='
+const paragraphFingerprints = blocks => blocks.filter(block => block.type === 'paragraph').map(block => fingerprint(block.content[0].text))
+
+test(target + ': accounts resume a formatted manuscript with cover and photos after a server restart', { timeout: 42000 }, async () => {
   const data = await mkdtemp(join(tmpdir(), 'yeobaek-sync-'))
   let app
 
@@ -101,6 +104,23 @@ test(target + ': accounts resume a formatted manuscript on another device after 
       const paragraph = '문장을 이어 쓴다. '.repeat(24_000)
       chapter.content.content.push(...makeDocument(paragraph, paragraph, paragraph, paragraph).content)
     }
+    const bodyPhoto = {
+      type: 'manuscriptImage', attrs: { src: examplePhoto, alt: '본문 사진', width: 55, align: 'right', ratio: 1 },
+    }
+    const coverPlacement = { x: 8, y: 15, w: 64, angle: -12, opacity: 0.8 }
+    book.coverDesign = {
+      background: '#fffaef',
+      layers: [
+        { id: newId(), type: 'photo', ...coverPlacement, h: 40, src: examplePhoto, alt: '표지 사진',
+          fit: 'cover', brightness: 1.2, cropX: 66, cropY: 48, flip: true },
+        { id: newId(), type: 'ink', strokes: [{ color: '#332045', size: 8, points: [[12, 31], [74, 63], [87, 92]] }] },
+        { id: newId(), type: 'text', ...coverPlacement, role: 'title', text: '가을 원고',
+          font: 'serif', color: '#333333', size: 9, align: 'center', bold: true },
+        { id: newId(), type: 'text', ...coverPlacement, role: 'author', text: '작가',
+          font: 'sans', color: '#352332', size: 5, align: 'right', bold: false },
+      ],
+    }
+    chapter.content.content.push(bodyPhoto)
     book.chapters.push(chapter)
     book.activeChapterId = chapter.id
     book.cursor = { anchor: 4, head: 4 }
@@ -124,8 +144,13 @@ test(target + ': accounts resume a formatted manuscript on another device after 
     const originalBlocks = chapter.content.content
     const restoredBlocks = resumed.chapters[1].content.content
     assert.deepEqual(restoredBlocks[0], originalBlocks[0])
-    assert.deepEqual(restoredBlocks.map(block => fingerprint(block.content[0].text)),
-      originalBlocks.map(block => fingerprint(block.content[0].text)))
+    assert.deepEqual(paragraphFingerprints(restoredBlocks), paragraphFingerprints(originalBlocks))
+    assert.deepEqual(restoredBlocks.at(-1), bodyPhoto)
+    assert.deepEqual(resumed.coverDesign, book.coverDesign)
+    const invalidPhoto = structuredClone(resumed)
+    invalidPhoto.coverDesign.layers[0].src = 'data:image/svg+xml;base64,PHN2Zy8+'
+    assert.equal((await call(path, { method: 'PUT', cookie: deviceB.cookie,
+      body: { revision: 1, book: invalidPhoto } })).status, 400)
 
     const other = await call('/auth/register', { method: 'POST', body: { ...credentials, email: 'another@example.test' } })
     assert.deepEqual(other.body.books, [])
@@ -142,8 +167,10 @@ test(target + ': accounts resume a formatted manuscript on another device after 
     const stored = await call('/session', { cookie: deviceA.cookie })
     assert.equal(stored.body.books[0].title, update.body.book.title)
     assert.equal(stored.body.books[0].revision, 2)
-    assert.deepEqual(stored.body.books[0].chapters[1].content.content.map(block => fingerprint(block.content[0].text)),
-      originalBlocks.map(block => fingerprint(block.content[0].text)))
+    const storedBook = stored.body.books[0]
+    assert.deepEqual(paragraphFingerprints(storedBook.chapters[1].content.content), paragraphFingerprints(originalBlocks))
+    assert.deepEqual(storedBook.chapters[1].content.content.at(-1), bodyPhoto)
+    assert.deepEqual(storedBook.coverDesign, book.coverDesign)
     const logout = await call('/auth/logout', { method: 'POST', cookie: deviceA.cookie, body: {} })
     assert.equal(logout.status, 200)
     assert.equal((await call('/session', { cookie: deviceA.cookie })).body.user, null)

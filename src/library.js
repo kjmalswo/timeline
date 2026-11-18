@@ -96,7 +96,7 @@ export function useLibrary() {
       const { book: saved } = await request('/books/' + id, 'PUT', {
         revision: queue.revision, book: snapshot, saveId: queue.saveId,
       }, background)
-      if (queues.current.get(id) !== queue) return
+      if (queues.current.get(id) !== queue) return false
       queue.revision = saved.revision
       if (queue.book === snapshot) {
         queues.current.delete(id)
@@ -108,8 +108,9 @@ export function useLibrary() {
         schedule(queue, 250)
       }
       preserveQueue()
+      return true
     } catch (error) {
-      if (queues.current.get(id) !== queue) return
+      if (queues.current.get(id) !== queue) return false
       if (error.status === 409 && error.data.book) {
         queue.remote = error.data.book
         status(id, 'conflict', { remote: queue.remote })
@@ -117,9 +118,25 @@ export function useLibrary() {
         status(id, 'error', { message: error.message, signIn: error.status === 401 })
         if (!error.status || error.status >= 500) schedule(queue, 12_000)
       }
+      return false
     } finally {
       queue.inFlight = null
     }
+  }
+
+  async function saveBook(id) {
+    if (!currentUser.current) {
+      const stored = writeLocal(guestKey, guest.current)
+      status(id, stored ? 'local' : 'error', stored ? {} : { message: '이 기기에 원고를 저장할 수 없습니다.' })
+      return stored
+    }
+    const queue = queues.current.get(id)
+    if (!queue) return true
+    if (queue.remote) return false
+    const alreadySaving = Boolean(queue.inFlight)
+    const saved = await flush(id)
+    if (saved && alreadySaving && queues.current.get(id) === queue) return await flush(id)
+    return saved
   }
 
   function queueBook(book, firstRevision = book.revision, saveId = newId()) {
@@ -296,6 +313,6 @@ export function useLibrary() {
   return {
     user, books, ready, statuses, versions,
     guestHasDrafts: guest.current.touched.length > 0,
-    create: commit, update: updateBook, flush, authenticate, signOut, resolveConflict,
+    create: commit, update: updateBook, save: saveBook, flush, authenticate, signOut, resolveConflict,
   }
 }

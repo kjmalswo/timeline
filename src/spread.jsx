@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { EditorContent } from '@tiptap/react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-const pixelsPerMillimeter = 96 / 25.4
+export const pixelsPerMillimeter = 96 / 25.4
 const seam = 4
 const minimumScale = 0.58
 
@@ -15,7 +15,7 @@ export function revealVerticalCaret(editor, caret = editor.view.coordsAtPos(edit
   else if (caret.bottom > bounds.bottom - inset) stage.scrollTop += caret.bottom - bounds.bottom + inset
 }
 
-export function WritingSpread({ editor, paper, layout, style, children }) {
+export function WritingSpread({ editor, paper, layout, style, zoom = 1, children }) {
   const frame = useRef(null)
   const opening = useRef(null)
   const viewport = useRef(null)
@@ -30,7 +30,8 @@ export function WritingSpread({ editor, paper, layout, style, children }) {
   const columnWidth = (paper.width - left - right) * pixelsPerMillimeter
   const pitch = pageWidth + seam
   const spreadWidth = pageWidth * 2 + seam
-  const scale = dimensions.width ? Math.max(minimumScale, Math.min(1, dimensions.width / spreadWidth)) : 1
+  const fitted = dimensions.width ? Math.max(minimumScale, Math.min(1, dimensions.width / spreadWidth)) : 1
+  const scale = fitted * zoom
   const step = pitch * 2 * scale
   const windowWidth = spreadWidth * scale
 
@@ -118,13 +119,17 @@ export function WritingSpread({ editor, paper, layout, style, children }) {
       if (transaction.docChanged || transaction.selectionSet) schedule(true)
     }
     const onFontLoad = () => schedule(true)
+    const onPhotoLoad = () => schedule()
+    const view = viewport.current
     editor.on('transaction', onTransaction)
     document.fonts.addEventListener('loadingdone', onFontLoad)
+    view.addEventListener('load', onPhotoLoad, true)
     schedule(true)
     return () => {
       cancelAnimationFrame(animation)
       editor.off('transaction', onTransaction)
       document.fonts.removeEventListener('loadingdone', onFontLoad)
+      view.removeEventListener('load', onPhotoLoad, true)
     }
   }, [editor, pitch, columnWidth, scale, step, windowWidth, paper.height, top, bottom,
     layout.font, layout.fontSize, layout.lineHeight, layout.firstLine, dimensions.heading])

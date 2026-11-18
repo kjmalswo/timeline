@@ -5,6 +5,7 @@ import '@fontsource-variable/noto-sans-kr'
 import '@fontsource-variable/noto-serif-kr'
 import './styles.css'
 import './editor.css'
+import './cover.css'
 import { Dashboard } from './dashboard.jsx'
 import { AccountDialog, AuthDialog, ConflictDialog, CreateDialog, Dialog } from './dialogs.jsx'
 import { useLibrary } from './library.js'
@@ -44,6 +45,14 @@ function App() {
     window.scrollTo(0, 0)
   }
 
+  function requestNewBook() {
+    setModal(library.user ? 'create' : 'auth-create')
+  }
+
+  useEffect(() => {
+    if (modal === 'auth-create' && library.user) setModal('create')
+  }, [modal, library.user])
+
   function openAccount() {
     setModal(library.user ? 'settings' : 'auth')
   }
@@ -68,7 +77,7 @@ function App() {
     <>
       {route.view !== 'book' ? (
         <Dashboard library={library} view={route.view} onNavigate={navigate} onOpen={id => navigate('book', id)}
-          onCreate={() => setModal('create')} onAccount={openAccount} onSettings={() => setModal('settings')} onSaveStatus={resolveIssue} />
+          onCreate={requestNewBook} onAccount={openAccount} onSettings={() => setModal('settings')} onSaveStatus={resolveIssue} />
       ) : book && chapter ? (
         <Suspense fallback={<main className="missing-book" role="status">편집기를 여는 중…</main>}>
           <WritingEditor key={book.id} book={book} chapter={chapter} library={library}
@@ -85,13 +94,19 @@ function App() {
           </div>
         </main>
       )}
-      {modal === 'create' && <CreateDialog onClose={close} onCreate={newBook => {
+      {modal === 'create' && library.user && <CreateDialog onClose={close} onCreate={newBook => {
         library.create(newBook)
         close()
         navigate('book', newBook.id)
       }} />}
-      {modal === 'auth' && <AuthDialog onClose={close} onAuthenticate={library.authenticate} hasDrafts={library.guestHasDrafts}
+      {(modal === 'auth' || (modal === 'auth-create' && library.ready && !library.user)) &&
+        <AuthDialog onClose={close} onAuthenticate={library.authenticate} hasDrafts={library.guestHasDrafts}
+        description={modal === 'auth-create' ? '새 책을 작성하려면 먼저 로그인하거나 계정을 만들어 주세요.' : undefined}
         onSuccess={({ imported, bookIds }) => {
+          if (modal === 'auth-create') {
+            setModal('create')
+            return
+          }
           close()
           if (route.id && imported.has(route.id)) navigate('book', imported.get(route.id))
           else if (book && !bookIds.has(book.id)) navigate('library')

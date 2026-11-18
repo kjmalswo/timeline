@@ -13,7 +13,7 @@ COPY --from=build --chown=node:node /app/package.json ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/server ./server
-COPY --from=build --chown=node:node /app/src/catalog.js /app/src/document.js ./src/
+COPY --from=build --chown=node:node /app/src ./src
 USER node
 VOLUME ["/data"]
 EXPOSE 3000

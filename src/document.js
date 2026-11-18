@@ -2,13 +2,15 @@ import { Extension } from '@tiptap/core'
 import { TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { FONTS } from './catalog.js'
+import { ManuscriptImage } from './manuscript-image.js'
 
 export const TEXT_SIZES = [8, 9, 10, 10.5, 11, 11.5, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48]
 export const LETTER_SPACINGS = [-0.08, -0.04, -0.02, 0, 0.02, 0.04, 0.08, 0.12]
 export const LINE_HEIGHTS = [1.2, 1.4, 1.5, 1.65, 1.75, 1.85, 2, 2.25, 2.5]
 export const INDENTS = [0, 0.5, 1, 1.5, 2, 3]
 export const BLOCK_INDENTS = [0, 1, 2, 3, 4, 5]
-export const ALIGNS = ['left', 'center', 'right', 'justify']
+export const DEFAULT_ALIGNMENT = 'justify'
+export const ALIGNS = [DEFAULT_ALIGNMENT, 'left', 'center', 'right']
 export const COLORS = ['#292433', '#7a42c8', '#325842', '#96374c', '#846026', '#285e81']
 
 export function inRange(value, min, max) {
@@ -78,6 +80,7 @@ export const writingExtensions = [
   StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, codeBlock: false, strike: false, code: false }),
   TextStyle,
   WritingStyle,
+  ManuscriptImage,
 ]
 
 export function paperStyle(layout) {
@@ -86,5 +89,6 @@ export function paperStyle(layout) {
     '--paper-font-size': layout.fontSize + 'pt',
     '--paper-line-height': layout.lineHeight,
     '--paper-indent': layout.firstLine + 'em',
+    '--paper-align': DEFAULT_ALIGNMENT,
   }
 }

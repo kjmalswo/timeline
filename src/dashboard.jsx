@@ -4,6 +4,7 @@ import {
   FileText, LayoutGrid, LayoutTemplate, List, LogIn, Menu, Plus, RotateCcw, Search, Settings, Star, Trash2, X,
 } from 'lucide-react'
 import { COVERS, relativeDate, STATUSES, TEMPLATES } from './catalog.js'
+import { CoverArtwork } from './cover-artwork.jsx'
 
 const views = {
   library: { label: '내 서재', icon: BookOpen },
@@ -57,6 +58,9 @@ function Sidebar({ view, navigate, onCreate, onSettings, user, unsaved, open, on
 }
 
 export function BookCover({ book }) {
+  if (book.coverDesign) {
+    return <span className="book-cover custom-book-cover" aria-hidden="true"><CoverArtwork book={book} /></span>
+  }
   const cover = COVERS[book.cover] ?? COVERS.ivory
   return (
     <span className={'book-cover artwork-' + book.cover} style={{ '--cover-ink': cover.ink }} aria-hidden="true">
