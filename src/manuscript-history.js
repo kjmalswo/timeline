@@ -34,7 +34,7 @@ export function typingGroup(before, after, transaction, chapterId) {
   const composing = transaction.getMeta('composition')
   if (composing !== undefined) return chapterId + ':composition:' + composing
   const [step] = transaction.steps
-  if (transaction.getMeta(formatEdit) || transaction.getMeta('uiEvent') || transaction.steps.length !== 1 ||
+  if (transaction.getMeta(formatEdit) || transaction.getMeta('inputRule') || transaction.getMeta('uiEvent') || transaction.steps.length !== 1 ||
       !(step instanceof ReplaceStep) || !before.selection.empty || !after.selection.empty) return undefined
   const from = before.selection.$from
   const to = after.selection.$from

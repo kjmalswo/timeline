@@ -1,4 +1,4 @@
-import { Extension } from '@tiptap/core'
+import { Extension, textInputRule } from '@tiptap/core'
 import { TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { FONTS } from './catalog.js'
@@ -7,11 +7,16 @@ import { ManuscriptImage } from './manuscript-image.js'
 export const TEXT_SIZES = [8, 9, 10, 10.5, 11, 11.5, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48]
 export const LETTER_SPACINGS = [-0.08, -0.04, -0.02, 0, 0.02, 0.04, 0.08, 0.12]
 export const LINE_HEIGHTS = [1.2, 1.4, 1.5, 1.65, 1.75, 1.85, 2, 2.25, 2.5]
+const defaultParagraphSpacing = 0.68
+export const MAX_PARAGRAPH_SPACING = 3
+export const PARAGRAPH_SPACINGS = [0, 0.25, 0.5, defaultParagraphSpacing, 0.75, 1, 1.5, 2, MAX_PARAGRAPH_SPACING]
 export const INDENTS = [0, 0.5, 1, 1.5, 2, 3]
 export const BLOCK_INDENTS = [0, 1, 2, 3, 4, 5]
 export const DEFAULT_ALIGNMENT = 'justify'
 export const DEFAULT_LETTER_SPACING = 0
 const headingLineHeight = 1.45
+const headingParagraphSpacing = 0.45
+const listParagraphSpacing = 0.22
 export const ALIGNS = [DEFAULT_ALIGNMENT, 'left', 'center', 'right']
 export const COLORS = ['#292433', '#7a42c8', '#325842', '#96374c', '#846026', '#285e81']
 
@@ -72,9 +77,17 @@ const WritingStyle = Extension.create({
           firstLine: numberStyle('firstLine', 'textIndent', 'text-indent', 'em', 0, 6),
           blockIndent: numberStyle('blockIndent', 'marginInlineStart', 'margin-inline-start', 'em', 0, 10),
           lineHeight: numberStyle('lineHeight', 'lineHeight', 'line-height', '', 1, 3),
+          paragraphSpacing: numberStyle('paragraphSpacing', 'marginBottom', 'margin-bottom', 'em', 0, MAX_PARAGRAPH_SPACING),
         },
       },
     ]
+  },
+})
+
+const Ellipsis = Extension.create({
+  name: 'yeobaekEllipsis',
+  addInputRules() {
+    return [textInputRule({ find: /\.\.\.$/, replace: '…' })]
   },
 })
 
@@ -82,8 +95,13 @@ export const writingExtensions = [
   StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, codeBlock: false, strike: false, code: false, undoRedo: false }),
   TextStyle,
   WritingStyle,
+  Ellipsis,
   ManuscriptImage,
 ]
+
+export function paragraphSpacing(layout) {
+  return layout.paragraphSpacing ?? defaultParagraphSpacing
+}
 
 export function paperStyle(layout) {
   return {
@@ -92,6 +110,9 @@ export function paperStyle(layout) {
     '--paper-letter-spacing': DEFAULT_LETTER_SPACING + 'em',
     '--paper-line-height': layout.lineHeight,
     '--heading-line-height': headingLineHeight,
+    '--paper-paragraph-spacing': paragraphSpacing(layout) + 'em',
+    '--heading-paragraph-spacing': headingParagraphSpacing + 'em',
+    '--list-paragraph-spacing': listParagraphSpacing + 'em',
     '--paper-indent': layout.firstLine + 'em',
     '--paper-align': DEFAULT_ALIGNMENT,
   }
@@ -110,21 +131,28 @@ export function formatSelection({ doc, selection, storedMarks }, layout) {
   const spacing = []
   const height = []
   const indent = []
+  const gaps = []
+  const baseGap = paragraphSpacing(layout)
   const { $from, from, to } = selection
   const readMarks = marks => spacing.push([marks.find(mark => mark.type.name === 'textStyle')?.attrs.letterSpacing, DEFAULT_LETTER_SPACING])
   function readBlock(node, position) {
     if (!['paragraph', 'heading'].includes(node.type.name)) return
     const heading = node.type.name === 'heading'
-    let defaultIndent = layout.firstLine
-    if (heading || node.attrs.align === 'center' || node.attrs.align === 'right') defaultIndent = 0
-    else {
+    let defaultIndent = heading || node.attrs.align === 'center' || node.attrs.align === 'right' ? 0 : layout.firstLine
+    let defaultGap = heading ? headingParagraphSpacing : baseGap
+    if (!heading) {
       const inside = doc.resolve(position)
       for (let depth = inside.depth; depth > 0; depth -= 1) {
-        if (inside.node(depth).type.name === 'listItem') { defaultIndent = 0; break }
+        if (inside.node(depth).type.name === 'listItem') {
+          defaultIndent = 0
+          defaultGap = listParagraphSpacing
+          break
+        }
       }
     }
     height.push([node.attrs.lineHeight, heading ? headingLineHeight : layout.lineHeight])
     indent.push([node.attrs.firstLine, defaultIndent])
+    gaps.push([node.attrs.paragraphSpacing, defaultGap])
   }
   if (selection.empty) {
     readMarks(storedMarks ?? $from.marks())
@@ -138,6 +166,7 @@ export function formatSelection({ doc, selection, storedMarks }, layout) {
   return {
     letterSpacing: numericSelection(spacing, DEFAULT_LETTER_SPACING),
     lineHeight: numericSelection(height, layout.lineHeight),
+    paragraphSpacing: numericSelection(gaps, baseGap),
     firstLine: numericSelection(indent, layout.firstLine),
   }
 }

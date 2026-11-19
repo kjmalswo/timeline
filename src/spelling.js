@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import { spacingCorrections } from './korean-spacing.js'
 import { checkDictionary, warmSpellingDictionary } from './spelling-dictionary.js'
 
 const commonMistakes = new Map([
@@ -15,12 +16,17 @@ const empty = { enabled: false, status: 'off', marks: DecorationSet.empty, count
 const scanDelay = 180
 
 function tokenize(text) {
-  const words = []
+  const corrections = spacingCorrections(text)
+  const words = [...corrections]
+  let nextCorrection = 0
   for (const match of text.matchAll(/\p{Script=Hangul}+/gu)) {
+    const to = match.index + match[0].length
+    while (corrections[nextCorrection]?.to <= match.index) nextCorrection += 1
+    if (corrections[nextCorrection]?.from < to) continue
     const word = match[0].normalize('NFC')
     if (word.length > 80 || !/[가-힣]/.test(word)) continue
     const corrected = word.replace(mistakePattern, wrong => commonMistakes.get(wrong))
-    words.push({ word, from: match.index, to: match.index + match[0].length, correction: corrected === word ? null : corrected })
+    words.push({ word, from: match.index, to, correction: corrected === word ? null : corrected })
   }
   return words
 }
@@ -42,9 +48,9 @@ export const spellingExtension = Extension.create({
 
     function decorate(doc) {
       const marks = []
-      forWords(doc, ({ from, to, word, correction }, offset) => {
+      forWords(doc, ({ from, to, word, correction, spacing }, offset) => {
         if (!correction && checked.get(word) !== false) return
-        const title = correction ? `맞춤법 제안 · ${correction}` : '한국어 사전에 없는 표기'
+        const title = correction ? `${spacing ? '띄어쓰기' : '맞춤법'} 제안 · ${correction}` : '한국어 사전에 없는 표기'
         marks.push(Decoration.inline(offset + from, offset + to, { class: 'spelling-error', title }))
       })
       return { marks: DecorationSet.create(doc, marks), count: marks.length }

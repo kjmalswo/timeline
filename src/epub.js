@@ -3,7 +3,7 @@ import { strToU8, zipSync } from 'fflate'
 import { FONTS } from './catalog.js'
 import { chapterLabel, chapterName, headingDefaults, headingStyle } from './chapter-heading.js'
 import { coverAuthor } from './cover-model.js'
-import { DEFAULT_ALIGNMENT, writingExtensions } from './document.js'
+import { DEFAULT_ALIGNMENT, paragraphSpacing, writingExtensions } from './document.js'
 import { ebookCover, ebookPhoto } from './ebook-images.js'
 
 const epubType = 'application/epub+zip'
@@ -21,7 +21,7 @@ function xhtml(title, content) {
 function stylesheet(layout) {
   return `body { font-family: ${FONTS[layout.font].family}; font-size: ${layout.fontSize}pt; line-height: ${layout.lineHeight}; }
 .paper-body { text-align: ${DEFAULT_ALIGNMENT}; overflow-wrap: anywhere; }
-.paper-body p { margin: 0 0 .68em; text-indent: ${layout.firstLine}em; }
+.paper-body p { margin: 0 0 ${paragraphSpacing(layout)}em; text-indent: ${layout.firstLine}em; }
 .paper-body li p { text-indent: 0; margin-bottom: .22em; }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
 .chapter-kicker { display: block; font-size: ${headingDefaults.labelStyle.fontSize}pt; color: ${headingDefaults.labelStyle.color}; font-weight: bold; }
@@ -51,10 +51,16 @@ function chapterHeader(chapter, index, serializer) {
   return header.childElementCount ? serializer.serializeToString(header).replace(invalidXml, '\ufffd') : ''
 }
 
-async function chapterMarkup(chapter, index, imagePath) {
+async function chapterMarkup(chapter, index, layout, imagePath) {
   const body = document.createElement('div')
   body.className = 'paper-body'
   body.innerHTML = generateHTML(chapter.content, writingExtensions)
+  if (layout.paragraphSpacing != null) {
+    const margin = paragraphSpacing(layout) + 'em'
+    for (const paragraph of body.querySelectorAll('p')) {
+      if (!paragraph.style.marginBottom && !paragraph.closest('li')) paragraph.style.marginBottom = margin
+    }
+  }
   for (const image of body.querySelectorAll('img')) {
     image.setAttribute('src', await imagePath(image.getAttribute('src')))
     image.removeAttribute('draggable')
@@ -102,7 +108,7 @@ export async function createEpub(book) {
 
   for (const [index, chapter] of book.chapters.entries()) {
     const id = 'chapter-' + (index + 1)
-    add(id, id + '.xhtml', xhtmlType, await chapterMarkup(chapter, index, imagePath), { readable: true })
+    add(id, id + '.xhtml', xhtmlType, await chapterMarkup(chapter, index, book.layout, imagePath), { readable: true })
   }
   const author = coverAuthor(book) || book.spine?.author.trim()
   const modified = new Date().toISOString().replace(/\.\d+Z$/, 'Z')

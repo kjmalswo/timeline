@@ -24,7 +24,11 @@ import { WriterDock, WriterPanel, writerShortcut } from './writer-tools.jsx'
 import { minZoom, maxZoom } from './writing-view.js'
 import { setSpelling, spellingExtension, spellingStatus } from './spelling.js'
 import { isReadableBook } from './reader-book.js'
-import { BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
+import { PAGE_NUMBER_POSITIONS, pageNumberPosition } from './page-numbers.js'
+import {
+  BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS,
+  PARAGRAPH_SPACINGS, paragraphSpacing, paperStyle, TEXT_SIZES, writingExtensions,
+} from './document.js'
 
 const formatNumber = new Intl.NumberFormat('ko-KR')
 const zoomStep = 10
@@ -134,8 +138,10 @@ function Toolbar({ editor, book, history, spellcheck, onSpelling, onFocusMode, o
       <div className="tool-group textual-tools">
         <NumericFormat label="자간" reading={state.formats.letterSpacing} values={LETTER_SPACINGS} unit=" em"
           onChange={letterSpacing => mark({ letterSpacing })} />
-        <NumericFormat label="줄 간격" reading={state.formats.lineHeight} values={LINE_HEIGHTS} unit="배"
+        <NumericFormat label="행간" reading={state.formats.lineHeight} values={LINE_HEIGHTS} unit="배"
           onChange={lineHeight => paragraph({ lineHeight })} />
+        <NumericFormat label="문단 간격" reading={state.formats.paragraphSpacing} values={PARAGRAPH_SPACINGS} unit=" em"
+          onChange={paragraphSpacing => paragraph({ paragraphSpacing })} />
         <NumericFormat label="첫 줄 들여쓰기" reading={state.formats.firstLine} values={INDENTS} unit="자"
           onChange={firstLine => paragraph({ firstLine })} />
         <ToolSelect label="문단 들여쓰기" value={state.paragraph.blockIndent} options={numberOptions(BLOCK_INDENTS, '들여쓰기', ' 글자', state.paragraph.blockIndent)}
@@ -219,9 +225,8 @@ function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, on
 }
 
 function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onDirty, onClose }) {
-  const layout = book.layout
+  const layout = { ...book.layout, paragraphSpacing: paragraphSpacing(book.layout) }
   const paper = PAPERS[layout.paper]
-  const numericOptions = values => values.map(value => [value, String(value)])
   return (
     <aside className="design-rail" aria-label="책 디자인 설정">
       <div className="rail-heading"><span><SlidersHorizontal size={17} /> 판형 설정</span>
@@ -234,6 +239,11 @@ function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onDirty, o
           </select>
         </label>
         <p className="paper-dimensions">{paper.width} × {paper.height} mm</p>
+        <label className="field">페이지 번호 위치
+          <select value={pageNumberPosition(layout)} onChange={event => onLayout({ pageNumberPosition: event.target.value })}>
+            {Object.entries(PAGE_NUMBER_POSITIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
         <label className="field">표지 디자인
           <select value={book.cover} onChange={event => onCover(event.target.value)}>
             {Object.entries(COVERS).map(([value, cover]) => <option key={value} value={value}>{cover.name}</option>)}
@@ -256,12 +266,13 @@ function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onDirty, o
         <div className="inspector-pair">
           {[
             ['fontSize', '크기 (pt)', TEXT_SIZES],
-            ['lineHeight', '줄 간격 (배)', LINE_HEIGHTS],
+            ['lineHeight', '행간 (배)', LINE_HEIGHTS],
+            ['paragraphSpacing', '문단 간격 (em)', PARAGRAPH_SPACINGS],
             ['firstLine', '첫 줄 들여쓰기', INDENTS],
           ].map(([key, label, values]) => (
             <label key={key} className="field">{label}
               <select value={layout[key]} onChange={event => onLayout({ [key]: Number(event.target.value) })}>
-                {numericOptions(values).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
+                {numberOptions(values, '', '', layout[key]).slice(1).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
               </select>
             </label>
           ))}

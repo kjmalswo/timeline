@@ -33,7 +33,7 @@ test('enabling spelling scans the existing Korean document and disabling removes
 
   const [plugin] = spellingExtension.config.addProseMirrorPlugins()
   const schema = getSchema(writingExtensions)
-  const doc = schema.nodeFromJSON(makeDocument('안녕하새요. 됬어요.', '안녕하세요. 됐어요.'))
+  const doc = schema.nodeFromJSON(makeDocument('안녕하새요. 됬어요. 할수 있다. 안녕 하세요.', '안녕하세요. 됐어요. 할 수 있다. 갈수록.'))
   const scanned = Promise.withResolvers()
   const view = {
     state: EditorState.create({ doc, plugins: [plugin] }),
@@ -53,12 +53,14 @@ test('enabling spelling scans the existing Korean document and disabling removes
     get state() { return view.state },
     setOptions(options) { this.options = { ...this.options, ...options } },
   }
-  const underlined = () => plugin.props.decorations(view.state).find().map(mark => doc.textBetween(mark.from, mark.to))
+  const marks = () => plugin.props.decorations(view.state).find()
+  const underlined = () => marks().map(mark => doc.textBetween(mark.from, mark.to))
 
   setSpelling(editor, true)
-  assert.deepEqual(underlined(), ['됬어요'])
+  assert.deepEqual(underlined(), ['됬어요', '할수 있다', '안녕 하세요'])
+  assert.equal(marks()[1].type.attrs.title, '띄어쓰기 제안 · 할 수 있다')
   assert.equal(await scanned.promise, 'ready')
-  assert.deepEqual(underlined(), ['안녕하새요', '됬어요'])
+  assert.deepEqual(underlined(), ['안녕하새요', '됬어요', '할수 있다', '안녕 하세요'])
   assert.equal(view.state.doc, doc)
   assert.equal(editor.options.editorProps.attributes.spellcheck, 'true')
   assert.equal(editor.options.editorProps.attributes.role, 'textbox')

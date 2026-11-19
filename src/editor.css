@@ -221,11 +221,11 @@
   text-justify: inter-character;
   overflow-wrap: anywhere;
 }
-.paper-body p { text-indent: var(--paper-indent); margin: 0 0 .68em; }
-.paper-body li p { text-indent: 0; margin-bottom: .22em; }
+.paper-body p { text-indent: var(--paper-indent); margin: 0 0 var(--paper-paragraph-spacing); }
+.paper-body li p { text-indent: 0; margin-bottom: var(--list-paragraph-spacing); }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
 .paper-body p:last-child { margin-bottom: 0; }
-.paper-body :is(h1, h2, h3) { font-family: inherit; margin: 1em 0 .45em; line-height: var(--heading-line-height); }
+.paper-body :is(h1, h2, h3) { font-family: inherit; margin: 1em 0 var(--heading-paragraph-spacing); line-height: var(--heading-line-height); }
 .paper-body h1 { font-size: 1.63em; }
 .paper-body h2 { font-size: 1.37em; }
 .paper-body h3 { font-size: 1.18em; }
@@ -315,18 +315,23 @@
   zoom: var(--spread-scale);
 }
 .spread-pages { display: grid; grid-auto-flow: column; grid-auto-columns: var(--trim-width); gap: var(--spread-gap); }
+.page-number {
+  position: absolute;
+  bottom: var(--page-number-bottom);
+  inset-inline: var(--page-number-left) var(--page-number-right);
+  color: var(--page-number-ink, #776c7e);
+  font: 11px/1 var(--paper-font);
+  font-variant-numeric: tabular-nums;
+}
 .spread-sheet {
-  display: grid;
+  --page-number-left: var(--m-left);
+  --page-number-right: var(--m-right);
+  --page-number-bottom: min(3mm, calc(var(--m-bottom) / 4));
   position: relative;
   height: var(--trim-height);
-  justify-items: center;
-  align-items: end;
-  padding-bottom: min(3mm, calc(var(--m-bottom) / 4));
   border: 1px solid #e5dfe9;
   background: #fffefc;
   box-shadow: 0 7px 13px #34244917;
-  color: #776c7e;
-  font: 11px var(--paper-font);
   pointer-events: none;
 }
 .spread-sheet:nth-child(odd) {
@@ -556,6 +561,7 @@
   .print-manuscript { position: static; width: auto; visibility: visible; color: #242128; font-family: var(--paper-font); }
   .print-front, .print-wrap { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .print-front { page: yeobaek-cover; width: var(--front-width); height: var(--front-height); }
+  .print-text { page: yeobaek-text; }
   .print-front + .print-text { break-before: page; }
   .print-wrap .cover-wrap { width: var(--wrap-width); height: var(--wrap-height); }
   .print-chapter + .print-chapter { break-before: page; }

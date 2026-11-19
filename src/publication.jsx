@@ -4,9 +4,10 @@ import { BookOpen, FileDown, Printer } from 'lucide-react'
 import { FONTS, PAPERS, TEMPLATES } from './catalog.js'
 import { Dialog } from './dialogs.jsx'
 import { handleDraftHistory, HistoryButtons, useDraftHistory } from './history-controls.jsx'
-import { paperStyle } from './document.js'
+import { paragraphSpacing, paperStyle } from './document.js'
 import { FormattedChapter } from './chapter-flow.jsx'
 import { ChapterHeading } from './chapter-heading.jsx'
+import { PAGE_NUMBER_POSITIONS, pageNumberPosition, printPageNumbers } from './page-numbers.js'
 import { CoverWrap, coverSize, FrontCover } from './spine.jsx'
 
 function PrintDocument({ job }) {
@@ -26,7 +27,8 @@ function PrintDocument({ job }) {
     '--body-image-max': (paper.height - top - bottom - 6) + 'mm',
   }}>
     <style media="print">{`@page { size: ${trim}; margin: ${top}mm ${right}mm ${bottom}mm ${left}mm; }
-      @page yeobaek-cover { size: ${trim}; margin: 0; }`}</style>
+      @page yeobaek-cover { size: ${trim}; margin: 0; counter-increment: page 0; }
+      ${printPageNumbers(book.layout)}`}</style>
     {includeCover && <div className="print-front"><FrontCover book={book} /></div>}
     <div className="print-text">
       {book.chapters.map((chapter, index) => <article className="print-chapter chapter-entry" key={chapter.id}>
@@ -44,8 +46,9 @@ function PrintSpecification({ book }) {
   return <dl className="print-spec">
     <dt>서식</dt><dd>{TEMPLATES[book.template].name}</dd>
     <dt>판형</dt><dd>{paper.name} ({paper.width} × {paper.height} mm)</dd>
-    <dt>본문</dt><dd>{FONTS[layout.font].name} {layout.fontSize} pt · 줄 간격 {layout.lineHeight}배 · 들여쓰기 {layout.firstLine}자</dd>
+    <dt>본문</dt><dd>{FONTS[layout.font].name} {layout.fontSize} pt · 행간 {layout.lineHeight}배 · 문단 간격 {paragraphSpacing(layout)} em · 들여쓰기 {layout.firstLine}자</dd>
     <dt>여백</dt><dd>위 {top} · 오른쪽 {right} · 아래 {bottom} · 왼쪽 {left} mm</dd>
+    <dt>페이지 번호</dt><dd>{PAGE_NUMBER_POSITIONS[pageNumberPosition(layout)]}</dd>
   </dl>
 }
 

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { pageNumberAlignment, pageNumberPosition } from './page-numbers.js'
 
 export const pixelsPerMillimeter = 96 / 25.4
 const seam = 4
@@ -130,7 +131,7 @@ export function WritingSpread({ editor, paper, layout, style, activeId, chapterL
       view.removeEventListener('load', remeasure, true)
     }
   }, [editor, activeId, chapterLayout, restoreCursor, pitch, columnWidth, scale, step, windowWidth, paper.height, top, bottom,
-    layout.font, layout.fontSize, layout.lineHeight, layout.firstLine])
+    layout.font, layout.fontSize, layout.lineHeight, layout.paragraphSpacing, layout.firstLine])
 
   function turn(amount) {
     following.current = false
@@ -141,6 +142,7 @@ export function WritingSpread({ editor, paper, layout, style, activeId, chapterL
   }
 
   const pageNumber = spread * 2 + 1
+  const numberPosition = pageNumberPosition(layout)
   return (
     <section className="writing-spread" ref={frame} style={{
       ...style,
@@ -162,7 +164,9 @@ export function WritingSpread({ editor, paper, layout, style, activeId, chapterL
         <div className="spread-strip">
           <div className="spread-pages" aria-hidden="true">
             {Array.from({ length: spreadCount * 2 }, (_, index) => (
-              <div key={index} className="spread-sheet"><span>{index + 1}</span></div>
+              <div key={index} className="spread-sheet">
+                <span className="page-number" style={{ textAlign: pageNumberAlignment(numberPosition, index) }}>{index + 1}</span>
+              </div>
             ))}
           </div>
           <article className="spread-manuscript" ref={flow}>{children}</article>

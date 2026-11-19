@@ -5,6 +5,7 @@ import { ChapterHeading } from './chapter-heading.jsx'
 import { chapterName } from './chapter-heading.js'
 import { Dialog } from './dialogs.jsx'
 import { paperStyle } from './document.js'
+import { pageNumberAlignment, pageNumberPosition } from './page-numbers.js'
 import { bookmarkPage, pageForSpread, readerPageSize, readingPoint } from './reader-position.js'
 import { FrontCover } from './spine.jsx'
 
@@ -194,7 +195,10 @@ export function BookReader({ book, identity, onBack }) {
   }
 
   const style = { '--reader-width': width + 'px', '--reader-height': height + 'px', '--reader-gap': gap + 'px',
-    '--reader-spread': visibleWidth + 'px', '--reader-visible': visible, ...paperStyle(book.layout) }
+    '--reader-spread': visibleWidth + 'px', '--reader-visible': visible,
+    '--page-number-left': left + 'px', '--page-number-right': right + 'px',
+    '--page-number-bottom': Math.max(0, Math.min(9, (bottom - 12) / 2)) + 'px', ...paperStyle(book.layout) }
+  const numberPosition = pageNumberPosition(book.layout)
 
   return <main className={'book-reader reader-theme-' + preferences.theme} onKeyDown={keydown}>
     <header className="reader-header">
@@ -215,7 +219,9 @@ export function BookReader({ book, identity, onBack }) {
         <div className={'reader-spread' + (showingCover ? ' reader-spread-hidden' : '')} aria-hidden={showingCover || undefined}>
           <div className="reader-sheets" aria-hidden="true">
             {Array.from({ length: visible }, (_, offset) => <div key={offset} className="reader-sheet">
-              {page + offset < count && <span>{page + offset + 1}</span>}
+              {page + offset < count && <span className="page-number" style={{ textAlign: pageNumberAlignment(numberPosition, page + offset) }}>
+                {page + offset + 1}
+              </span>}
             </div>)}
           </div>
           <div className="reader-viewport" ref={viewport}>

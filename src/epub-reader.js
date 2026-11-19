@@ -20,6 +20,7 @@ const textStyles = {
   textIndent: /^\d(?:\.\d{1,2})?em$/,
   letterSpacing: /^-?0(?:\.\d{1,3})?em$/,
   marginInlineStart: /^\d(?:\.\d{1,2})?em$/,
+  marginBottom: /^(?:[0-2](?:\.\d{1,2})?|3(?:\.0{1,2})?)em$/,
 }
 
 function archivePath(href, directoryFile = '') {

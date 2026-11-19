@@ -1,5 +1,5 @@
 import { getSchema } from '@tiptap/core'
-import { ALIGNS, COLORS, inRange, writingExtensions } from '../src/document.js'
+import { ALIGNS, COLORS, inRange, MAX_PARAGRAPH_SPACING, writingExtensions } from '../src/document.js'
 import { COVERS, FONTS, PAPERS, STATUSES, TEMPLATES } from '../src/catalog.js'
 import {
   COVER_LAYER_LIMIT, COVER_STROKE_LIMIT, COVER_TEXT_LIMIT, SPINE_WIDTH_RANGE, STROKE_POINT_LIMIT, coverAlignments, photoFits, validColor,
@@ -8,6 +8,7 @@ import { BOOK_PHOTO_LIMIT, bookPhotoLength, isPhoto } from '../src/media.js'
 import { IMAGE_ALIGNS, imageRatio, imageWidth } from '../src/manuscript-image.js'
 import { NOTE_BODY_LIMIT, NOTE_KINDS, NOTE_LIMIT, NOTE_TITLE_LIMIT } from '../src/writer-notes.js'
 import { headingAlignments, headingSize } from '../src/chapter-heading.js'
+import { pageNumberPosition } from '../src/page-numbers.js'
 
 const schema = getSchema(writingExtensions)
 const nodeTypes = new Set(Object.keys(schema.nodes))
@@ -138,6 +139,7 @@ function sanitizeDocument(document) {
       if (inRange(attrs.firstLine, 0, 6)) node.attrs.firstLine = attrs.firstLine
       if (inRange(attrs.blockIndent, 0, 10)) node.attrs.blockIndent = attrs.blockIndent
       if (inRange(attrs.lineHeight, 1, 3)) node.attrs.lineHeight = attrs.lineHeight
+      if (inRange(attrs.paragraphSpacing, 0, MAX_PARAGRAPH_SPACING)) node.attrs.paragraphSpacing = attrs.paragraphSpacing
     }
     if (value.type === 'manuscriptImage') {
       const attrs = value.attrs
@@ -178,6 +180,7 @@ export function sanitizeBook(source, id) {
   const { layout, chapters } = source
   if (!layout?.margins || !Object.hasOwn(PAPERS, layout.paper) || !Object.hasOwn(FONTS, layout.font) ||
       !Array.isArray(chapters) || !chapters.length || chapters.length > 200) invalid()
+  if (layout.pageNumberPosition != null && pageNumberPosition(layout) !== layout.pageNumberPosition) invalid()
   const seen = new Set()
   const cleanChapters = chapters.map(chapter => {
     if (typeof chapter?.id !== 'string' || !identifier.test(chapter.id) || seen.has(chapter.id)) invalid()
@@ -204,6 +207,8 @@ export function sanitizeBook(source, id) {
       paper: layout.paper, font: layout.font, margins,
       fontSize: range(layout.fontSize, 6, 72),
       lineHeight: range(layout.lineHeight, 1, 3),
+      ...(layout.paragraphSpacing == null ? {} : { paragraphSpacing: range(layout.paragraphSpacing, 0, MAX_PARAGRAPH_SPACING) }),
+      ...(layout.pageNumberPosition == null ? {} : { pageNumberPosition: layout.pageNumberPosition }),
       firstLine: range(layout.firstLine, 0, 6),
     },
     activeChapterId, cursor,

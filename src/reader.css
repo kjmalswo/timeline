@@ -94,11 +94,10 @@
 .reader-spread-hidden { visibility: hidden; }
 .reader-viewport { overflow: hidden; }
 .reader-sheets { display: grid; grid-template-columns: repeat(var(--reader-visible), var(--reader-width)); gap: var(--reader-gap); }
-.reader-sheet { position: relative; background: var(--reader-paper); border: 1px solid var(--reader-edge);
+.reader-sheet { --page-number-ink: var(--reader-muted); position: relative; background: var(--reader-paper); border: 1px solid var(--reader-edge);
   border-radius: 5px 2px 2px 5px; box-shadow: 1px 4px 0 var(--reader-edge), 3px 9px 22px #211c2230; }
 .reader-sheets:has(> :nth-child(2)) .reader-sheet:first-child { background: linear-gradient(to left, var(--reader-fold), var(--reader-paper) 20px); }
 .reader-sheet:nth-child(2) { border-radius: 2px 5px 5px 2px; background: linear-gradient(to right, var(--reader-fold), var(--reader-paper) 20px); }
-.reader-sheet span { position: absolute; bottom: 9px; inset-inline: 0; text-align: center; font-family: var(--paper-font); font-size: 11px; color: var(--reader-muted); }
 .reader-track { position: relative; height: var(--reader-height); }
 .reader-ink { position: absolute; }
 .reader-columns { column-count: 1; column-fill: auto; orphans: 2; widows: 2; overflow-wrap: anywhere; }
