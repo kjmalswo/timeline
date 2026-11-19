@@ -9,11 +9,12 @@ const deriveKey = promisify(scrypt)
 const sessionTime = 30 * 24 * 60 * 60 * 1000
 const bodyLimit = 10 * 1024 * 1024
 
-export function secureHeaders(headers, development = false) {
+export function secureHeaders(headers, development = false, path = '') {
   headers.set('X-Content-Type-Options', 'nosniff')
   headers.set('Referrer-Policy', 'same-origin')
   if (!development) {
-    headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; object-src 'none'; form-action 'self'")
+    const wasm = /^\/assets\/korean-spelling-worker-[\w-]+\.js$/.test(path) ? " 'wasm-unsafe-eval'" : ''
+    headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self'${wasm}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; object-src 'none'; form-action 'self'`)
   }
 }
 

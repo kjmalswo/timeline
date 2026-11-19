@@ -75,6 +75,7 @@
 .tool-group:last-child { border-right: 0; padding-right: 0; }
 .focus-toggle { min-height: 31px; padding-inline: 8px; font-size: 11.5px; gap: 5px; }
 .spelling-toggle[aria-pressed='true'] { color: var(--purple-ink); background: var(--purple-light); border-color: #ded0f2; }
+.spelling-feedback { padding-inline: 4px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .tool-button { width: 30px; height: 31px; color: #544763; }
 .tool-active { color: var(--purple-ink); background: #ede4fc; }
 .tool-select {
@@ -256,6 +257,7 @@
 .paper-body .tiptap { outline: none; caret-color: var(--purple-ink); }
 .paper-body .tiptap .spelling-error {
   text-decoration: underline wavy #c02f43;
+  text-decoration-thickness: 1px;
   text-underline-offset: .16em;
   text-decoration-skip-ink: none;
 }

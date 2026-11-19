@@ -31,7 +31,7 @@ export default {
     }
     const asset = await env.ASSETS.fetch(request)
     const response = new Response(asset.body, asset)
-    secureHeaders(response.headers)
+    secureHeaders(response.headers, false, pathname)
     return response
   },
 }

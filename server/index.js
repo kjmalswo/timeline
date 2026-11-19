@@ -41,9 +41,9 @@ const app = express()
 const server = createServer(app)
 app.disable('x-powered-by')
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1)
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
   const headers = new Headers()
-  secureHeaders(headers, development)
+  secureHeaders(headers, development, req.path)
   headers.forEach((value, name) => res.set(name, value))
   next()
 })

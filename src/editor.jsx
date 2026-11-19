@@ -22,7 +22,7 @@ import { Publication } from './publication.jsx'
 import { SpineEditor } from './spine.jsx'
 import { WriterDock, WriterPanel, writerShortcut } from './writer-tools.jsx'
 import { minZoom, maxZoom } from './writing-view.js'
-import { setSpelling, spellingExtension } from './spelling.js'
+import { setSpelling, spellingExtension, spellingStatus } from './spelling.js'
 import { isReadableBook } from './reader-book.js'
 import { BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
 
@@ -83,13 +83,17 @@ function Toolbar({ editor, book, history, spellcheck, onSpelling, onFocusMode, o
       const image = selection instanceof NodeSelection && selection.node.type.name === 'manuscriptImage' ? selection.node.attrs : null
       return {
         paragraph, image, text: current.getAttributes('textStyle'),
-        formats: formatSelection(current.state, layout),
+        formats: formatSelection(current.state, layout), spelling: spellingStatus(current.state),
         bold: current.isActive('bold'), italic: current.isActive('italic'), underline: current.isActive('underline'),
         bullets: current.isActive('bulletList'), numbers: current.isActive('orderedList'),
       }
     },
   })
   if (!state) return <div className="toolbar"><HistoryButtons {...history} /></div>
+
+  const { status: scanStatus, count: spellingCount } = state.spelling
+  const spellingFeedback = scanStatus === 'partial' ? '기본 검사' : scanStatus !== 'ready' ? '검사 중…' :
+    spellingCount ? `${formatNumber.format(spellingCount)}곳 표시` : '오류 표시 없음'
 
   const chain = () => editor.chain().focus().setMeta(formatEdit, true)
   const mark = attrs => chain().setMark('textStyle', attrs).removeEmptyTextStyle().run()
@@ -141,10 +145,14 @@ function Toolbar({ editor, book, history, spellcheck, onSpelling, onFocusMode, o
         aria-keyshortcuts="Alt+Shift+F" onMouseDown={event => event.preventDefault()} onClick={onFocusMode}>
         <Focus size={17} /> 집중 모드
       </button>
-      <button type="button" className="button button-secondary focus-toggle spelling-toggle" aria-label="맞춤법 검사" aria-pressed={spellcheck}
-        title={spellcheck ? '맞춤법 검사 끄기' : '맞춤법 검사 켜기'} onMouseDown={event => event.preventDefault()} onClick={onSpelling}>
-        <SpellCheck size={17} /> 맞춤법 {spellcheck ? '켜짐' : '꺼짐'}
-      </button>
+      <div className="tool-group">
+        <button type="button" className="button button-secondary focus-toggle spelling-toggle" aria-label="맞춤법 검사" aria-pressed={spellcheck}
+          title={spellcheck ? '맞춤법 검사 끄기' : '맞춤법 검사 켜기'} onMouseDown={event => event.preventDefault()} onClick={onSpelling}>
+          <SpellCheck size={17} /> 맞춤법 {spellcheck ? '켜짐' : '꺼짐'}
+        </button>
+        {spellcheck && <span className="spelling-feedback" role="status"
+          title={scanStatus === 'partial' ? '한국어 사전을 불러오지 못해 기본 표현을 검사하고 있어요.' : '한국어 사전 검사 결과'}>{spellingFeedback}</span>}
+      </div>
       <div className="tool-group editor-reading-tools" role="group" aria-label="읽기와 공유">
         {complete ? <>
           <button type="button" className="button button-secondary focus-toggle" onClick={onRead}><BookOpen size={16} /> 리더에서 읽기</button>

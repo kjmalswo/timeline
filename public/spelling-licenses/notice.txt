@@ -1,0 +1,17 @@
+Yeobaek's Korean spelling checker uses the following separate components.
+
+Korean spelling dictionary (hunspell-dict-ko 0.7.94)
+Copyright (C) 2008-2019 hunspell-dict-ko contributors
+Copyright (C) 2017-2019 National Institute of Korean Language
+Redistributed without modification from dictionary-ko 2.0.0 under GPL-3.0-or-later.
+License: GPL-3.0.txt
+License and data attribution details: dictionary-ko.txt
+Corresponding source: https://github.com/spellcheck-ko/hunspell-dict-ko/tree/07c339220d92ce06ccbae62a345c7314a7e724ce
+Dictionary package: https://registry.npmjs.org/dictionary-ko/-/dictionary-ko-2.0.0.tgz
+
+Hunspell WebAssembly port (hunspell-wasm 0.3.0)
+Copyright (C) Hunspell contributors and Rotem Dan
+Distributed under the Mozilla Public License 1.1 option of the Hunspell tri-license.
+License: Hunspell-MPL-1.1.txt
+Corresponding source and build instructions: https://github.com/rotemdan/hunspell-wasm/tree/8f755ef64e8b047b77b676f9698b3dfa5cb1887d
+Port package: https://registry.npmjs.org/hunspell-wasm/-/hunspell-wasm-0.3.0.tgz
