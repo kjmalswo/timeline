@@ -7,6 +7,7 @@ import {
 import { BOOK_PHOTO_LIMIT, bookPhotoLength, isPhoto } from '../src/media.js'
 import { IMAGE_ALIGNS, imageRatio, imageWidth } from '../src/manuscript-image.js'
 import { NOTE_BODY_LIMIT, NOTE_KINDS, NOTE_LIMIT, NOTE_TITLE_LIMIT } from '../src/writer-notes.js'
+import { headingAlignments, headingSize } from '../src/chapter-heading.js'
 
 const schema = getSchema(writingExtensions)
 const nodeTypes = new Set(Object.keys(schema.nodes))
@@ -102,6 +103,17 @@ function sanitizeWriterNotes(notes, chapters) {
   })
 }
 
+function sanitizeHeadingStyle(source = {}) {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) invalid()
+  const style = {}
+  if (headingAlignments.includes(source.align)) style.align = source.align
+  if (inRange(source.fontSize, headingSize.min, headingSize.max)) style.fontSize = source.fontSize
+  if (validColor(source.color)) style.color = source.color
+  if (Object.hasOwn(FONTS, source.font)) style.font = source.font
+  if (typeof source.bold === 'boolean') style.bold = source.bold
+  return style
+}
+
 function sanitizeDocument(document) {
   let nodes = 0
   function visit(value, depth) {
@@ -170,7 +182,11 @@ export function sanitizeBook(source, id) {
   const cleanChapters = chapters.map(chapter => {
     if (typeof chapter?.id !== 'string' || !identifier.test(chapter.id) || seen.has(chapter.id)) invalid()
     seen.add(chapter.id)
-    return { id: chapter.id, title: name(chapter.title), content: sanitizeDocument(chapter.content) }
+    const heading = chapter.heading == null ? null : {
+      label: chapter.heading.label == null ? null : optionalText(chapter.heading.label).trim(),
+      labelStyle: sanitizeHeadingStyle(chapter.heading.labelStyle), titleStyle: sanitizeHeadingStyle(chapter.heading.titleStyle),
+    }
+    return { id: chapter.id, title: optionalText(chapter.title).trim(), content: sanitizeDocument(chapter.content), ...(heading ? { heading } : {}) }
   })
   const margins = Object.fromEntries(['top', 'right', 'bottom', 'left'].map(side => [side, range(layout.margins[side], 5, 40)]))
   const activeChapterId = seen.has(source.activeChapterId) ? source.activeChapterId : cleanChapters[0].id

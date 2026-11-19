@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { newId } from './catalog.js'
 import { exampleShelf } from './example-shelf.js'
 import { bookChange, createHistory, restoreBook } from './history.js'
+import { request } from './api-request.js'
 
 const guestKey = 'yeobaek.guest.v1'
 
@@ -23,22 +24,6 @@ function writeLocal(key, value) {
 }
 
 const draftKey = user => 'yeobaek.pending.v1.' + user.id
-
-async function request(path, method = 'GET', data, background = false) {
-  const body = data === undefined ? undefined : JSON.stringify(data)
-  const response = await fetch('/api' + path, {
-    method,
-    cache: 'no-store',
-    signal: AbortSignal.timeout(20_000),
-    ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body } : {}),
-    keepalive: background && body !== undefined && new Blob([body]).size <= 60_000,
-  })
-  const result = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw Object.assign(new Error(result.error ?? '서버에 연결할 수 없습니다.'), { status: response.status, data: result })
-  }
-  return result
-}
 
 export function useLibrary() {
   const [initialGuest] = useState(() => readLocal(guestKey, { books: [], touched: [] }))
@@ -143,6 +128,15 @@ export function useLibrary() {
     const saved = await flush(id)
     if (saved && alreadySaving && queues.current.get(id) === queue) return await flush(id)
     return saved
+  }
+
+  async function publishBook(id) {
+    const accountId = currentUser.current?.id
+    const saved = await saveBook(id)
+    if (!accountId || currentUser.current?.id !== accountId) throw new Error('공유하려면 다시 로그인해 주세요.')
+    const book = currentBooks.current.find(item => item.id === id)
+    if (!saved || queues.current.has(id) || !book?.revision) throw new Error('원고의 저장 상태를 확인한 뒤 다시 공유해 주세요.')
+    return request('/books/' + id + '/share', 'PUT', { accountId, revision: book.revision })
   }
 
   function queueBook(book, firstRevision = book.revision, saveId = newId()) {
@@ -376,6 +370,7 @@ export function useLibrary() {
     user, books, ready, statuses, versions, needsSignIn,
     guestHasDrafts: guest.current.touched.length > 0,
     canUndo: history.canUndo, canRedo: history.canRedo, historyReplay, stepHistory, recordView,
+    publishBook,
     create: createBook, update: updateBook, save: saveBook, flush, authenticate, signOut, resolveConflict,
   }
 }

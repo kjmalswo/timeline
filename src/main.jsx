@@ -11,13 +11,19 @@ import { AccountDialog, AuthDialog, ConflictDialog, CreateDialog, Dialog } from 
 import { useLibrary } from './library.js'
 import { historyShortcut } from './keyboard.js'
 import { readWritingView, saveWritingView } from './writing-view.js'
+import { ShareDialog } from './share-dialog.jsx'
+import { isReadableBook } from './reader-book.js'
 
 const WritingEditor = lazy(() => import('./editor.jsx').then(module => ({ default: module.WritingEditor })))
+const ReaderWorkspace = lazy(() => import('./reader.jsx').then(module => ({ default: module.ReaderWorkspace })))
 const shelfViews = new Set(['library', 'favorites', 'trash'])
+const readerViews = new Set(['reader', 'read', 'shared', 'read-file'])
+const protectedViews = new Set(['book', 'read', 'favorites', 'trash'])
 
 function readRoute() {
   const [view, id] = window.location.hash.replace(/^#\/?/, '').split('/')
-  if (view === 'book' && id) return { view, id }
+  if (['book', 'read', 'shared'].includes(view) && id) return { view, id }
+  if (readerViews.has(view)) return { view: view === 'read-file' ? view : 'reader' }
   return { view: shelfViews.has(view) ? view : 'library' }
 }
 
@@ -29,7 +35,8 @@ function App() {
   const [writingView, setWritingView] = useState(readWritingView)
   const currentWritingView = useRef(writingView)
 
-  const previousBook = useRef(route.id)
+  const writingId = route.view === 'book' ? route.id : null
+  const previousBook = useRef(writingId)
   const authRoute = useRef(null)
   const historyAction = useRef(null)
 
@@ -40,9 +47,9 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (previousBook.current && previousBook.current !== route.id) library.flush(previousBook.current)
-    previousBook.current = route.id
-  }, [route.id])
+    if (previousBook.current && previousBook.current !== writingId) library.flush(previousBook.current)
+    previousBook.current = writingId
+  }, [writingId])
 
   function navigate(view, id) {
     const hash = view === 'library' ? '#/' : '#/' + view + (id ? '/' + id : '')
@@ -80,11 +87,11 @@ function App() {
     applyWritingView(fields)
   }
 
-  historyAction.current = moveHistory
+  historyAction.current = readerViews.has(route.view) ? null : moveHistory
   useEffect(() => {
     function onHistoryKey(event) {
       const direction = historyShortcut(event)
-      if (!direction || event.defaultPrevented || document.querySelector('dialog[open]') || event.target?.matches?.('input[type="search"]')) return
+      if (!historyAction.current || !direction || event.defaultPrevented || document.querySelector('dialog[open]') || event.target?.matches?.('input[type="search"]')) return
       event.preventDefault()
       historyAction.current(direction)
     }
@@ -93,7 +100,7 @@ function App() {
   }, [])
 
   function requestRoute(view, id) {
-    if (library.user || view === 'library') {
+    if (library.user || !protectedViews.has(view)) {
       navigate(view, id)
       return
     }
@@ -102,7 +109,11 @@ function App() {
   }
 
   useEffect(() => {
-    if (library.ready && !library.user && (route.view !== 'library' || library.needsSignIn)) setModal(current => current ?? 'auth-route')
+    if (readerViews.has(route.view) && route.view !== 'read') {
+      setModal(current => current === 'auth-route' ? null : current)
+    } else if (library.ready && !library.user && (protectedViews.has(route.view) || library.needsSignIn)) {
+      setModal(current => current ?? 'auth-route')
+    }
   }, [library.ready, library.user, library.needsSignIn, route.view, route.id])
 
   useEffect(() => {
@@ -132,8 +143,14 @@ function App() {
     setModal(state.signIn ? 'auth' : state.state === 'conflict' ? 'conflict' : 'error')
   }
 
+  function showShare(id) {
+    setIssueId(id)
+    setModal('share')
+  }
+
   const book = library.user && route.view === 'book' ? library.books.find(item => item.id === route.id && !item.trashed) : null
   const chapter = book?.chapters.find(item => item.id === book.activeChapterId) ?? book?.chapters[0]
+  const shareBook = modal === 'share' && library.user && library.books.find(item => item.id === issueId && isReadableBook(item) && !item.example)
   const unsaved = Object.values(library.statuses).some(item => ['saving', 'conflict', 'error'].includes(item.state))
   function close() {
     authRoute.current = null
@@ -141,19 +158,24 @@ function App() {
   }
 
   useEffect(() => {
-    document.title = book ? book.title + ' — 여백' : '여백 — 집필 스튜디오'
-  }, [book?.title])
+    if (!readerViews.has(route.view)) document.title = book ? book.title + ' — 여백' : '여백 — 집필 스튜디오'
+  }, [book?.title, route.view])
 
   return (
     <>
-      {route.view !== 'book' ? (
+      {readerViews.has(route.view) ? (
+        <Suspense fallback={<main className="missing-book" role="status">리더를 여는 중…</main>}>
+          <ReaderWorkspace route={route} accountId={library.user?.id} ready={library.ready} books={library.books}
+            onNavigate={navigate} onLogin={openAccount} />
+        </Suspense>
+      ) : route.view !== 'book' ? (
         <Dashboard library={library} view={library.user ? route.view : 'library'} onNavigate={requestRoute}
           onOpen={id => requestRoute('book', id)} onCreate={requestNewBook} onAccount={openAccount}
-          onSaveStatus={resolveIssue} onHistory={moveHistory} />
+          onSaveStatus={resolveIssue} onHistory={moveHistory} onRead={id => requestRoute('read', id)} onShare={showShare} />
       ) : book && chapter ? (
         <Suspense fallback={<main className="missing-book" role="status">편집기를 여는 중…</main>}>
           <WritingEditor key={library.user.id + '/' + book.id} book={book} chapter={chapter} library={library}
-            writingView={writingView} onViewChange={changeWritingView}
+            writingView={writingView} onViewChange={changeWritingView} onRead={() => requestRoute('read', book.id)} onShare={() => showShare(book.id)}
             onBack={() => navigate('library')} onAccount={openAccount} onSaveStatus={() => resolveIssue(book.id)} onHistory={moveHistory} />
         </Suspense>
       ) : (
@@ -167,6 +189,7 @@ function App() {
           </div>
         </main>
       )}
+      {shareBook && <ShareDialog key={shareBook.id} book={shareBook} accountId={library.user.id} onPublish={library.publishBook} onClose={close} />}
       {modal === 'create' && library.user && <CreateDialog onClose={close} onCreate={newBook => {
         library.create(newBook)
         close()
@@ -183,10 +206,10 @@ function App() {
           }
           const target = authRoute.current ?? route
           close()
-          if (target.view === 'book') {
+          if (target.view === 'book' || target.view === 'read') {
             const id = imported.get(target.id) ?? target.id
-            if (bookIds.has(id)) navigate('book', id)
-            else navigate('library')
+            if (bookIds.has(id)) navigate(target.view, id)
+            else navigate(target.view === 'read' ? 'reader' : 'library')
           } else if (target.view !== 'library') navigate(target.view)
         }} />}
       {modal === 'settings' && <AccountDialog user={library.user} unsaved={unsaved} onClose={close}

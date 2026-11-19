@@ -568,6 +568,14 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .form-note, .form-error { margin-top: 11px; font-size: 12px; line-height: 1.55; }
 .form-note { display: flex; align-items: center; gap: 6px; color: #63468c; }
 .form-error { color: #a13552; }
+.share-book-title { display: flex; align-items: center; gap: 7px; margin-block: 14px; color: var(--purple-ink); overflow-wrap: anywhere; }
+.share-book-title svg { flex: 0 0 auto; }
+.share-link-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-block: 10px; }
+.share-link-actions a { text-decoration: none; }
+.share-feedback { display: flex; align-items: center; gap: 6px; margin-top: 9px; color: #397154; font-size: 12px; }
+.book-reading-actions { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 8px; }
+.book-reading-actions .text-button { min-width: 0; text-align: left; }
+.book-reading-actions svg { flex: 0 0 auto; }
 .account-summary { display: flex; align-items: center; gap: 10px; background: #f8f5fd; border-radius: 9px; padding: 12px; margin-top: 14px; overflow-wrap: anywhere; }
 .account-summary strong { font-size: 13px; }
 .account-summary p { margin-top: 2px; font-size: 11.5px; color: var(--muted); }

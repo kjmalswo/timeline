@@ -1,3 +1,5 @@
+import { isReadableBook, readingCopy } from '../src/reader-book.js'
+
 const schema = [
   `CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -26,6 +28,22 @@ const schema = [
     data TEXT NOT NULL,
     PRIMARY KEY (user_id, id, part_number),
     FOREIGN KEY (user_id, id) REFERENCES books(user_id, id) ON DELETE CASCADE
+  )`,
+  `CREATE TABLE IF NOT EXISTS book_shares (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    book_id TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    published_at TEXT NOT NULL,
+    data TEXT NOT NULL,
+    UNIQUE (user_id, book_id),
+    FOREIGN KEY (user_id, book_id) REFERENCES books(user_id, id) ON DELETE CASCADE
+  )`,
+  `CREATE TABLE IF NOT EXISTS share_parts (
+    token TEXT NOT NULL REFERENCES book_shares(token) ON DELETE CASCADE,
+    part_number INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    PRIMARY KEY (token, part_number)
   )`,
   `CREATE TABLE IF NOT EXISTS auth_attempts (
     ip TEXT PRIMARY KEY,
@@ -58,6 +76,19 @@ export function createStore(query, transaction) {
     return { ...JSON.parse(data), revision: row.revision, updatedAt: row.updated_at }
   }
 
+  function getBook(userId, id) {
+    const row = query('SELECT id, data, revision, updated_at FROM books WHERE user_id = ? AND id = ?', userId, id)[0]
+    return row ? decode(row, userId) : null
+  }
+
+  function shareInfo(userId, id) {
+    return query('SELECT token, revision, published_at AS publishedAt FROM book_shares WHERE user_id = ? AND book_id = ?', userId, id)[0] ?? null
+  }
+
+  function revokeShare(userId, id) {
+    query('DELETE FROM book_shares WHERE user_id = ? AND book_id = ?', userId, id)
+  }
+
   return {
     user: email => query('SELECT * FROM users WHERE email = ?', email)[0],
     createUser: (id, email, salt, hash) => query(
@@ -79,6 +110,37 @@ export function createStore(query, transaction) {
     books: userId => query(
       'SELECT id, data, revision, updated_at FROM books WHERE user_id = ? ORDER BY updated_at DESC', userId,
     ).map(row => decode(row, userId)),
+    shareInfo,
+    revokeShare,
+    sharedBook(token) {
+      const row = query('SELECT data FROM book_shares WHERE token = ?', token)[0]
+      if (!row) return null
+      const data = row.data || query('SELECT data FROM share_parts WHERE token = ? ORDER BY part_number', token).map(part => part.data).join('')
+      return JSON.parse(data)
+    },
+    publishBook(userId, id, revision, token, time) {
+      return transaction(() => {
+        const book = getBook(userId, id)
+        if (!book) return { error: 'missing' }
+        if (!isReadableBook(book)) return { error: 'draft' }
+        if (book.revision !== revision) return { error: 'stale' }
+        const previous = shareInfo(userId, id)
+        if (previous?.revision === revision) return { share: previous }
+
+        const sharedToken = previous?.token ?? token
+        const data = JSON.stringify(readingCopy(book))
+        const inline = data.length <= partLength ? data : ''
+        query(`INSERT INTO book_shares (token, user_id, book_id, revision, published_at, data) VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT (user_id, book_id) DO UPDATE SET revision = excluded.revision, published_at = excluded.published_at, data = excluded.data`,
+        sharedToken, userId, id, revision, time, inline)
+        if (previous) query('DELETE FROM share_parts WHERE token = ?', sharedToken)
+        if (!inline) {
+          let index = 0
+          for (const part of splitBook(data)) query('INSERT INTO share_parts (token, part_number, data) VALUES (?, ?, ?)', sharedToken, index++, part)
+        }
+        return { share: { token: sharedToken, revision, publishedAt: time } }
+      })
+    },
     saveBook(userId, id, revision, data, time) {
       return transaction(() => {
         const inline = data.length <= partLength ? data : ''
@@ -88,10 +150,7 @@ export function createStore(query, transaction) {
           : query(`UPDATE books SET data = ?, updated_at = ?, revision = revision + 1
                    WHERE user_id = ? AND id = ? AND revision = ? RETURNING id, revision, updated_at`,
             inline, time, userId, id, revision)[0]
-        if (!row) {
-          const current = query('SELECT id, data, revision, updated_at FROM books WHERE user_id = ? AND id = ?', userId, id)[0]
-          return { changed: false, book: current ? decode(current, userId) : null }
-        }
+        if (!row) return { changed: false, book: getBook(userId, id) }
 
         if (revision > 0) query('DELETE FROM book_parts WHERE user_id = ? AND id = ?', userId, id)
         if (!inline) {
@@ -100,7 +159,9 @@ export function createStore(query, transaction) {
             query('INSERT INTO book_parts (user_id, id, part_number, data) VALUES (?, ?, ?, ?)', userId, id, index++, part)
           }
         }
-        return { changed: true, book: { ...JSON.parse(data), revision: row.revision, updatedAt: row.updated_at } }
+        const book = { ...JSON.parse(data), revision: row.revision, updatedAt: row.updated_at }
+        if (revision > 0 && !isReadableBook(book)) revokeShare(userId, id)
+        return { changed: true, book }
       })
     },
   }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowUpRight, CalendarDays, ContactRound, Flag, LockKeyhole, Plus, StickyNote, Trash2, X } from 'lucide-react'
 import { newId } from './catalog.js'
+import { chapterName } from './chapter-heading.js'
 import { NOTE_BODY_LIMIT, NOTE_KINDS, NOTE_LIMIT, NOTE_TITLE_LIMIT } from './writer-notes.js'
 
 const tools = {
@@ -33,7 +34,7 @@ function ChapterLink({ label, value, chapters, onChange, onJump }) {
     <label className="field">{label}
       <select value={value ?? ''} onChange={event => onChange(event.target.value || null)}>
         <option value="">연결 안 함</option>
-        {chapters.map((item, index) => <option key={item.id} value={item.id}>{index + 1}장 · {item.title}</option>)}
+        {chapters.map((item, index) => <option key={item.id} value={item.id}>{index + 1}장 · {chapterName(item, index)}</option>)}
       </select>
     </label>
     <button type="button" className="icon-button" title={label + '으로 이동'} aria-label={label + '으로 이동'}

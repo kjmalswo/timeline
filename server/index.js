@@ -49,7 +49,7 @@ app.use((_req, res, next) => {
 })
 
 app.use('/api', async (req, res) => {
-  const hasBody = ['POST', 'PUT'].includes(req.method)
+  const hasBody = ['POST', 'PUT', 'DELETE'].includes(req.method)
   const request = new Request(new URL(req.originalUrl, 'http://localhost'), {
     method: req.method,
     headers: req.headers,

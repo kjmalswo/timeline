@@ -32,7 +32,8 @@ export function coverAuthor(book) {
 export function frontDesign(book) {
   if (book.coverDesign) return book.coverDesign
   const layers = [textLayer(book, 'title', 'front-title')]
-  if (book.spine?.author) layers.push({ ...textLayer(book, 'author', 'front-author'), text: book.spine.author })
+  const author = book.spine?.author ?? book.author
+  if (author) layers.push({ ...textLayer(book, 'author', 'front-author'), text: author })
   return { background: null, layers }
 }
 

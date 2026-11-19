@@ -2,15 +2,17 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { NodeSelection } from '@tiptap/pm/state'
 import { useEditor, useEditorState } from '@tiptap/react'
 import {
-  AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Bold, Book, BookOpen, ChevronDown, Cloud,
-  CloudAlert, CloudCheck, FileDown, FileText, Focus, Italic, List, ListOrdered, ListTree, Minus, Paintbrush, Plus, Printer,
-  Save, Search, SlidersHorizontal, Trash2, Underline, X,
+  AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, BadgeCheck, Bold, Book, BookOpen, ChevronDown, Cloud,
+  CloudAlert, CloudCheck, FileDown, FileText, Focus, Italic, Link2, List, ListOrdered, ListTree, Minus, Paintbrush, Plus, Printer,
+  Save, Search, SlidersHorizontal, SpellCheck, Trash2, Type, Underline, X,
 } from 'lucide-react'
 import { bookCharacters, characterCount, COVERS, FONTS, newChapter, PAPERS, TEMPLATES } from './catalog.js'
 import { AccountButton } from './dashboard.jsx'
 import { Dialog } from './dialogs.jsx'
 import { CoverStudio } from './cover-studio.jsx'
 import { ChapterFlow } from './chapter-flow.jsx'
+import { ChapterHeadingDialog } from './chapter-heading.jsx'
+import { chapterName, headingStyle } from './chapter-heading.js'
 import { EditorPhotoTools } from './editor-photo.jsx'
 import { isSaveShortcut } from './keyboard.js'
 import { HistoryButtons } from './history-controls.jsx'
@@ -20,10 +22,13 @@ import { Publication } from './publication.jsx'
 import { SpineEditor } from './spine.jsx'
 import { WriterDock, WriterPanel, writerShortcut } from './writer-tools.jsx'
 import { minZoom, maxZoom } from './writing-view.js'
+import { setSpelling, spellingExtension } from './spelling.js'
+import { isReadableBook } from './reader-book.js'
 import { BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
 
 const formatNumber = new Intl.NumberFormat('ko-KR')
 const zoomStep = 10
+const editorExtensions = [...writingExtensions, spellingExtension]
 
 const alignments = [
   [DEFAULT_ALIGNMENT, '양쪽 정렬', AlignJustify], ['left', '왼쪽 정렬', AlignLeft],
@@ -66,7 +71,7 @@ function NumericFormat({ label, values, unit, reading, onChange }) {
     onChange={value => onChange(value === '' ? null : Number(value))} />
 }
 
-function Toolbar({ editor, book, history, onFocusMode }) {
+function Toolbar({ editor, book, history, spellcheck, onSpelling, onFocusMode, onRead, onShare, onComplete }) {
   const { layout } = book
   const state = useEditorState({
     editor,
@@ -135,16 +140,26 @@ function Toolbar({ editor, book, history, onFocusMode }) {
         aria-keyshortcuts="Alt+Shift+F" onMouseDown={event => event.preventDefault()} onClick={onFocusMode}>
         <Focus size={17} /> 집중 모드
       </button>
+      <button type="button" className="button button-secondary focus-toggle spelling-toggle" aria-label="맞춤법 검사" aria-pressed={spellcheck}
+        title={spellcheck ? '맞춤법 검사 끄기' : '맞춤법 검사 켜기'} onMouseDown={event => event.preventDefault()} onClick={onSpelling}>
+        <SpellCheck size={17} /> 맞춤법 {spellcheck ? '켜짐' : '꺼짐'}
+      </button>
+      <div className="tool-group editor-reading-tools" role="group" aria-label="읽기와 공유">
+        {isReadableBook(book) ? <>
+          <button type="button" className="button button-secondary focus-toggle" onClick={onRead}><BookOpen size={16} /> 리더에서 읽기</button>
+          {!book.example && <button type="button" className="button button-secondary focus-toggle" onClick={onShare}><Link2 size={16} /> 공유</button>}
+        </> : <button type="button" className="button button-secondary focus-toggle" onClick={onComplete}><BadgeCheck size={16} /> 초고 완료</button>}
+      </div>
     </div>
   )
 }
 
-function NameInput({ value, onSave, onDirty, label, className, autoFocus = false }) {
+function NameInput({ value, onSave, onDirty, label, className, style, placeholder, allowBlank = false, autoFocus = false }) {
   const [name, setName] = useState(value)
   useEffect(() => { setName(value) }, [value])
-  const next = name.trim() || value
+  const next = name.trim() || (allowBlank ? '' : value)
   return (
-    <input className={className} aria-label={label} value={name} maxLength={160} autoFocus={autoFocus}
+    <input className={className} style={style} placeholder={placeholder} aria-label={label} value={name} maxLength={160} autoFocus={autoFocus}
       data-book-draft={name === value ? undefined : next === value ? 'discard' : 'change'}
       onFocus={event => { if (autoFocus) event.target.select() }}
       onChange={event => { setName(event.target.value); onDirty(event.target.value !== value) }}
@@ -162,7 +177,7 @@ function NameInput({ value, onSave, onDirty, label, className, autoFocus = false
   )
 }
 
-function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, onDelete }) {
+function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, onDelete, onHeading }) {
   const index = book.chapters.findIndex(item => item.id === chapter.id)
   return (
     <aside className={'chapter-rail' + (open ? ' chapter-rail-open' : '')} aria-label="책의 장 목록">
@@ -173,7 +188,7 @@ function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, on
         {book.chapters.map((item, position) => (
           <button type="button" key={item.id} className={'chapter-item' + (item.id === chapter.id ? ' current' : '')}
             onClick={() => { onSelect(item.id); onClose() }} aria-current={item.id === chapter.id ? 'page' : undefined}>
-            <span className="chapter-number">{String(position + 1).padStart(2, '0')}</span><span>{item.title}</span>
+            <span className="chapter-number">{String(position + 1).padStart(2, '0')}</span><span>{chapterName(item, position)}</span>
           </button>
         ))}
       </div>
@@ -181,6 +196,7 @@ function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, on
         <Plus size={16} /> 장 추가
       </button>
       <div className="rail-actions" aria-label="현재 장 관리">
+        <IconCommand icon={Type} label="장 번호·제목 편집" press={onHeading} />
         <IconCommand icon={ArrowUp} label="현재 장을 위로 이동" disabled={index === 0} press={() => onMove(-1)} />
         <IconCommand icon={ArrowDown} label="현재 장을 아래로 이동" disabled={index === book.chapters.length - 1} press={() => onMove(1)} />
         <IconCommand icon={Trash2} label="현재 장 삭제" disabled={book.chapters.length <= 1} press={onDelete} />
@@ -308,11 +324,11 @@ function ZoomControls({ zoom, onZoom }) {
   </div>
 }
 
-export function WritingEditor({ book, chapter, library, writingView, onViewChange, onBack, onAccount, onSaveStatus, onHistory }) {
+export function WritingEditor({ book, chapter, library, writingView, onViewChange, onBack, onAccount, onSaveStatus, onHistory, onRead, onShare }) {
   const [inspect, setInspect] = useState(false)
   const [writerTool, setWriterTool] = useState(null)
   const [focusMode, setFocusMode] = useState(false)
-  const { showSpread, zoom } = writingView
+  const { showSpread, zoom, spellcheck } = writingView
   const [stageWidth, setStageWidth] = useState(0)
   const [coverOpen, setCoverOpen] = useState(false)
   const [spineOpen, setSpineOpen] = useState(false)
@@ -322,6 +338,7 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
   const shortcuts = useRef(null)
   const [chaptersOpen, setChaptersOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [headingOpen, setHeadingOpen] = useState(false)
   const [output, setOutput] = useState(null)
   const [focusChapter, setFocusChapter] = useState(null)
   const [pendingEdit, setPendingEdit] = useState(false)
@@ -359,11 +376,11 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
     },
   }
   const editor = useEditor({
-    extensions: writingExtensions,
+    extensions: editorExtensions,
     content: initial.content,
     shouldRerenderOnTransaction: false,
     editorProps: {
-      attributes: { 'aria-label': '장 본문', 'aria-multiline': 'true', role: 'textbox', spellcheck: 'true' },
+      attributes: { 'aria-label': '장 본문', 'aria-multiline': 'true', role: 'textbox', lang: 'ko', spellcheck: String(spellcheck) },
       handleDOMEvents: { beforeinput: (_view, event) => {
         if (!['historyUndo', 'historyRedo'].includes(event.inputType)) return false
         event.preventDefault()
@@ -376,6 +393,10 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
       current.on('beforeTransaction', ({ nextState, transaction }) => callbacks.current.edit(current, nextState, transaction))
     },
   }, [documentKey])
+
+  useLayoutEffect(() => {
+    if (editor && !editor.isDestroyed) setSpelling(editor, spellcheck)
+  }, [editor, spellcheck])
 
   useLayoutEffect(() => {
     if (!editor || editor.isDestroyed || editorKeys.current.get(editor) !== documentKey) return
@@ -506,7 +527,7 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
 
   function addChapter() {
     if (book.chapters.length >= 200) return
-    const item = newChapter('제목 없는 장')
+    const item = newChapter('')
     setFocusChapter(item.id)
     patch(current => ({ ...current, chapters: [...current.chapters, item], activeChapterId: item.id, cursor: null }))
   }
@@ -536,11 +557,13 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
     setConfirmDelete(false)
   }
 
+  function changeHeading(fields) {
+    patch(current => ({ ...current, chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, ...fields } : item) }))
+  }
+
   const manuscript = <ChapterFlow book={book} activeId={chapter.id} editor={editor} onSelect={selectChapter} single={!showSpread}>
-    <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter} onDirty={setPendingEdit}
-      onSave={title => patch(current => ({
-        ...current, chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, title } : item),
-      }))} />
+    <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" style={headingStyle(chapter.heading?.titleStyle)}
+      placeholder="장 제목 (선택)" allowBlank autoFocus={chapter.id === focusChapter} onDirty={setPendingEdit} onSave={title => changeHeading({ title })} />
   </ChapterFlow>
   const history = { canUndo: library.canUndo || pendingEdit, canRedo: library.canRedo && !pendingEdit, onStep: onHistory }
   const viewAction = showSpread ? '단면 보기' : '양면 보기'
@@ -579,10 +602,13 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
             <AccountButton user={library.user} onClick={onAccount} ready={library.ready} />
           </div>
         </header>
-        <Toolbar editor={editor} book={book} history={history} onFocusMode={toggleFocusMode} />
+        <Toolbar editor={editor} book={book} history={history} onFocusMode={toggleFocusMode} onRead={onRead} onShare={onShare}
+          spellcheck={spellcheck} onSpelling={() => onViewChange({ spellcheck: !spellcheck })}
+          onComplete={() => patch(current => ({ ...current, status: 'complete' }))} />
         <main className={'workbench' + (inspect ? ' inspector-open' : '')}>
           <ChapterRail book={book} chapter={chapter} open={chaptersOpen} onClose={() => setChaptersOpen(false)}
-            onSelect={selectChapter} onAdd={addChapter} onMove={moveChapter} onDelete={() => setConfirmDelete(true)} />
+            onSelect={selectChapter} onAdd={addChapter} onMove={moveChapter} onDelete={() => setConfirmDelete(true)}
+            onHeading={() => { setChaptersOpen(false); setHeadingOpen(true) }} />
           {chaptersOpen && <button type="button" className="rail-backdrop" aria-label="장의 목록 닫기" onClick={() => setChaptersOpen(false)} />}
           <div className="writing-area">
             <div className="paper-stage" ref={stage}>
@@ -630,7 +656,11 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
         setSpineOpen(false)
         manualSave()
       }} />}
-      {confirmDelete && <Dialog title="현재 장을 삭제할까요?" description={'“' + chapter.title + '”의 제목과 본문을 삭제합니다.'} onClose={() => setConfirmDelete(false)}>
+      {headingOpen && <ChapterHeadingDialog chapter={chapter} index={chapterIndex} onClose={() => setHeadingOpen(false)} onSave={fields => {
+        changeHeading(fields)
+        setHeadingOpen(false)
+      }} />}
+      {confirmDelete && <Dialog title="현재 장을 삭제할까요?" description={'“' + chapterName(chapter, chapterIndex) + '”의 제목과 본문을 삭제합니다.'} onClose={() => setConfirmDelete(false)}>
         <div className="dialog-actions">
           <button type="button" className="button button-secondary" onClick={() => setConfirmDelete(false)}>취소</button>
           <button type="button" className="button button-danger" onClick={deleteChapter}>장 삭제</button>

@@ -64,7 +64,7 @@ export function newChapter(title) {
 }
 
 export function newBook({ title, template, cover, paper }) {
-  const chapter = newChapter('제목 없는 장')
+  const chapter = newChapter('')
   return {
     id: newId(), title, template, cover,
     layout: { ...structuredClone(TEMPLATES[template].layout), paper },

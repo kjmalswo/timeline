@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDownUp, ArrowRight, BookOpen, ChevronDown, ChevronRight, Clock3, Cloud, CloudCheck, Ellipsis,
-  FileText, LayoutGrid, LayoutTemplate, List, LockKeyhole, LogIn, Menu, Plus, RotateCcw, Search, Settings, Star, Trash2, X,
+  FileText, LayoutGrid, LayoutTemplate, LibraryBig, Link2, List, LockKeyhole, LogIn, Menu, Plus, RotateCcw, Search, Settings, Star, Trash2, X,
 } from 'lucide-react'
 import { COVERS, relativeDate, STATUSES, TEMPLATES } from './catalog.js'
 import { CoverArtwork } from './cover-artwork.jsx'
 import { HistoryButtons } from './history-controls.jsx'
+import { isReadableBook } from './reader-book.js'
 
 const views = {
   library: { label: '내 서재', icon: BookOpen },
@@ -40,6 +41,7 @@ function Sidebar({ view, navigate, onCreate, onSettings, user, unsaved, open, on
               <Icon size={19} strokeWidth={1.8} /> <span>{label}</span>{key === view && <span className="nav-active-dot" />}
             </button>,
           )}
+          <button type="button" className="nav-item" onClick={() => navigate('reader')}><LibraryBig size={19} strokeWidth={1.8} /> 리더</button>
           <span className="nav-caption second-caption">도구</span>
           <button type="button" className="nav-item" onClick={() => { onClose(); onCreate() }}><LayoutTemplate size={19} strokeWidth={1.8} /> 책 서식</button>
           <button type="button" className="nav-item" onClick={() => { onClose(); onSettings() }}><Settings size={19} strokeWidth={1.8} /> 설정</button>
@@ -72,7 +74,7 @@ export function BookCover({ book }) {
   )
 }
 
-function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus, onLogin }) {
+function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus, onLogin, onRead, onShare }) {
   function change(event, update) {
     event.currentTarget.closest('details')?.removeAttribute('open')
     onUpdate(book.id, current => ({ ...current, ...update }))
@@ -117,6 +119,10 @@ function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus, onLogin }) {
           {(saveStatus?.state === 'error' || saveStatus?.state === 'conflict') &&
             <button type="button" className="text-button warning-button" onClick={onStatus}>저장 확인</button>}
         </div>
+        {!onLogin && isReadableBook(book) && <div className="book-reading-actions">
+          <button type="button" className="text-button" onClick={onRead}><BookOpen size={15} /> 리더에서 읽기</button>
+          {!book.example && <button type="button" className="icon-button" title="공유" aria-label={book.title + ' 공유'} onClick={onShare}><Link2 size={17} /></button>}
+        </div>}
       </div>
     </article>
   )
@@ -139,7 +145,7 @@ function Hero({ book, onOpen, onCreate }) {
   )
 }
 
-export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccount, onSaveStatus, onHistory }) {
+export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccount, onSaveStatus, onHistory, onRead, onShare }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recent')
   const [mode, setMode] = useState('grid')
@@ -223,6 +229,7 @@ export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccou
             {visible.length > 0
               ? <div className={'book-grid' + (mode === 'list' ? ' as-list' : '')}>
                 {visible.map(book => <BookCard key={book.id} book={book} onOpen={() => onOpen(book.id)}
+                  onRead={() => onRead(book.id)} onShare={() => onShare(book.id)}
                   onUpdate={library.user ? library.update : onAccount} onLogin={library.user ? undefined : onAccount}
                   saveStatus={library.statuses[book.id]} onStatus={() => onSaveStatus(book.id)} />)}
               </div>

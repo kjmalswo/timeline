@@ -1,6 +1,7 @@
 import { generateHTML } from '@tiptap/core'
 import { strToU8, zipSync } from 'fflate'
 import { FONTS } from './catalog.js'
+import { chapterLabel, chapterName, headingDefaults, headingStyle } from './chapter-heading.js'
 import { coverAuthor } from './cover-model.js'
 import { DEFAULT_ALIGNMENT, writingExtensions } from './document.js'
 import { ebookCover, ebookPhoto } from './ebook-images.js'
@@ -23,6 +24,9 @@ function stylesheet(layout) {
 .paper-body p { margin: 0 0 .68em; text-indent: ${layout.firstLine}em; }
 .paper-body li p { text-indent: 0; margin-bottom: .22em; }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
+.chapter-kicker { display: block; font-size: ${headingDefaults.labelStyle.fontSize}pt; color: ${headingDefaults.labelStyle.color}; font-weight: bold; }
+.chapter-kicker:only-child { margin-bottom: 1.2em; }
+.chapter-display-title { font-size: ${headingDefaults.titleStyle.fontSize}pt; font-weight: bold; margin: .3em 0 .9em; }
 blockquote { margin: .65em 0; padding-left: .76em; border-left: .16em solid #ddd; }
 figure { margin: .75em auto; break-inside: avoid; }
 figure[data-align='left'] { margin-left: 0; } figure[data-align='right'] { margin-right: 0; }
@@ -31,7 +35,24 @@ figure img { width: 100%; }
 .cover img { margin: auto; }`
 }
 
-async function chapterMarkup(chapter, imagePath) {
+function chapterHeader(chapter, index, serializer) {
+  const header = document.createElement('header')
+  const lines = [
+    ['span', 'chapter-kicker', chapterLabel(chapter, index), chapter.heading?.labelStyle],
+    ['h1', 'chapter-display-title', chapter.title, chapter.heading?.titleStyle],
+  ]
+  for (const [tag, className, text, settings] of lines) {
+    if (!text) continue
+    const element = document.createElement(tag)
+    element.className = className
+    element.textContent = text
+    for (const [key, value] of Object.entries(headingStyle(settings))) if (value !== undefined) element.style[key] = value
+    header.append(element)
+  }
+  return header.childElementCount ? serializer.serializeToString(header).replace(invalidXml, '\ufffd') : ''
+}
+
+async function chapterMarkup(chapter, index, imagePath) {
   const body = document.createElement('div')
   body.className = 'paper-body'
   body.innerHTML = generateHTML(chapter.content, writingExtensions)
@@ -41,8 +62,9 @@ async function chapterMarkup(chapter, imagePath) {
     const figure = image.closest('figure')
     if (figure) figure.style.width = figure.dataset.width + '%'
   }
-  const content = new XMLSerializer().serializeToString(body).replace(invalidXml, '\ufffd')
-  return xhtml(chapter.title, `<section epub:type="chapter"><h1>${xml(chapter.title)}</h1>${content}</section>`)
+  const serializer = new XMLSerializer()
+  const content = serializer.serializeToString(body).replace(invalidXml, '\ufffd')
+  return xhtml(chapterName(chapter, index), `<section epub:type="chapter">${chapterHeader(chapter, index, serializer)}${content}</section>`)
 }
 
 export async function createEpub(book) {
@@ -64,7 +86,7 @@ export async function createEpub(book) {
   add('cover-image', 'cover.jpg', 'image/jpeg', await ebookCover(book), { properties: 'cover-image' })
   add('cover', 'cover.xhtml', xhtmlType, xhtml(book.title,
     `<section epub:type="cover" class="cover"><img src="cover.jpg" alt="${xml(book.title)} 표지"/></section>`), { readable: true })
-  const links = book.chapters.map((chapter, index) => `<li><a href="chapter-${index + 1}.xhtml">${xml(chapter.title)}</a></li>`)
+  const links = book.chapters.map((chapter, index) => `<li><a href="chapter-${index + 1}.xhtml">${xml(chapterName(chapter, index))}</a></li>`)
   add('nav', 'nav.xhtml', xhtmlType, xhtml('목차', `<nav epub:type="toc" id="toc"><h1>목차</h1><ol>${links.join('')}</ol></nav>`),
     { properties: 'nav', readable: true })
 
@@ -81,7 +103,7 @@ export async function createEpub(book) {
 
   for (const [index, chapter] of book.chapters.entries()) {
     const id = 'chapter-' + (index + 1)
-    add(id, id + '.xhtml', xhtmlType, await chapterMarkup(chapter, imagePath), { readable: true })
+    add(id, id + '.xhtml', xhtmlType, await chapterMarkup(chapter, index, imagePath), { readable: true })
   }
   const author = coverAuthor(book) || book.spine?.author.trim()
   const modified = new Date().toISOString().replace(/\.\d+Z$/, 'Z')

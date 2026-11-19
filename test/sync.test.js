@@ -62,7 +62,7 @@ async function stopServer({ server }) {
 const examplePhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aO8sAAAAASUVORK5CYII='
 const paragraphFingerprints = blocks => blocks.filter(block => block.type === 'paragraph').map(block => fingerprint(block.content[0].text))
 
-test(target + ': accounts resume a formatted manuscript with cover, photos and private notes after a server restart', { timeout: 42000 }, async () => {
+test(target + ': accounts resume a formatted manuscript and share only the published reading copy', { timeout: 55000 }, async () => {
   const data = await mkdtemp(join(tmpdir(), 'yeobaek-sync-'))
   let app
 
@@ -97,6 +97,7 @@ test(target + ': accounts resume a formatted manuscript with cover, photos and p
     assert.equal((await call('/books/' + example.id, { method: 'PUT', body: { revision: 0, book: example } })).status, 401)
 
     const book = newBook({ title: '이어 쓰는 책', template: 'novel', cover: 'grove', paper: 'b6' })
+    book.chapters[0].heading = { label: '', labelStyle: { align: 'right', fontSize: 12 }, titleStyle: { align: 'center', fontSize: 28 } }
     const chapter = newChapter('두 번째 장')
     chapter.content = makeDocument('한 문장씩.')
     chapter.content.content[0].attrs = { align: 'justify', firstLine: 1.5, blockIndent: 2, lineHeight: 1.85 }
@@ -160,6 +161,8 @@ test(target + ': accounts resume a formatted manuscript with cover, photos and p
     assert.deepEqual(resumed.coverDesign, book.coverDesign)
     assert.deepEqual(resumed.spine, book.spine)
     assert.deepEqual(resumed.writerNotes, book.writerNotes)
+    assert.equal(resumed.chapters[0].title, '')
+    assert.deepEqual(resumed.chapters[0].heading, book.chapters[0].heading)
     const invalidPhoto = structuredClone(resumed)
     invalidPhoto.coverDesign.layers[0].src = 'data:image/svg+xml;base64,PHN2Zy8+'
     assert.equal((await call(path, { method: 'PUT', cookie: deviceB.cookie,
@@ -173,11 +176,25 @@ test(target + ': accounts resume a formatted manuscript with cover, photos and p
     assert.equal((await call(path, { method: 'PUT', cookie: other.cookie,
       body: { revision: 0, book, accountId: deviceA.body.user.id } })).status, 401)
 
-    const update = await call(path, { method: 'PUT', cookie: deviceB.cookie, body: { revision: 1, book: { ...resumed, title: '기기 B에서 쓴 책' } } })
+    const sharePath = path + '/share'
+    const accountId = deviceA.body.user.id
+    const publish = revision => call(sharePath, { method: 'PUT', cookie: deviceA.cookie, body: { accountId, revision } })
+    assert.equal((await call(sharePath)).status, 401)
+    assert.equal((await publish(1)).status, 409)
+    assert.equal((await call(sharePath, { method: 'PUT', cookie: other.cookie, body: { accountId: other.body.user.id, revision: 1 } })).status, 404)
+
+    const update = await call(path, { method: 'PUT', cookie: deviceB.cookie,
+      body: { revision: 1, book: { ...resumed, title: '기기 B에서 쓴 책', status: 'complete' } } })
     assert.equal(update.status, 200)
     const stale = await call(path, { method: 'PUT', cookie: deviceA.cookie, body: { revision: 1, book: { ...resumed, title: '이전 편집본' } } })
     assert.equal(stale.status, 409)
     assert.equal(stale.body.book.title, update.body.book.title)
+    assert.equal((await publish(1)).status, 409)
+    const published = await publish(2)
+    assert.equal(published.status, 200)
+    assert.match(published.body.share.token, /^[a-f0-9]{48}$/)
+    const publicPath = '/shares/' + published.body.share.token
+    assert.deepEqual((await call(sharePath, { cookie: other.cookie })).body, { share: null })
 
     await stopServer(app)
     app = await startServer(data)
@@ -190,6 +207,31 @@ test(target + ': accounts resume a formatted manuscript with cover, photos and p
     assert.deepEqual(storedBook.coverDesign, book.coverDesign)
     assert.deepEqual(storedBook.spine, book.spine)
     assert.deepEqual(storedBook.writerNotes, book.writerNotes)
+
+    const publicBook = (await call(publicPath)).body.book
+    assert.deepEqual(Object.keys(publicBook).sort(), ['author', 'chapters', 'cover', 'coverDesign', 'layout', 'title'])
+    assert.equal(publicBook.title, update.body.book.title)
+    assert.deepEqual(publicBook.chapters[0].heading, book.chapters[0].heading)
+    assert.deepEqual(publicBook.chapters[1].content.content.at(-1), bodyPhoto)
+    assert.deepEqual(paragraphFingerprints(publicBook.chapters[1].content.content), paragraphFingerprints(originalBlocks))
+
+    const revised = await call(path, { method: 'PUT', cookie: deviceB.cookie,
+      body: { revision: 2, book: { ...update.body.book, title: '수정한 완성본' } } })
+    assert.equal(revised.status, 200)
+    assert.equal((await call(publicPath)).body.book.title, update.body.book.title)
+    assert.equal((await publish(3)).body.share.token, published.body.share.token)
+    assert.equal((await call(publicPath)).body.book.title, '수정한 완성본')
+    await call(sharePath, { method: 'DELETE', cookie: other.cookie, body: { accountId: other.body.user.id } })
+    assert.equal((await call(publicPath)).status, 200)
+    assert.deepEqual((await call(sharePath, { method: 'DELETE', cookie: deviceA.cookie, body: { accountId } })).body, { share: null })
+    assert.equal((await call(publicPath)).status, 404)
+
+    const republished = await publish(3)
+    assert.notEqual(republished.body.share.token, published.body.share.token)
+    assert.equal((await call(path, { method: 'PUT', cookie: deviceB.cookie,
+      body: { revision: 3, book: { ...revised.body.book, status: 'draft' } } })).status, 200)
+    assert.equal((await call('/shares/' + republished.body.share.token)).status, 404)
+
     const logout = await call('/auth/logout', { method: 'POST', cookie: deviceA.cookie, body: {} })
     assert.equal(logout.status, 200)
     assert.equal((await call('/session', { cookie: deviceA.cookie })).body.user, null)

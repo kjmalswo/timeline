@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'no
 import { promisify } from 'node:util'
 import { identifier, sanitizeBook } from './books.js'
 import { sampleBooks } from './examples.js'
+import { shareLinkPattern } from '../src/reader-book.js'
 
 const deriveKey = promisify(scrypt)
 const sessionTime = 30 * 24 * 60 * 60 * 1000
@@ -149,17 +150,40 @@ export function createApi(store) {
     return json({ book: saved.book }, revision === 0 ? 201 : 200)
   }
 
+  async function manageShare(request, method, user, id) {
+    if (!user) return failure('공유를 관리하려면 로그인해 주세요.', 401)
+    if (!identifier.test(id)) return failure('서재에서 이 원고를 찾을 수 없습니다.', 404)
+    if (method === 'GET') return json({ share: store.shareInfo(user.id, id) })
+    const { accountId, revision } = await bodyJson(request) ?? {}
+    if (accountId !== user.id) return failure('원고를 작성한 계정으로 로그인해 주세요.', 401)
+    if (method === 'DELETE') {
+      store.revokeShare(user.id, id)
+      return json({ share: null })
+    }
+    if (!Number.isSafeInteger(revision) || revision < 1) return failure('원고를 저장한 뒤 공유해 주세요.', 400)
+    const result = store.publishBook(user.id, id, revision, randomBytes(24).toString('hex'), new Date().toISOString())
+    if (result.error === 'missing') return failure('서재에서 이 원고를 찾을 수 없습니다.', 404)
+    if (result.error === 'draft') return failure('초고 완료로 표시한 원고만 공유할 수 있습니다.', 409)
+    if (result.error === 'stale') return failure('다른 기기에서 원고가 수정됐어요. 최신 원고를 연 뒤 다시 공유해 주세요.', 409)
+    return json({ share: result.share })
+  }
+
   return async function api(request, { secure, ip }) {
     const { pathname } = new URL(request.url)
     const path = pathname.replace(/\/$/, '')
     const method = request.method === 'HEAD' ? 'GET' : request.method
-    if (['POST', 'PUT'].includes(method) && (
+    if (['POST', 'PUT', 'DELETE'].includes(method) && (
       request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'application/json' ||
       request.headers.get('Sec-Fetch-Site') === 'cross-site'
     )) return failure('요청 형식이 올바르지 않습니다.', 415)
 
     try {
       if (method === 'GET' && path === '/api/health') return json({ status: 'ok' })
+      const publicToken = path.match(/^\/api\/shares\/([^/]+)$/)?.[1]
+      if (method === 'GET' && publicToken) {
+        const book = shareLinkPattern.test(publicToken) ? store.sharedBook(publicToken) : null
+        return book ? json({ book }) : failure('공유된 책을 열 수 없어요. 링크를 확인해 주세요.', 404)
+      }
       if (method === 'POST' && (path === '/api/auth/register' || path === '/api/auth/login')) {
         return await authenticate(request, path, secure, ip)
       }
@@ -170,6 +194,8 @@ export function createApi(store) {
       }
       const user = token ? store.session(tokenHash(token), Date.now()) : null
       if (method === 'GET' && path === '/api/session') return json(library(user))
+      const sharing = path.match(/^\/api\/books\/([^/]+)\/share$/)
+      if (sharing && ['GET', 'PUT', 'DELETE'].includes(method)) return await manageShare(request, method, user, sharing[1])
       const book = path.match(/^\/api\/books\/([^/]+)$/)
       if (method === 'PUT' && book) return await save(request, user, book[1])
       return failure('요청을 찾을 수 없습니다.', 404)

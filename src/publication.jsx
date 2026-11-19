@@ -6,6 +6,7 @@ import { Dialog } from './dialogs.jsx'
 import { handleDraftHistory, HistoryButtons, useDraftHistory } from './history-controls.jsx'
 import { paperStyle } from './document.js'
 import { FormattedChapter } from './chapter-flow.jsx'
+import { ChapterHeading } from './chapter-heading.jsx'
 import { CoverWrap, coverSize, FrontCover } from './spine.jsx'
 
 function PrintDocument({ job }) {
@@ -29,10 +30,7 @@ function PrintDocument({ job }) {
     {includeCover && <div className="print-front"><FrontCover book={book} /></div>}
     <div className="print-text">
       {book.chapters.map((chapter, index) => <article className="print-chapter chapter-entry" key={chapter.id}>
-        <header className="chapter-heading">
-          <span className="chapter-kicker">제 {index + 1}장</span>
-          <h2>{chapter.title}</h2>
-        </header>
+        <ChapterHeading chapter={chapter} index={index} />
         <FormattedChapter content={chapter.content} />
       </article>)}
     </div>

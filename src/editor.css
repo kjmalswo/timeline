@@ -74,6 +74,7 @@
 .tool-group { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding-right: 6px; border-right: 1px solid #e9e3ef; }
 .tool-group:last-child { border-right: 0; padding-right: 0; }
 .focus-toggle { min-height: 31px; padding-inline: 8px; font-size: 11.5px; gap: 5px; }
+.spelling-toggle[aria-pressed='true'] { color: var(--purple-ink); background: var(--purple-light); border-color: #ded0f2; }
 .tool-button { width: 30px; height: 31px; color: #544763; }
 .tool-active { color: var(--purple-ink); background: #ede4fc; }
 .tool-select {
@@ -177,13 +178,24 @@
   padding: var(--m-top) var(--m-right) var(--m-bottom) var(--m-left);
   overflow-wrap: anywhere;
 }
-.chapter-kicker { color: #75608c; font-size: 11.5px; font-weight: 740; letter-spacing: .035em; }
+.chapter-kicker { display: block; width: 100%; color: #75608c; font-size: 9pt; font-weight: 740; letter-spacing: .035em; text-align: start; }
+.chapter-kicker:only-child { margin-bottom: 1.2em; }
+.chapter-kicker.chapter-switch { border: 0; padding: 0; background: transparent; }
+.chapter-display-title {
+  margin: 5px 0 20px;
+  color: #292433;
+  font-family: var(--paper-font);
+  font-size: 17pt;
+  font-weight: 780;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
 .editor-chapter-title {
   display: block;
   width: 100%;
   font-family: var(--paper-font);
   color: #292433;
-  font-size: clamp(19px, 2.6vw, 24px);
+  font-size: 17pt;
   line-height: 1.4;
   font-weight: 780;
   letter-spacing: -.055em;
@@ -194,6 +206,7 @@
   text-overflow: ellipsis;
 }
 .editor-chapter-title:hover { box-shadow: 0 1px 0 #e4d9ee; }
+.editor-chapter-title::placeholder { color: #8d829a; font-weight: 490; }
 .chapter-switch { text-align: start; white-space: nowrap; overflow: hidden; }
 .chapter-heading { display: flow-root; break-inside: avoid; break-after: avoid; }
 .chapter-body p:empty::after { content: '\00a0'; }
@@ -242,6 +255,11 @@
 .editor-photo-busy, .editor-photo-error { font-size: 11px; color: var(--muted); }
 .editor-photo-error { border: 0; padding: 4px; color: #963d35; background: #fff4ee; border-radius: 5px; }
 .paper-body .tiptap { outline: none; caret-color: var(--purple-ink); }
+.paper-body .tiptap .spelling-error {
+  text-decoration: underline wavy #c02f43;
+  text-underline-offset: .16em;
+  text-decoration-skip-ink: none;
+}
 .paper-article .tiptap { min-height: 13em; }
 .paper-body .tiptap:has(> p:only-child > br.ProseMirror-trailingBreak:only-child) > p::before {
   content: '여기에 원고를 작성하세요.';
@@ -447,6 +465,15 @@
 .focus-history { position: absolute; z-index: 3; inset: 12px 14px auto auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 
 .output-dialog { width: min(calc(100% - 26px), 472px); }
+.chapter-heading-dialog { width: min(calc(100% - 26px), 510px); }
+.chapter-heading-dialog fieldset { padding: 9px 12px 13px; margin: 8px 0 13px; border: 1px solid var(--line); border-radius: 8px; }
+.chapter-heading-dialog legend { padding-inline: 5px; color: var(--purple-ink); font-size: 12px; font-weight: 730; }
+.chapter-label-row, .chapter-heading-fields { display: grid; gap: 9px; align-items: end; grid-template-columns: minmax(0, 1fr) auto; }
+.chapter-label-row button { min-height: 39px; }
+.chapter-heading-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 10px; }
+.chapter-heading-fields .field { margin: 0; }
+.chapter-heading-fields input[type='color'] { padding: 4px; }
+.chapter-heading-bold { display: flex; align-items: center; gap: 5px; font-size: 12px; }
 .print-spec {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -531,7 +558,7 @@
   .print-front + .print-text { break-before: page; }
   .print-wrap .cover-wrap { width: var(--wrap-width); height: var(--wrap-height); }
   .print-chapter + .print-chapter { break-before: page; }
-  .print-chapter h2 { font-size: 17pt; font-weight: 780; margin: 3mm 0 8mm; }
+  .print-chapter .chapter-display-title { margin: 3mm 0 8mm; }
   .print-manuscript .paper-body :is(h1, h2, h3) { break-after: avoid; }
   .paper-body p { orphans: 2; widows: 2; }
 }
