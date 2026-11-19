@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer'
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import { identifier, sanitizeBook } from './books.js'
+import { sampleBooks } from './examples.js'
 
 const deriveKey = promisify(scrypt)
 const sessionTime = 30 * 24 * 60 * 60 * 1000
@@ -81,7 +82,7 @@ async function bodyJson(request) {
 
 export function createApi(store) {
   function library(user) {
-    return { user, books: user ? store.books(user.id) : [] }
+    return user ? { user, books: store.books(user.id), examples: sampleBooks() } : { user: null, books: [] }
   }
 
   function openSession(request, user, secure, status) {
@@ -127,7 +128,8 @@ export function createApi(store) {
 
   async function save(request, user, id) {
     if (!user) return failure('다시 로그인하면 동기화가 이어집니다.', 401)
-    const { revision, book, saveId } = await bodyJson(request) ?? {}
+    const { revision, book, saveId, accountId } = await bodyJson(request) ?? {}
+    if (accountId !== undefined && accountId !== user.id) return failure('원고를 작성한 계정으로 다시 로그인해 주세요.', 401)
     if (!identifier.test(id) || !Number.isSafeInteger(revision) || revision < 0 || id !== book?.id ||
         (saveId !== undefined && (typeof saveId !== 'string' || !identifier.test(saveId)))) {
       return failure('저장 요청을 확인해 주세요.', 400)

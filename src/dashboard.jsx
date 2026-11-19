@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDownUp, ArrowRight, BookOpen, ChevronDown, ChevronRight, Clock3, Cloud, CloudCheck, Ellipsis,
-  FileText, LayoutGrid, LayoutTemplate, List, LogIn, Menu, Plus, RotateCcw, Search, Settings, Star, Trash2, X,
+  FileText, LayoutGrid, LayoutTemplate, List, LockKeyhole, LogIn, Menu, Plus, RotateCcw, Search, Settings, Star, Trash2, X,
 } from 'lucide-react'
 import { COVERS, relativeDate, STATUSES, TEMPLATES } from './catalog.js'
 import { CoverArtwork } from './cover-artwork.jsx'
@@ -71,7 +71,7 @@ export function BookCover({ book }) {
   )
 }
 
-function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus }) {
+function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus, onLogin }) {
   function change(event, update) {
     event.currentTarget.closest('details')?.removeAttribute('open')
     onUpdate(book.id, current => ({ ...current, ...update }))
@@ -92,7 +92,12 @@ function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus }) {
         <div className="book-card-top">
           <button type="button" className="book-title-button" onClick={onOpen} disabled={book.trashed}>{book.title}</button>
           {!book.trashed && <details className="dropdown book-menu">
-            <summary className="icon-button" aria-label={book.title + ' 메뉴'}><Ellipsis size={20} /></summary>
+            <summary className="icon-button" aria-label={book.title + ' 메뉴'} onClick={event => {
+              if (onLogin) {
+                event.preventDefault()
+                onLogin()
+              }
+            }}><Ellipsis size={20} /></summary>
             <div className="dropdown-panel">
               <button type="button" onClick={event => change(event, { status: book.status === 'complete' ? 'draft' : 'complete' })}>
                 <FileText size={16} /> {book.status === 'complete' ? '집필 중으로 표시' : '초고 완료로 표시'}
@@ -107,7 +112,7 @@ function BookCard({ book, onOpen, onUpdate, onStatus, saveStatus }) {
         <div className="book-card-bottom">
           {book.trashed
             ? <button type="button" className="text-button restore-button" onClick={event => change(event, { trashed: false })}><RotateCcw size={15} /> 복원</button>
-            : <><span className={'badge badge-' + book.status}><i />{STATUSES[book.status]}</span><span className="chapter-count"><FileText size={14} />{book.chapters.length}장</span></>}
+            : <><span className={'badge badge-' + book.status}>{book.example ? <>{onLogin && <LockKeyhole size={12} />} 예제 책</> : <><i />{STATUSES[book.status]}</>}</span><span className="chapter-count"><FileText size={14} />{book.chapters.length}장</span></>}
           {(saveStatus?.state === 'error' || saveStatus?.state === 'conflict') &&
             <button type="button" className="text-button warning-button" onClick={onStatus}>저장 확인</button>}
         </div>
@@ -122,18 +127,18 @@ function Hero({ book, onOpen, onCreate }) {
     <section className="hero" aria-label={book ? '최근 작업' : '새 책 시작'}>
       <div className="hero-art" />
       <div className="hero-copy">
-        {book && <span className="hero-tag"><Clock3 size={14} /> 최근 작업</span>}
+        {book && !book.example && <span className="hero-tag"><Clock3 size={14} /> 최근 작업</span>}
         <h2>{book ? book.title : '첫 책을 시작해 보세요'}</h2>
         <p>{book ? TEMPLATES[book.template].name + ' · ' + (chapterIndex + 1) + '장' : '서식을 고르고 첫 문장을 적어 보세요.'}</p>
         <button type="button" className="button hero-button" onClick={book ? onOpen : onCreate}>
-          {book ? '이어서 쓰기' : '새 책 만들기'} <ArrowRight size={17} />
+          {book ? (book.example ? '예제 책 열기' : '이어서 쓰기') : '새 책 만들기'} <ArrowRight size={17} />
         </button>
       </div>
     </section>
   )
 }
 
-export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccount, onSettings, onSaveStatus }) {
+export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccount, onSaveStatus }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recent')
   const [mode, setMode] = useState('grid')
@@ -152,12 +157,13 @@ export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccou
   }, [])
 
   const active = library.books.filter(book => !book.trashed)
-  const latest = [...active].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
+  const byRecency = (a, b) => Number(Boolean(a.example)) - Number(Boolean(b.example)) || b.updatedAt.localeCompare(a.updatedAt)
+  const latest = [...active].sort(byRecency)[0]
   const scope = view === 'trash' ? library.books.filter(book => book.trashed) :
     view === 'favorites' ? active.filter(book => book.favorite) : active
   const needle = query.trim().toLowerCase()
   const visible = scope.filter(book => !needle || (book.title + ' ' + TEMPLATES[book.template].name).toLowerCase().includes(needle))
-    .sort((a, b) => sort === 'title' ? a.title.localeCompare(b.title, 'ko') : b.updatedAt.localeCompare(a.updatedAt))
+    .sort((a, b) => sort === 'title' ? a.title.localeCompare(b.title, 'ko') : byRecency(a, b))
   const subtitle = view === 'library' ? '책을 정리하고 마지막 원고를 이어 쓰세요.' :
     view === 'favorites' ? '즐겨찾기로 표시한 원고를 모아 보세요.' : '휴지통에 보낸 책은 다시 서재로 복원할 수 있어요.'
   const unsaved = Object.values(library.statuses).some(item => ['saving', 'error', 'conflict'].includes(item.state))
@@ -165,7 +171,7 @@ export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccou
   return (
     <div className="workspace-layout">
       <Sidebar view={view} navigate={next => { setQuery(''); setMenu(false); onNavigate(next) }}
-        onCreate={onCreate} onSettings={onSettings} user={library.user} unsaved={unsaved} open={menu} onClose={() => setMenu(false)} />
+        onCreate={onCreate} onSettings={onAccount} user={library.user} unsaved={unsaved} open={menu} onClose={() => setMenu(false)} />
       <div className="workspace-main">
         <header className="topbar">
           <button type="button" className="icon-button mobile-menu" onClick={() => setMenu(true)} aria-label="작업 공간 메뉴 열기"><Menu size={22} /></button>
@@ -192,7 +198,7 @@ export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccou
 
           <section className="shelf-section" aria-label="책 목록">
             <div className="shelf-heading">
-              <h2>{needle ? '검색 결과' : view === 'library' ? '나의 책' : '원고'} <span>{visible.length}</span></h2>
+              <h2>{needle ? '검색 결과' : view === 'library' ? (library.user ? '나의 책' : '예제 책') : '원고'} <span>{visible.length}</span></h2>
               <div className="shelf-actions">
                 <label className="sort-select">
                   <ArrowDownUp size={15} />
@@ -212,7 +218,8 @@ export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccou
             </div>
             {visible.length > 0
               ? <div className={'book-grid' + (mode === 'list' ? ' as-list' : '')}>
-                {visible.map(book => <BookCard key={book.id} book={book} onOpen={() => onOpen(book.id)} onUpdate={library.update}
+                {visible.map(book => <BookCard key={book.id} book={book} onOpen={() => onOpen(book.id)}
+                  onUpdate={library.user ? library.update : onAccount} onLogin={library.user ? undefined : onAccount}
                   saveStatus={library.statuses[book.id]} onStatus={() => onSaveStatus(book.id)} />)}
               </div>
               : <div className="empty-shelf">

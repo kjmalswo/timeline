@@ -62,7 +62,7 @@ async function stopServer({ server }) {
 const examplePhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aO8sAAAAASUVORK5CYII='
 const paragraphFingerprints = blocks => blocks.filter(block => block.type === 'paragraph').map(block => fingerprint(block.content[0].text))
 
-test(target + ': accounts resume a formatted manuscript with cover and photos after a server restart', { timeout: 42000 }, async () => {
+test(target + ': accounts resume a formatted manuscript with cover, photos and private notes after a server restart', { timeout: 42000 }, async () => {
   const data = await mkdtemp(join(tmpdir(), 'yeobaek-sync-'))
   let app
 
@@ -87,10 +87,14 @@ test(target + ': accounts resume a formatted manuscript with cover and photos af
       assert.ok(entry, 'The HTML should refer to the generated editor entry')
       assert.match((await fetch(app.url + entry)).headers.get('Content-Type'), /javascript/)
     }
+    assert.deepEqual((await call('/session')).body, { user: null, books: [] })
     const credentials = { email: 'author@example.test', password: 'sample-passphrase' }
     const deviceA = await call('/auth/register', { method: 'POST', body: credentials })
     assert.equal(deviceA.status, 201)
     assert.match(deviceA.setCookie, /HttpOnly/)
+    const example = deviceA.body.examples[0]
+    assert.ok(example.chapters[0].content.content.length > 0)
+    assert.equal((await call('/books/' + example.id, { method: 'PUT', body: { revision: 0, book: example } })).status, 401)
 
     const book = newBook({ title: '이어 쓰는 책', template: 'novel', cover: 'grove', paper: 'b6' })
     const chapter = newChapter('두 번째 장')
@@ -125,6 +129,13 @@ test(target + ': accounts resume a formatted manuscript with cover and photos af
     book.activeChapterId = chapter.id
     book.cursor = { anchor: 4, head: 4 }
     book.layout.margins.left = 24
+    book.spine = { width: 12.5, title: '책등 제목', author: '작가', font: 'serif', color: '#4a375c', background: '#f8f2fa' }
+    book.writerNotes = [
+      { id: newId(), kind: 'memo', title: '집필 메모', body: '작성자만 볼 수 있는 내용', chapterId: chapter.id },
+      { id: newId(), kind: 'character', title: '지우', body: '등장인물 설정', detail: '주인공', chapterId: null },
+      { id: newId(), kind: 'timeline', title: '첫 만남', body: '', detail: '이틀 뒤', chapterId: chapter.id },
+      { id: newId(), kind: 'foreshadow', title: '접힌 지도', body: '', chapterId: book.chapters[0].id, payoffChapterId: chapter.id, resolved: true },
+    ]
     const path = '/books/' + book.id
     const firstWrite = { revision: 0, book, saveId: newId() }
     const saved = await call(path, { method: 'PUT', cookie: deviceA.cookie, body: firstWrite })
@@ -147,14 +158,20 @@ test(target + ': accounts resume a formatted manuscript with cover and photos af
     assert.deepEqual(paragraphFingerprints(restoredBlocks), paragraphFingerprints(originalBlocks))
     assert.deepEqual(restoredBlocks.at(-1), bodyPhoto)
     assert.deepEqual(resumed.coverDesign, book.coverDesign)
+    assert.deepEqual(resumed.spine, book.spine)
+    assert.deepEqual(resumed.writerNotes, book.writerNotes)
     const invalidPhoto = structuredClone(resumed)
     invalidPhoto.coverDesign.layers[0].src = 'data:image/svg+xml;base64,PHN2Zy8+'
     assert.equal((await call(path, { method: 'PUT', cookie: deviceB.cookie,
       body: { revision: 1, book: invalidPhoto } })).status, 400)
+    assert.equal((await call(path, { method: 'PUT', cookie: deviceB.cookie,
+      body: { revision: 1, book: { ...resumed, spine: { ...book.spine, width: 0 } } } })).status, 400)
 
     const other = await call('/auth/register', { method: 'POST', body: { ...credentials, email: 'another@example.test' } })
     assert.deepEqual(other.body.books, [])
     assert.equal((await call(path, { method: 'PUT', cookie: other.cookie, body: { revision: 1, book } })).status, 404)
+    assert.equal((await call(path, { method: 'PUT', cookie: other.cookie,
+      body: { revision: 0, book, accountId: deviceA.body.user.id } })).status, 401)
 
     const update = await call(path, { method: 'PUT', cookie: deviceB.cookie, body: { revision: 1, book: { ...resumed, title: '기기 B에서 쓴 책' } } })
     assert.equal(update.status, 200)
@@ -171,6 +188,8 @@ test(target + ': accounts resume a formatted manuscript with cover and photos af
     assert.deepEqual(paragraphFingerprints(storedBook.chapters[1].content.content), paragraphFingerprints(originalBlocks))
     assert.deepEqual(storedBook.chapters[1].content.content.at(-1), bodyPhoto)
     assert.deepEqual(storedBook.coverDesign, book.coverDesign)
+    assert.deepEqual(storedBook.spine, book.spine)
+    assert.deepEqual(storedBook.writerNotes, book.writerNotes)
     const logout = await call('/auth/logout', { method: 'POST', cookie: deviceA.cookie, body: {} })
     assert.equal(logout.status, 200)
     assert.equal((await call('/session', { cookie: deviceA.cookie })).body.user, null)

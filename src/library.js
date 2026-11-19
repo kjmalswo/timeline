@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { newId } from './catalog.js'
-import { sampleBooks } from './examples.js'
+import { exampleShelf } from './example-shelf.js'
 
 const guestKey = 'yeobaek.guest.v1'
 
@@ -40,13 +40,14 @@ async function request(path, method = 'GET', data, background = false) {
 }
 
 export function useLibrary() {
-  const [initialGuest] = useState(() => readLocal(guestKey, { books: sampleBooks(), touched: [] }))
+  const [initialGuest] = useState(() => readLocal(guestKey, { books: [], touched: [] }))
   const guest = useRef(initialGuest)
-  const [books, setBooks] = useState(initialGuest.books)
+  const [books, setBooks] = useState(exampleShelf)
   const currentBooks = useRef(books)
   const [user, setUser] = useState(null)
   const currentUser = useRef(null)
   const [ready, setReady] = useState(false)
+  const [needsSignIn, setNeedsSignIn] = useState(false)
   const [statuses, setStatuses] = useState({})
   const [versions, setVersions] = useState({})
   const queues = useRef(new Map())
@@ -94,7 +95,7 @@ export function useLibrary() {
     status(id, 'saving')
     try {
       const { book: saved } = await request('/books/' + id, 'PUT', {
-        revision: queue.revision, book: snapshot, saveId: queue.saveId,
+        revision: queue.revision, book: snapshot, saveId: queue.saveId, accountId: currentUser.current?.id,
       }, background)
       if (queues.current.get(id) !== queue) return false
       queue.revision = saved.revision
@@ -111,6 +112,11 @@ export function useLibrary() {
       return true
     } catch (error) {
       if (queues.current.get(id) !== queue) return false
+      if (error.status === 401 && preserveQueue()) {
+        openLibrary({ user: null, books: [] })
+        setNeedsSignIn(true)
+        return false
+      }
       if (error.status === 409 && error.data.book) {
         queue.remote = error.data.book
         status(id, 'conflict', { remote: queue.remote })
@@ -125,11 +131,7 @@ export function useLibrary() {
   }
 
   async function saveBook(id) {
-    if (!currentUser.current) {
-      const stored = writeLocal(guestKey, guest.current)
-      status(id, stored ? 'local' : 'error', stored ? {} : { message: '이 기기에 원고를 저장할 수 없습니다.' })
-      return stored
-    }
+    if (!currentUser.current) return false
     const queue = queues.current.get(id)
     if (!queue) return true
     if (queue.remote) return false
@@ -152,38 +154,34 @@ export function useLibrary() {
     return queue
   }
 
-  function commit(book, touch = true) {
+  function commit(book) {
+    if (!currentUser.current) return
     const next = { ...book, updatedAt: new Date().toISOString() }
     replace(next)
-    if (currentUser.current) {
-      queueBook(next)
-      preserveQueue()
-    } else {
-      const touched = touch ? [...new Set([...guest.current.touched, next.id])] : guest.current.touched
-      guest.current = { touched, books: currentBooks.current }
-      const stored = writeLocal(guestKey, guest.current)
-      status(next.id, stored ? 'local' : 'error', stored ? {} : { message: '이 기기에 저장할 수 없습니다. 로그인하여 원고를 저장해 주세요.' })
-    }
+    queueBook(next)
+    preserveQueue()
     return next
   }
 
-  function updateBook(id, updater, { touch = true } = {}) {
+  function updateBook(id, updater) {
+    if (!currentUser.current) return
     const previous = currentBooks.current.find(item => item.id === id)
     if (!previous) return
     const updated = updater(previous)
-    if (updated !== previous) commit(updated, touch)
+    if (updated !== previous) commit(updated)
   }
 
-  function openLibrary({ user: account, books: remoteBooks }, importGuest = false) {
+  function openLibrary({ user: account, books: remoteBooks, examples = [] }, importGuest = false) {
     queues.current.forEach(queue => clearTimeout(queue.timer))
     queues.current.clear()
     currentUser.current = account
     setUser(account)
+    setNeedsSignIn(false)
     setStatuses({})
     setVersions(previous => Object.fromEntries([...new Set([...Object.keys(previous), ...currentBooks.current.map(book => book.id)])]
       .map(id => [id, (previous[id] ?? 0) + 1])))
     if (!account) {
-      publishBooks(guest.current.books)
+      publishBooks(exampleShelf())
       return
     }
 
@@ -213,9 +211,12 @@ export function useLibrary() {
         queueBook(copy)
       }
     }
+    for (const example of examples) {
+      if (!merged.has(example.id)) merged.set(example.id, example)
+    }
     publishBooks([...merged.values()])
     if (preserveQueue() && importGuest) {
-      guest.current = { books: sampleBooks(), touched: [] }
+      guest.current = { books: [], touched: [] }
       writeLocal(guestKey, guest.current)
     }
     return { imported, bookIds: new Set(merged.keys()) }
@@ -267,7 +268,11 @@ export function useLibrary() {
       refreshing.current = true
       try {
         const result = await request('/session')
-        if (!mounted || currentUser.current?.id !== account.id || result.user?.id !== account.id) return
+        if (!mounted || currentUser.current?.id !== account.id) return
+        if (result.user?.id !== account.id) {
+          if (!queues.current.size || preserveQueue()) openLibrary(result)
+          return
+        }
         const byId = new Map(currentBooks.current.map(book => [book.id, book]))
         const changed = []
         for (const remote of result.books) {
@@ -311,7 +316,7 @@ export function useLibrary() {
   }, [])
 
   return {
-    user, books, ready, statuses, versions,
+    user, books, ready, statuses, versions, needsSignIn,
     guestHasDrafts: guest.current.touched.length > 0,
     create: commit, update: updateBook, save: saveBook, flush, authenticate, signOut, resolveConflict,
   }

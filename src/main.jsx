@@ -26,6 +26,7 @@ function App() {
   const [issueId, setIssueId] = useState(null)
 
   const previousBook = useRef(route.id)
+  const authRoute = useRef(null)
 
   useEffect(() => {
     function onHashChange() { setRoute(readRoute()) }
@@ -44,6 +45,27 @@ function App() {
     setRoute({ view, id })
     window.scrollTo(0, 0)
   }
+
+  function requestRoute(view, id) {
+    if (library.user || view === 'library') {
+      navigate(view, id)
+      return
+    }
+    authRoute.current = { view, id }
+    setModal('auth-route')
+  }
+
+  useEffect(() => {
+    if (library.ready && !library.user && (route.view !== 'library' || library.needsSignIn)) setModal(current => current ?? 'auth-route')
+  }, [library.ready, library.user, library.needsSignIn, route.view, route.id])
+
+  useEffect(() => {
+    if (modal !== 'auth-route' || !library.user || !authRoute.current) return
+    const { view, id } = authRoute.current
+    authRoute.current = null
+    setModal(null)
+    if (!id || library.books.some(book => book.id === id)) navigate(view, id)
+  }, [modal, library.user])
 
   function requestNewBook() {
     setModal(library.user ? 'create' : 'auth-create')
@@ -64,10 +86,13 @@ function App() {
     setModal(state.signIn ? 'auth' : state.state === 'conflict' ? 'conflict' : 'error')
   }
 
-  const book = route.view === 'book' ? library.books.find(item => item.id === route.id && !item.trashed) : null
+  const book = library.user && route.view === 'book' ? library.books.find(item => item.id === route.id && !item.trashed) : null
   const chapter = book?.chapters.find(item => item.id === book.activeChapterId) ?? book?.chapters[0]
   const unsaved = Object.values(library.statuses).some(item => ['saving', 'conflict', 'error'].includes(item.state))
-  const close = () => setModal(null)
+  function close() {
+    authRoute.current = null
+    setModal(null)
+  }
 
   useEffect(() => {
     document.title = book ? book.title + ' — 여백' : '여백 — 집필 스튜디오'
@@ -76,11 +101,11 @@ function App() {
   return (
     <>
       {route.view !== 'book' ? (
-        <Dashboard library={library} view={route.view} onNavigate={navigate} onOpen={id => navigate('book', id)}
-          onCreate={requestNewBook} onAccount={openAccount} onSettings={() => setModal('settings')} onSaveStatus={resolveIssue} />
+        <Dashboard library={library} view={library.user ? route.view : 'library'} onNavigate={requestRoute}
+          onOpen={id => requestRoute('book', id)} onCreate={requestNewBook} onAccount={openAccount} onSaveStatus={resolveIssue} />
       ) : book && chapter ? (
         <Suspense fallback={<main className="missing-book" role="status">편집기를 여는 중…</main>}>
-          <WritingEditor key={book.id} book={book} chapter={chapter} library={library}
+          <WritingEditor key={library.user.id + '/' + book.id} book={book} chapter={chapter} library={library}
             onBack={() => navigate('library')} onAccount={openAccount} onSaveStatus={() => resolveIssue(book.id)} />
         </Suspense>
       ) : (
@@ -99,17 +124,22 @@ function App() {
         close()
         navigate('book', newBook.id)
       }} />}
-      {(modal === 'auth' || (modal === 'auth-create' && library.ready && !library.user)) &&
+      {(modal === 'auth' || (library.ready && !library.user && ['auth-create', 'auth-route'].includes(modal))) &&
         <AuthDialog onClose={close} onAuthenticate={library.authenticate} hasDrafts={library.guestHasDrafts}
-        description={modal === 'auth-create' ? '새 책을 작성하려면 먼저 로그인하거나 계정을 만들어 주세요.' : undefined}
+        description={modal === 'auth-create' ? '새 책을 작성하려면 먼저 로그인하거나 계정을 만들어 주세요.' :
+          modal === 'auth-route' ? '책을 열고 서재를 이용하려면 로그인해 주세요.' : undefined}
         onSuccess={({ imported, bookIds }) => {
           if (modal === 'auth-create') {
             setModal('create')
             return
           }
+          const target = authRoute.current ?? route
           close()
-          if (route.id && imported.has(route.id)) navigate('book', imported.get(route.id))
-          else if (book && !bookIds.has(book.id)) navigate('library')
+          if (target.view === 'book') {
+            const id = imported.get(target.id) ?? target.id
+            if (bookIds.has(id)) navigate('book', id)
+            else navigate('library')
+          } else if (target.view !== 'library') navigate(target.view)
         }} />}
       {modal === 'settings' && <AccountDialog user={library.user} unsaved={unsaved} onClose={close}
         onLogin={() => setModal('auth')} onSignOut={async () => { await library.signOut(); close(); navigate('library') }} />}

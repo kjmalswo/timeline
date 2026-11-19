@@ -1,20 +1,22 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { generateHTML } from '@tiptap/core'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
-import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
+import { useEditor, useEditorState } from '@tiptap/react'
 import {
-  AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Bold, BookOpen, ChevronDown, Cloud,
-  CloudAlert, CloudCheck, FileText, Italic, List, ListOrdered, ListTree, Minus, Paintbrush, Plus, Printer,
+  AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Bold, Book, BookOpen, ChevronDown, Cloud,
+  CloudAlert, CloudCheck, FileDown, FileText, Focus, Italic, List, ListOrdered, ListTree, Minus, Paintbrush, Plus, Printer,
   Redo2, Save, Search, SlidersHorizontal, Trash2, Underline, Undo2, X,
 } from 'lucide-react'
 import { bookCharacters, characterCount, COVERS, FONTS, newChapter, PAPERS, TEMPLATES } from './catalog.js'
 import { AccountButton } from './dashboard.jsx'
 import { Dialog } from './dialogs.jsx'
-import { CoverArtwork } from './cover-artwork.jsx'
 import { CoverStudio } from './cover-studio.jsx'
+import { ChapterFlow } from './chapter-flow.jsx'
 import { EditorPhotoTools } from './editor-photo.jsx'
 import { isSaveShortcut } from './keyboard.js'
 import { pixelsPerMillimeter, revealVerticalCaret, WritingSpread } from './spread.jsx'
+import { Publication } from './publication.jsx'
+import { SpineEditor } from './spine.jsx'
+import { WriterDock, WriterPanel, writerShortcut } from './writer-tools.jsx'
 import { BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
 
 const formatNumber = new Intl.NumberFormat('ko-KR')
@@ -72,7 +74,7 @@ function numberOptions(values, label, suffix, active) {
   return [['', label], ...configured.map(value => [value, String(value) + suffix])]
 }
 
-function Toolbar({ editor, book }) {
+function Toolbar({ editor, book, onFocusMode }) {
   const { layout } = book
   const state = useEditorState({
     editor,
@@ -140,6 +142,10 @@ function Toolbar({ editor, book }) {
         <ToolSelect label="문단 들여쓰기" value={state.paragraph.blockIndent} options={numberOptions(BLOCK_INDENTS, '들여쓰기', ' 글자', state.paragraph.blockIndent)}
           onChange={value => paragraph({ blockIndent: numeric(value) })} />
       </div>
+      <button type="button" className="button button-secondary focus-toggle" title="집중 모드 (Alt+Shift+F)"
+        aria-keyshortcuts="Alt+Shift+F" onMouseDown={event => event.preventDefault()} onClick={onFocusMode}>
+        <Focus size={17} /> 집중 모드
+      </button>
     </div>
   )
 }
@@ -192,7 +198,7 @@ function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, on
   )
 }
 
-function Inspector({ book, onLayout, onCover, onDesignCover, onClose }) {
+function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onClose }) {
   const layout = book.layout
   const paper = PAPERS[layout.paper]
   const numericOptions = values => values.map(value => [value, String(value)])
@@ -215,6 +221,9 @@ function Inspector({ book, onLayout, onCover, onDesignCover, onClose }) {
         </label>
         <button type="button" className="button button-secondary cover-inspector-button" onClick={onDesignCover}>
           <Paintbrush size={15} /> 표지 직접 편집
+        </button>
+        <button type="button" className="button button-secondary cover-inspector-button" onClick={onSpine}>
+          <Book size={15} /> 책등 편집
         </button>
       </div>
       <div className="inspector-section">
@@ -260,32 +269,38 @@ function MarginInput({ value, onSave }) {
     onBlur={() => { const next = Math.max(5, Math.min(40, Number(draft) || value)); setDraft(String(next)); if (value !== next) onSave(next) }} />
 }
 
-function SaveStatus({ user, state, onFix }) {
+function SaveStatus({ state, onFix }) {
   if (state?.state === 'conflict' || state?.state === 'error') {
     return <button type="button" className="save-status save-error" title={state.message} onClick={onFix}><CloudAlert size={17} /> 저장 확인</button>
   }
   if (state?.state === 'saving') return <span className="save-status" role="status"><Cloud size={17} /> 저장 중…</span>
-  if (!user) return <span className="save-status" role="status"><Cloud size={17} /> 이 기기에 저장</span>
   return <span className="save-status save-ok" role="status"><CloudCheck size={17} /> 클라우드에 저장됨</span>
 }
 
-function PrintManuscript({ book }) {
-  const paper = PAPERS[book.layout.paper]
-  const { top, right, bottom, left } = book.layout.margins
-  const trim = paper.width + 'mm ' + paper.height + 'mm'
+function EditorMenu({ label, icon: Icon, items }) {
+  const menu = useRef(null)
+  useEffect(() => {
+    function closeOutside(event) {
+      if (!menu.current.contains(event.target)) menu.current.open = false
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    return () => document.removeEventListener('pointerdown', closeOutside)
+  }, [])
   return (
-    <section className="print-manuscript" style={{ ...paperStyle(book.layout), '--front-width': paper.width + 'mm',
-      '--front-height': paper.height + 'mm', '--body-image-max': (paper.height - top - bottom - 6) + 'mm' }}>
-      <style media="print">{'@page { size: ' + trim + '; margin: ' + [top, right, bottom, left].map(value => value + 'mm').join(' ') + '; } @page yeobaek-cover { size: ' + trim + '; margin: 0; }'}</style>
-      {book.coverDesign ? <div className="print-front"><CoverArtwork book={book} /></div> : <div className="print-title"><h1>{book.title}</h1></div>}
-      {book.chapters.map((chapter, index) => (
-        <article className="print-chapter" key={chapter.id}>
-          <span className="chapter-kicker">제 {index + 1}장</span>
-          <h2>{chapter.title}</h2>
-          <div className="paper-body" dangerouslySetInnerHTML={{ __html: generateHTML(chapter.content, writingExtensions) }} />
-        </article>
-      ))}
-    </section>
+    <details ref={menu} className="dropdown editor-menu" onKeyDown={event => {
+      if (event.key !== 'Escape' || !event.currentTarget.open) return
+      event.stopPropagation()
+      event.currentTarget.open = false
+      event.currentTarget.querySelector('summary').focus()
+    }}>
+      <summary className="button button-secondary editor-action" aria-label={label} title={label}><Icon size={17} /> <span>{label}</span></summary>
+      <div className="dropdown-panel">
+        {items.map(([name, ItemIcon, action]) => <button type="button" key={name} onClick={event => {
+          event.currentTarget.closest('details').open = false
+          action()
+        }}><ItemIcon size={16} /> {name}</button>)}
+      </div>
+    </details>
   )
 }
 
@@ -301,19 +316,21 @@ function ZoomControls({ zoom, onZoom }) {
 
 export function WritingEditor({ book, chapter, library, onBack, onAccount, onSaveStatus }) {
   const [inspect, setInspect] = useState(false)
+  const [writerTool, setWriterTool] = useState(null)
+  const [focusMode, setFocusMode] = useState(false)
   const [showSpread, setShowSpread] = useState(preferredSpread)
   const [zoom, setZoom] = useState(preferredZoom)
   const [stageWidth, setStageWidth] = useState(0)
   const [coverOpen, setCoverOpen] = useState(false)
+  const [spineOpen, setSpineOpen] = useState(false)
   const [saveFlash, setSaveFlash] = useState('')
   const stage = useRef(null)
   const saveTimer = useRef(null)
-  const saveHandler = useRef(null)
+  const shortcuts = useRef(null)
   const [chaptersOpen, setChaptersOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [printing, setPrinting] = useState(null)
+  const [output, setOutput] = useState(null)
   const [focusChapter, setFocusChapter] = useState(null)
-  const previousSpread = useRef(showSpread)
   const callbacks = useRef({})
   const lastCursor = useRef(book.cursor)
   const documentKey = chapter.id + ':' + (library.versions[book.id] ?? 0)
@@ -339,7 +356,7 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
       if (anchor === lastCursor.current?.anchor && head === lastCursor.current?.head) return
       const cursor = { anchor, head }
       lastCursor.current = cursor
-      library.update(book.id, current => current.activeChapterId === chapter.id ? { ...current, cursor } : current, { touch: false })
+      library.update(book.id, current => current.activeChapterId === chapter.id ? { ...current, cursor } : current)
     },
   }
   const editor = useEditor({
@@ -365,27 +382,21 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     },
   }, [documentKey])
 
-  useEffect(() => {
-    const returnedToSingle = previousSpread.current && !showSpread
-    previousSpread.current = showSpread
-    if (returnedToSingle && editor) {
-      const frame = requestAnimationFrame(() => {
-        if (!editor.isDestroyed) revealVerticalCaret(editor)
-      })
-      return () => cancelAnimationFrame(frame)
-    }
-  }, [editor, showSpread])
-
-  useEffect(() => {
-    if (!printing) return
-    let alive = true
-    const images = [...document.querySelectorAll('.print-manuscript img')]
-    Promise.all([document.fonts.ready, ...images.map(image => image.decode().catch(() => {}))])
-      .then(() => requestAnimationFrame(() => {
-        if (alive) { window.print(); setPrinting(null) }
-      }))
-    return () => { alive = false }
-  }, [printing])
+  const chapterOrder = book.chapters.map(item => item.id).join('/')
+  useLayoutEffect(() => {
+    if (!editor || showSpread) return
+    const frame = requestAnimationFrame(() => {
+      if (editor.isDestroyed) return
+      if (initial.cursor || editor.isFocused) revealVerticalCaret(editor)
+      else {
+        const view = stage.current
+        const heading = view.querySelector('[data-current-chapter]')
+        const offset = Math.min(120, view.clientHeight * 0.25)
+        view.scrollTop += heading.getBoundingClientRect().top - view.getBoundingClientRect().top - offset
+      }
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [editor, showSpread, initial, chapterOrder])
 
   useLayoutEffect(() => {
     const element = stage.current
@@ -394,13 +405,11 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     const observer = new ResizeObserver(([entry]) => setStageWidth(entry.contentRect.width))
     observer.observe(element)
     return () => observer.disconnect()
-  }, [chapter.id])
+  }, [])
 
   useEffect(() => {
     function onKey(event) {
-      if (!isSaveShortcut(event) || document.querySelector('dialog[open]')) return
-      event.preventDefault()
-      if (!event.repeat && !event.isComposing) saveHandler.current()
+      if (!event.isComposing && !document.querySelector('dialog[open]')) shortcuts.current(event)
     }
     window.addEventListener('keydown', onKey)
     return () => {
@@ -415,12 +424,42 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     void library.save(book.id).then(saved => {
       if (!saved || !stage.current) return
       clearTimeout(saveTimer.current)
-      setSaveFlash(library.user ? '수동 저장 완료' : '이 기기에 저장했습니다.')
+      setSaveFlash('수동 저장 완료')
       saveTimer.current = setTimeout(() => setSaveFlash(''), 2200)
     })
   }
 
-  saveHandler.current = manualSave
+  function toggleWriterTool(kind) {
+    setInspect(false)
+    setFocusMode(false)
+    setWriterTool(current => current === kind ? null : kind)
+  }
+
+  function toggleFocusMode() {
+    setChaptersOpen(false)
+    setInspect(false)
+    setWriterTool(null)
+    setFocusMode(current => !current)
+    editor?.commands.focus(undefined, { scrollIntoView: false })
+  }
+
+  shortcuts.current = event => {
+    if (event.defaultPrevented) return
+    const kind = writerShortcut(event)
+    const command = event.ctrlKey || event.metaKey
+    const print = command && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'p'
+    const focus = event.altKey && event.shiftKey && !command && event.code === 'KeyF'
+    const escape = event.key === 'Escape' && focusMode
+    if (!kind && !print && !focus && !escape && !isSaveShortcut(event)) return
+    event.preventDefault()
+    if (event.repeat) return
+    if (kind) toggleWriterTool(kind)
+    else if (print) {
+      if (document.activeElement?.matches('input')) document.activeElement.blur()
+      setOutput('print')
+    } else if (focus || escape) toggleFocusMode()
+    else manualSave()
+  }
 
   function changeZoom(value) {
     const next = Math.max(minZoom, Math.min(maxZoom, value))
@@ -448,19 +487,18 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     } catch {}
   }
 
-  const chapterHeading = (
-    <>
-      <span className="chapter-kicker">제 {chapterIndex + 1}장</span>
-      <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter}
-        onSave={title => patch(current => ({
-          ...current,
-          chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, title } : item),
-        }))} />
-    </>
-  )
-
   function selectChapter(id) {
     if (id !== chapter.id) patch(current => ({ ...current, cursor: null, activeChapterId: id }))
+    else stage.current?.querySelector('[data-current-chapter]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
+
+  function jumpFromNote(id) {
+    selectChapter(id)
+    if (window.matchMedia('(max-width: 850px)').matches) setWriterTool(null)
+  }
+
+  function updateWriterNotes(update) {
+    patch(current => ({ ...current, writerNotes: update(current.writerNotes ?? []) }))
   }
 
   function addChapter() {
@@ -485,14 +523,26 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     patch(current => {
       if (current.chapters.length <= 1) return current
       const chapters = current.chapters.filter(item => item.id !== chapter.id)
-      return { ...current, chapters, activeChapterId: chapters[Math.min(chapterIndex, chapters.length - 1)].id, cursor: null }
+      const writerNotes = current.writerNotes?.map(note => ({
+        ...note,
+        ...(note.chapterId === chapter.id ? { chapterId: null } : {}),
+        ...(note.payoffChapterId === chapter.id ? { payoffChapterId: null } : {}),
+      }))
+      return { ...current, chapters, writerNotes, activeChapterId: chapters[Math.min(chapterIndex, chapters.length - 1)].id, cursor: null }
     })
     setConfirmDelete(false)
   }
 
+  const manuscript = <ChapterFlow book={book} activeId={chapter.id} editor={editor} onSelect={selectChapter}>
+    <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter}
+      onSave={title => patch(current => ({
+        ...current, chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, title } : item),
+      }))} />
+  </ChapterFlow>
+
   return (
     <>
-      <div className="editor-app">
+      <div className={'editor-app' + (focusMode ? ' editor-focused' : '')}>
         <header className="editor-header">
           <div className="editor-header-left">
             <button type="button" className="icon-button rail-toggle" aria-label="장 목록 열기" aria-expanded={chaptersOpen} onClick={() => setChaptersOpen(!chaptersOpen)}><ListTree size={21} /></button>
@@ -502,7 +552,7 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
           </div>
           <div className="editor-header-right">
             <div className="save-controls">
-              <SaveStatus user={library.user} state={library.statuses[book.id]} onFix={onSaveStatus} />
+              <SaveStatus state={library.statuses[book.id]} onFix={onSaveStatus} />
               <button type="button" onClick={manualSave} className="icon-button manual-save-button"
                 aria-label="수동 저장" aria-keyshortcuts="Control+S Meta+S" title="수동 저장 (Ctrl+S / ⌘S)"><Save size={17} /></button>
             </div>
@@ -510,26 +560,29 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
               aria-pressed={showSpread} title="양면 보기" aria-label="양면 보기">
               <BookOpen size={17} /> <span>양면 보기</span>
             </button>
-            <button className="button button-secondary editor-action" type="button" onClick={() => setInspect(!inspect)} aria-pressed={inspect} title="판형 설정" aria-label="판형 설정">
+            <button className="button button-secondary editor-action" type="button" onClick={() => { setWriterTool(null); setInspect(!inspect) }}
+              aria-pressed={inspect} title="판형 설정" aria-label="판형 설정">
               <SlidersHorizontal size={17} /> <span>판형 설정</span>
             </button>
-            <button className="button button-secondary editor-action" type="button" onClick={() => setCoverOpen(true)}
-              title="표지 편집" aria-label="표지 편집"><Paintbrush size={17} /> <span>표지 편집</span></button>
-            <button className="button button-secondary editor-action" type="button" onClick={() => setPrinting(book)} title="인쇄 또는 PDF 저장" aria-label="인쇄 또는 PDF 저장">
-              <Printer size={17} /> <span>인쇄</span>
-            </button>
+            <EditorMenu label="표지·책등" icon={Paintbrush} items={[
+              ['표지 편집', Paintbrush, () => setCoverOpen(true)], ['책등 편집', Book, () => setSpineOpen(true)],
+            ]} />
+            <EditorMenu label="인쇄·내보내기" icon={Printer} items={[
+              ['인쇄 설정', Printer, () => setOutput('print')], ['내보내기', FileDown, () => setOutput('export')],
+            ]} />
             <AccountButton user={library.user} onClick={onAccount} ready={library.ready} />
           </div>
         </header>
-        <Toolbar editor={editor} book={book} />
+        <Toolbar editor={editor} book={book} onFocusMode={toggleFocusMode} />
         <main className={'workbench' + (inspect ? ' inspector-open' : '')}>
           <ChapterRail book={book} chapter={chapter} open={chaptersOpen} onClose={() => setChaptersOpen(false)}
             onSelect={selectChapter} onAdd={addChapter} onMove={moveChapter} onDelete={() => setConfirmDelete(true)} />
           {chaptersOpen && <button type="button" className="rail-backdrop" aria-label="장의 목록 닫기" onClick={() => setChaptersOpen(false)} />}
           <div className="writing-area">
-            <div className="paper-stage" ref={stage} key={chapter.id}>
+            <div className="paper-stage" ref={stage}>
               {showSpread ? (
-                <WritingSpread editor={editor} paper={paper} layout={book.layout} style={articleStyle} zoom={zoom / 100}>{chapterHeading}</WritingSpread>
+                <WritingSpread editor={editor} paper={paper} layout={book.layout} style={articleStyle} activeId={chapter.id}
+                  chapterOrder={chapterOrder} restoreCursor={Boolean(initial.cursor)} zoom={zoom / 100}>{manuscript}</WritingSpread>
               ) : (
                 <div className="single-sheet-area" style={{
                   '--paper-base-width': sheetWidth + 'px',
@@ -537,28 +590,38 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
                   '--paper-view-scale': zoom / 100,
                 }}>
                   <article className="paper-article" style={articleStyle}>
-                    {chapterHeading}
-                    <EditorContent className="paper-body" editor={editor} />
+                    {manuscript}
                   </article>
                 </div>
               )}
             </div>
             {saveFlash && <p className="manual-save-feedback" role="status">{saveFlash}</p>}
             <ZoomControls zoom={zoom} onZoom={changeZoom} />
+            {focusMode && <button type="button" className="button button-secondary focus-exit" onClick={toggleFocusMode}>
+              <X size={16} /> 집중 모드 종료
+            </button>}
           </div>
           {inspect && <Inspector book={book} onClose={() => setInspect(false)}
             onLayout={partial => patch(current => ({ ...current, layout: { ...current.layout, ...partial } }))}
-            onCover={cover => patch(current => ({ ...current, cover }))} onDesignCover={() => setCoverOpen(true)} />}
+            onCover={cover => patch(current => ({ ...current, cover }))} onDesignCover={() => setCoverOpen(true)} onSpine={() => setSpineOpen(true)} />}
+          {writerTool && <WriterPanel key={writerTool} kind={writerTool} book={book} chapterId={chapter.id}
+            onChange={updateWriterNotes} onJump={jumpFromNote} onClose={() => setWriterTool(null)} />}
+          <WriterDock active={writerTool} onToggle={toggleWriterTool} />
         </main>
         <footer className="editor-footer">
           <span><FileText size={14} /> {TEMPLATES[book.template].name} · {paper.width} × {paper.height} mm</span>
           <span>현재 장 {formatNumber.format(counts[0])}자 <small>(공백 포함 {formatNumber.format(counts[1])}자)</small> <i /> 전체 {formatNumber.format(counts[2])}자</span>
         </footer>
       </div>
-      {printing && <PrintManuscript book={printing} />}
+      <Publication book={book} mode={output} onClose={() => setOutput(null)} />
       {coverOpen && <CoverStudio book={book} onClose={() => setCoverOpen(false)} onApply={coverDesign => {
         patch(current => ({ ...current, coverDesign }))
         setCoverOpen(false)
+        manualSave()
+      }} />}
+      {spineOpen && <SpineEditor book={book} onClose={() => setSpineOpen(false)} onApply={spine => {
+        patch(current => ({ ...current, spine }))
+        setSpineOpen(false)
         manualSave()
       }} />}
       {confirmDelete && <Dialog title="현재 장을 삭제할까요?" description={'“' + chapter.title + '”의 제목과 본문을 삭제합니다.'} onClose={() => setConfirmDelete(false)}>

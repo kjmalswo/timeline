@@ -14,10 +14,10 @@ export const FONTS = {
 }
 
 export const COVERS = {
-  dawn: { name: '보랏빛 새벽', ink: '#fff9fb' },
-  grove: { name: '초록의 숲', ink: '#fffcef' },
-  season: { name: '따뜻한 노을', ink: '#482c2a' },
-  ivory: { name: '아이보리', ink: '#583d56' },
+  dawn: { name: '보랏빛 새벽', ink: '#fff9fb', base: '#59426e' },
+  grove: { name: '초록의 숲', ink: '#fffcef', base: '#425b42' },
+  season: { name: '따뜻한 노을', ink: '#482c2a', base: '#f1bdad' },
+  ivory: { name: '아이보리', ink: '#583d56', base: '#f9edda' },
 }
 
 export const TEMPLATES = {

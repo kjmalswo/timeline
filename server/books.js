@@ -2,10 +2,11 @@ import { getSchema } from '@tiptap/core'
 import { ALIGNS, COLORS, inRange, writingExtensions } from '../src/document.js'
 import { COVERS, FONTS, PAPERS, STATUSES, TEMPLATES } from '../src/catalog.js'
 import {
-  COVER_LAYER_LIMIT, COVER_STROKE_LIMIT, COVER_TEXT_LIMIT, STROKE_POINT_LIMIT, coverAlignments, photoFits, validColor,
+  COVER_LAYER_LIMIT, COVER_STROKE_LIMIT, COVER_TEXT_LIMIT, SPINE_WIDTH_RANGE, STROKE_POINT_LIMIT, coverAlignments, photoFits, validColor,
 } from '../src/cover-model.js'
 import { BOOK_PHOTO_LIMIT, bookPhotoLength, isPhoto } from '../src/media.js'
 import { IMAGE_ALIGNS, imageRatio, imageWidth } from '../src/manuscript-image.js'
+import { NOTE_BODY_LIMIT, NOTE_KINDS, NOTE_LIMIT, NOTE_TITLE_LIMIT } from '../src/writer-notes.js'
 
 const schema = getSchema(writingExtensions)
 const nodeTypes = new Set(Object.keys(schema.nodes))
@@ -73,6 +74,32 @@ function sanitizeCover(design) {
     }
   })
   return { background: design.background, layers }
+}
+
+function sanitizeSpine(spine) {
+  if (!validColor(spine.background) || !validColor(spine.color) || !Object.hasOwn(FONTS, spine.font)) invalid()
+  return {
+    width: range(spine.width, SPINE_WIDTH_RANGE.min, SPINE_WIDTH_RANGE.max),
+    title: optionalText(spine.title, COVER_TEXT_LIMIT), author: optionalText(spine.author, COVER_TEXT_LIMIT),
+    font: spine.font, color: spine.color, background: spine.background,
+  }
+}
+
+function sanitizeWriterNotes(notes, chapters) {
+  if (!Array.isArray(notes) || notes.length > NOTE_LIMIT) invalid()
+  const seen = new Set()
+  return notes.map(note => {
+    if (typeof note?.id !== 'string' || !identifier.test(note.id) || seen.has(note.id) || !NOTE_KINDS.includes(note.kind)) invalid()
+    seen.add(note.id)
+    return {
+      id: note.id, kind: note.kind, title: optionalText(note.title, NOTE_TITLE_LIMIT),
+      body: optionalText(note.body, NOTE_BODY_LIMIT), chapterId: chapters.has(note.chapterId) ? note.chapterId : null,
+      ...(note.kind === 'character' || note.kind === 'timeline' ? { detail: optionalText(note.detail, NOTE_TITLE_LIMIT) } : {}),
+      ...(note.kind === 'foreshadow' ? {
+        payoffChapterId: chapters.has(note.payoffChapterId) ? note.payoffChapterId : null, resolved: note.resolved === true,
+      } : {}),
+    }
+  })
 }
 
 function sanitizeDocument(document) {
@@ -151,6 +178,8 @@ export function sanitizeBook(source, id) {
     Number.isSafeInteger(position) && inRange(position, 0, 8_000_000)
   ) ? { anchor: source.cursor.anchor, head: source.cursor.head } : null
   const coverDesign = source.coverDesign == null ? null : sanitizeCover(source.coverDesign)
+  const spine = source.spine == null ? null : sanitizeSpine(source.spine)
+  const writerNotes = source.writerNotes == null ? [] : sanitizeWriterNotes(source.writerNotes, seen)
   if (bookPhotoLength({ chapters: cleanChapters, coverDesign }) > BOOK_PHOTO_LIMIT) invalid()
   return {
     id, title: name(source.title), template: source.template, cover: source.cover, status: source.status,
@@ -163,5 +192,7 @@ export function sanitizeBook(source, id) {
     },
     activeChapterId, cursor,
     ...(coverDesign ? { coverDesign } : {}),
+    ...(spine ? { spine } : {}),
+    ...(writerNotes.length ? { writerNotes } : {}),
   }
 }

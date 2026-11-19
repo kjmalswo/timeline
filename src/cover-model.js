@@ -4,14 +4,15 @@ export const COVER_LAYER_LIMIT = 28
 export const COVER_STROKE_LIMIT = 120
 export const STROKE_POINT_LIMIT = 360
 export const COVER_TEXT_LIMIT = 160
+export const SPINE_WIDTH_RANGE = { min: 2, max: 60 }
 export const coverAlignments = ['left', 'center', 'right']
 export const photoFits = ['contain', 'cover']
 export const validColor = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
 
-export function textLayer(book, role) {
+export function textLayer(book, role, id = newId()) {
   const title = role === 'title'
   return {
-    id: newId(), type: 'text', role,
+    id, type: 'text', role,
     text: title ? book.title : '',
     x: 10, y: title ? 15 : 78, w: 80,
     angle: 0, opacity: 1,
@@ -22,6 +23,25 @@ export function textLayer(book, role) {
 
 export function initialCover(book) {
   return { background: null, layers: [textLayer(book, 'title')] }
+}
+
+export function coverAuthor(book) {
+  return book.coverDesign?.layers.find(layer => layer.type === 'text' && layer.role === 'author' && layer.text.trim())?.text.trim() || ''
+}
+
+export function frontDesign(book) {
+  if (book.coverDesign) return book.coverDesign
+  const layers = [textLayer(book, 'title', 'front-title')]
+  if (book.spine?.author) layers.push({ ...textLayer(book, 'author', 'front-author'), text: book.spine.author })
+  return { background: null, layers }
+}
+
+export function defaultSpine(book) {
+  const cover = COVERS[book.cover]
+  return {
+    width: 12, title: '', author: coverAuthor(book), font: 'serif',
+    color: cover.ink, background: book.coverDesign?.background ?? cover.base,
+  }
 }
 
 export function photoLayer(photo, paper) {
