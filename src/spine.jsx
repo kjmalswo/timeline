@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { FONTS, PAPERS } from './catalog.js'
 import { CoverArtwork } from './cover-artwork.jsx'
 import { COVER_TEXT_LIMIT, defaultSpine, frontDesign, SPINE_WIDTH_RANGE } from './cover-model.js'
 import { Dialog } from './dialogs.jsx'
+import { handleDraftHistory, HistoryButtons, useDraftHistory } from './history-controls.jsx'
 
 export function coverSize(book, spine = book.spine ?? defaultSpine(book)) {
   const paper = PAPERS[book.layout.paper]
@@ -36,19 +36,22 @@ export function CoverWrap({ book, spine = book.spine ?? defaultSpine(book) }) {
 }
 
 export function SpineEditor({ book, onClose, onApply }) {
-  const [draft, setDraft] = useState(() => book.spine ?? defaultSpine(book))
+  const history = useDraftHistory(() => book.spine ?? defaultSpine(book))
+  const draft = history.value
   const { min, max } = SPINE_WIDTH_RANGE
   const preview = { ...draft, width: Math.max(min, Math.min(max, Number(draft.width) || min)) }
   const size = coverSize(book, preview)
-  function change(field, value) {
-    setDraft(current => ({ ...current, [field]: value }))
+  function change(field, value, merge = true) {
+    history.change(current => current[field] === value ? current : { ...current, [field]: value }, { group: merge ? field : undefined })
   }
 
-  return <Dialog className="spine-dialog" title="책등 편집" onClose={onClose}>
+  return <Dialog className="spine-dialog" title="책등 편집" onClose={onClose} onKeyDown={event => handleDraftHistory(event, history.step)}>
     <form onSubmit={event => {
       event.preventDefault()
-      onApply({ ...draft, width: Number(draft.width), title: draft.title.trim(), author: draft.author.trim() })
+      if (draft === book.spine) onClose()
+      else onApply({ ...draft, width: Number(draft.width), title: draft.title.trim(), author: draft.author.trim() })
     }}>
+      <HistoryButtons canUndo={history.canUndo} canRedo={history.canRedo} onStep={history.step} />
       <div className="spine-workbench">
         <div className="spine-preview">
           <CoverWrap book={book} spine={preview} />
@@ -65,7 +68,7 @@ export function SpineEditor({ book, onClose, onApply }) {
             <input value={draft.author} maxLength={COVER_TEXT_LIMIT} onChange={event => change('author', event.target.value)} />
           </label>
           <label className="field">글꼴
-            <select value={draft.font} onChange={event => change('font', event.target.value)}>
+            <select value={draft.font} onChange={event => change('font', event.target.value, false)}>
               {Object.entries(FONTS).map(([value, { name }]) => <option key={value} value={value}>{name}</option>)}
             </select>
           </label>

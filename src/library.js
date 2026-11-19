@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { newId } from './catalog.js'
 import { exampleShelf } from './example-shelf.js'
+import { bookChange, createHistory, restoreBook } from './history.js'
 
 const guestKey = 'yeobaek.guest.v1'
 
@@ -50,6 +51,9 @@ export function useLibrary() {
   const [needsSignIn, setNeedsSignIn] = useState(false)
   const [statuses, setStatuses] = useState({})
   const [versions, setVersions] = useState({})
+  const [history] = useState(createHistory)
+  const [, refreshHistory] = useState(0)
+  const [historyReplay, setHistoryReplay] = useState(null)
   const queues = useRef(new Map())
   const refreshing = useRef(false)
 
@@ -163,15 +167,60 @@ export function useLibrary() {
     return next
   }
 
-  function updateBook(id, updater) {
+  function createBook(book) {
+    if (!currentUser.current) return
+    history.record({ scope: book.id, before: { fields: { trashed: true } }, after: { fields: { trashed: false } } })
+    return commit(book)
+  }
+
+  function updateBook(id, updater, options = {}) {
     if (!currentUser.current) return
     const previous = currentBooks.current.find(item => item.id === id)
     if (!previous) return
+    if (options.beforePosition && options.beforePosition.chapterId !== previous.activeChapterId) return
     const updated = updater(previous)
+    if (options.record === false) {
+      if (updated !== previous) history.separate()
+    } else {
+      const change = bookChange(previous, updated, options)
+      if (change) {
+        history.record({ scope: id, ...change, group: options.group })
+        if (updated === previous) refreshHistory(count => count + 1)
+      }
+    }
+    if (updated !== previous || options.beforePosition) setHistoryReplay(current => current?.id === id ? null : current)
     if (updated !== previous) commit(updated)
   }
 
+  function stepHistory(direction) {
+    if (!currentUser.current) return
+    const entry = history.step(direction)
+    if (!entry) return
+    if (entry.value.view) {
+      refreshHistory(count => count + 1)
+      return { view: entry.value.view }
+    }
+    const book = currentBooks.current.find(item => item.id === entry.scope)
+    if (!book) {
+      refreshHistory(count => count + 1)
+      return
+    }
+    const next = restoreBook(book, entry.value)
+    setHistoryReplay({ id: book.id, ...entry.value })
+    if (Object.keys(entry.value.fields).length || next.activeChapterId !== book.activeChapterId ||
+        next.cursor?.anchor !== book.cursor?.anchor || next.cursor?.head !== book.cursor?.head) commit(next)
+    return { book: next }
+  }
+
+  function recordView(id, before, after) {
+    if (!currentUser.current) return
+    history.record({ scope: id, before: { view: before }, after: { view: after } })
+    refreshHistory(count => count + 1)
+  }
+
   function openLibrary({ user: account, books: remoteBooks, examples = [] }, importGuest = false) {
+    history.forget()
+    setHistoryReplay(null)
     queues.current.forEach(queue => clearTimeout(queue.timer))
     queues.current.clear()
     currentUser.current = account
@@ -241,11 +290,13 @@ export function useLibrary() {
     if (!pending?.remote) return
     clearTimeout(pending.timer)
     queues.current.delete(id)
+    history.forget(id)
+    setHistoryReplay(current => current?.id === id ? null : current)
     replace(pending.remote)
     status(id, 'saved')
     setVersions(previous => ({ ...previous, [id]: (previous[id] ?? 0) + 1 }))
     if (keepCopy) {
-      const copy = commit({ ...pending.book, id: newId(), revision: 0, title: pending.book.title.slice(0, 145) + ' (이 기기 사본)' })
+      const copy = createBook({ ...pending.book, id: newId(), revision: 0, title: pending.book.title.slice(0, 145) + ' (이 기기 사본)' })
       return copy.id
     }
     preserveQueue()
@@ -280,15 +331,21 @@ export function useLibrary() {
           const local = byId.get(remote.id)
           if (!local || remote.revision > local.revision) {
             byId.set(remote.id, remote)
-            if (local) changed.push(remote.id)
+            if (local) {
+              changed.push(remote.id)
+              history.forget(remote.id)
+            }
           }
         }
         publishBooks([...byId.values()])
-        if (changed.length) setVersions(previous => {
-          const next = { ...previous }
-          for (const id of changed) next[id] = (next[id] ?? 0) + 1
-          return next
-        })
+        if (changed.length) {
+          setHistoryReplay(current => changed.includes(current?.id) ? null : current)
+          setVersions(previous => {
+            const next = { ...previous }
+            for (const id of changed) next[id] = (next[id] ?? 0) + 1
+            return next
+          })
+        }
       } catch {
         // Existing drafts remain available while the connection is interrupted.
       } finally {
@@ -318,6 +375,7 @@ export function useLibrary() {
   return {
     user, books, ready, statuses, versions, needsSignIn,
     guestHasDrafts: guest.current.touched.length > 0,
-    create: commit, update: updateBook, save: saveBook, flush, authenticate, signOut, resolveConflict,
+    canUndo: history.canUndo, canRedo: history.canRedo, historyReplay, stepHistory, recordView,
+    create: createBook, update: updateBook, save: saveBook, flush, authenticate, signOut, resolveConflict,
   }
 }

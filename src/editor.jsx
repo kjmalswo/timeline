@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { NodeSelection, TextSelection } from '@tiptap/pm/state'
+import { NodeSelection } from '@tiptap/pm/state'
 import { useEditor, useEditorState } from '@tiptap/react'
 import {
   AlignCenter, AlignJustify, AlignLeft, AlignRight, ArrowDown, ArrowLeft, ArrowUp, Bold, Book, BookOpen, ChevronDown, Cloud,
   CloudAlert, CloudCheck, FileDown, FileText, Focus, Italic, List, ListOrdered, ListTree, Minus, Paintbrush, Plus, Printer,
-  Redo2, Save, Search, SlidersHorizontal, Trash2, Underline, Undo2, X,
+  Save, Search, SlidersHorizontal, Trash2, Underline, X,
 } from 'lucide-react'
 import { bookCharacters, characterCount, COVERS, FONTS, newChapter, PAPERS, TEMPLATES } from './catalog.js'
 import { AccountButton } from './dashboard.jsx'
@@ -13,35 +13,18 @@ import { CoverStudio } from './cover-studio.jsx'
 import { ChapterFlow } from './chapter-flow.jsx'
 import { EditorPhotoTools } from './editor-photo.jsx'
 import { isSaveShortcut } from './keyboard.js'
+import { HistoryButtons } from './history-controls.jsx'
+import { createDocumentSerializer, editPosition, formatEdit, historyRestore, marksChanged, restoreManuscript, typingGroup } from './manuscript-history.js'
 import { pixelsPerMillimeter, revealVerticalCaret, WritingSpread } from './spread.jsx'
 import { Publication } from './publication.jsx'
 import { SpineEditor } from './spine.jsx'
 import { WriterDock, WriterPanel, writerShortcut } from './writer-tools.jsx'
-import { BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
+import { minZoom, maxZoom } from './writing-view.js'
+import { BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS, paperStyle, TEXT_SIZES, writingExtensions } from './document.js'
 
 const formatNumber = new Intl.NumberFormat('ko-KR')
-const paperViewKey = 'yeobaek.paper-view'
-const zoomKey = 'yeobaek.paper-zoom'
-const minZoom = 50
-const maxZoom = 200
 const zoomStep = 10
 
-function preferredZoom() {
-  try {
-    const value = Number(localStorage.getItem(zoomKey))
-    return Number.isInteger(value) && value >= minZoom && value <= maxZoom ? value : 100
-  } catch {
-    return 100
-  }
-}
-
-function preferredSpread() {
-  try {
-    return localStorage.getItem(paperViewKey) === 'spread'
-  } catch {
-    return false
-  }
-}
 const alignments = [
   [DEFAULT_ALIGNMENT, '양쪽 정렬', AlignJustify], ['left', '왼쪽 정렬', AlignLeft],
   ['center', '가운데 정렬', AlignCenter], ['right', '오른쪽 정렬', AlignRight],
@@ -58,11 +41,11 @@ function IconCommand({ icon: Icon, label, press, active, disabled }) {
   )
 }
 
-function ToolSelect({ label, value, onChange, options, className = '' }) {
+function ToolSelect({ label, title = label, value, onChange, options, className = '' }) {
   return (
-    <label className={'tool-select ' + className} title={label}>
+    <label className={'tool-select ' + className} title={title}>
       <select value={value ?? ''} aria-label={label} onChange={event => onChange(event.target.value)}>
-        {options.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+        {options.map(([key, name, disabled]) => <option key={key} value={key} disabled={disabled}>{name}</option>)}
       </select>
       <ChevronDown size={12} aria-hidden="true" />
     </label>
@@ -74,7 +57,16 @@ function numberOptions(values, label, suffix, active) {
   return [['', label], ...configured.map(value => [value, String(value) + suffix])]
 }
 
-function Toolbar({ editor, book, onFocusMode }) {
+function NumericFormat({ label, values, unit, reading, onChange }) {
+  const { selected, base } = reading
+  const options = numberOptions(values, `${base}${unit} (기본)`, unit, selected)
+    .map(([value, name]) => [value, label + ' ' + name])
+  if (selected === 'mixed') options.unshift(['mixed', label + ' 혼합', true])
+  return <ToolSelect label={label} title={`${label} · 기본 ${base}${unit}`} value={selected} options={options}
+    onChange={value => onChange(value === '' ? null : Number(value))} />
+}
+
+function Toolbar({ editor, book, history, onFocusMode }) {
   const { layout } = book
   const state = useEditorState({
     editor,
@@ -85,30 +77,27 @@ function Toolbar({ editor, book, onFocusMode }) {
       const image = selection instanceof NodeSelection && selection.node.type.name === 'manuscriptImage' ? selection.node.attrs : null
       return {
         paragraph, image, text: current.getAttributes('textStyle'),
+        formats: formatSelection(current.state, layout),
         bold: current.isActive('bold'), italic: current.isActive('italic'), underline: current.isActive('underline'),
         bullets: current.isActive('bulletList'), numbers: current.isActive('orderedList'),
-        undo: current.can().undo(), redo: current.can().redo(),
       }
     },
   })
-  if (!state) return <div className="toolbar" />
+  if (!state) return <div className="toolbar"><HistoryButtons {...history} /></div>
 
-  const chain = () => editor.chain().focus()
+  const chain = () => editor.chain().focus().setMeta(formatEdit, true)
   const mark = attrs => chain().setMark('textStyle', attrs).removeEmptyTextStyle().run()
   const paragraph = attrs => chain().updateAttributes('paragraph', attrs).updateAttributes('heading', attrs).run()
   const numeric = value => value === '' ? null : Number(value)
 
   return (
     <div className="toolbar" role="group" aria-label="본문 서식">
+      <div className="tool-group"><HistoryButtons {...history} /></div>
       <div className="tool-group">
         {alignments.map(([align, label, icon]) => <IconCommand key={align} icon={icon} label={label}
           active={(state.paragraph.align ?? DEFAULT_ALIGNMENT) === align} press={() => paragraph({ align })} />)}
         <IconCommand icon={List} label="글머리 기호" active={state.bullets} press={() => chain().toggleBulletList().run()} />
         <IconCommand icon={ListOrdered} label="번호 목록" active={state.numbers} press={() => chain().toggleOrderedList().run()} />
-      </div>
-      <div className="tool-group">
-        <IconCommand icon={Undo2} label="실행 취소" disabled={!state.undo} press={() => chain().undo().run()} />
-        <IconCommand icon={Redo2} label="다시 실행" disabled={!state.redo} press={() => chain().redo().run()} />
       </div>
       <div className="tool-group">
         <ToolSelect label="문단 스타일" value={state.paragraph.level} className="paragraph-select"
@@ -133,12 +122,12 @@ function Toolbar({ editor, book, onFocusMode }) {
       </div>
       <EditorPhotoTools editor={editor} book={book} image={state.image} />
       <div className="tool-group textual-tools">
-        <ToolSelect label="자간" value={state.text.letterSpacing} options={numberOptions(LETTER_SPACINGS, '자간', ' em', state.text.letterSpacing)}
-          onChange={value => mark({ letterSpacing: numeric(value) })} />
-        <ToolSelect label="줄 간격" value={state.paragraph.lineHeight} options={numberOptions(LINE_HEIGHTS, '줄 간격', '배', state.paragraph.lineHeight)}
-          onChange={value => paragraph({ lineHeight: numeric(value) })} />
-        <ToolSelect label="첫 줄 들여쓰기" value={state.paragraph.firstLine} options={numberOptions(INDENTS, '첫 줄', ' 글자', state.paragraph.firstLine)}
-          onChange={value => paragraph({ firstLine: numeric(value) })} />
+        <NumericFormat label="자간" reading={state.formats.letterSpacing} values={LETTER_SPACINGS} unit=" em"
+          onChange={letterSpacing => mark({ letterSpacing })} />
+        <NumericFormat label="줄 간격" reading={state.formats.lineHeight} values={LINE_HEIGHTS} unit="배"
+          onChange={lineHeight => paragraph({ lineHeight })} />
+        <NumericFormat label="첫 줄 들여쓰기" reading={state.formats.firstLine} values={INDENTS} unit="자"
+          onChange={firstLine => paragraph({ firstLine })} />
         <ToolSelect label="문단 들여쓰기" value={state.paragraph.blockIndent} options={numberOptions(BLOCK_INDENTS, '들여쓰기', ' 글자', state.paragraph.blockIndent)}
           onChange={value => paragraph({ blockIndent: numeric(value) })} />
       </div>
@@ -150,13 +139,15 @@ function Toolbar({ editor, book, onFocusMode }) {
   )
 }
 
-function NameInput({ value, onSave, label, className, autoFocus = false }) {
+function NameInput({ value, onSave, onDirty, label, className, autoFocus = false }) {
   const [name, setName] = useState(value)
   useEffect(() => { setName(value) }, [value])
+  const next = name.trim() || value
   return (
     <input className={className} aria-label={label} value={name} maxLength={160} autoFocus={autoFocus}
+      data-book-draft={name === value ? undefined : next === value ? 'discard' : 'change'}
       onFocus={event => { if (autoFocus) event.target.select() }}
-      onChange={event => setName(event.target.value)}
+      onChange={event => { setName(event.target.value); onDirty(event.target.value !== value) }}
       onKeyDown={event => {
         if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
           event.preventDefault()
@@ -164,7 +155,7 @@ function NameInput({ value, onSave, label, className, autoFocus = false }) {
         }
       }}
       onBlur={() => {
-        const next = name.trim() || value
+        onDirty(false)
         setName(next)
         if (next !== value) onSave(next)
       }} />
@@ -198,7 +189,7 @@ function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, on
   )
 }
 
-function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onClose }) {
+function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onDirty, onClose }) {
   const layout = book.layout
   const paper = PAPERS[layout.paper]
   const numericOptions = values => values.map(value => [value, String(value)])
@@ -252,7 +243,7 @@ function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onClose })
         <div className="inspector-pair">
           {[['top', '위'], ['right', '오른쪽'], ['bottom', '아래'], ['left', '왼쪽']].map(([side, label]) =>
             <label key={side} className="field">{label}
-              <MarginInput value={layout.margins[side]} onSave={value => onLayout({ margins: { ...layout.margins, [side]: value } })} />
+              <MarginInput value={layout.margins[side]} onDirty={onDirty} onSave={value => onLayout({ margins: { ...layout.margins, [side]: value } })} />
             </label>,
           )}
         </div>
@@ -261,12 +252,15 @@ function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onClose })
   )
 }
 
-function MarginInput({ value, onSave }) {
+function MarginInput({ value, onSave, onDirty }) {
   const [draft, setDraft] = useState(String(value))
   useEffect(() => { setDraft(String(value)) }, [value])
-  return <input type="number" min="5" max="40" value={draft} onChange={event => setDraft(event.target.value)}
-    onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }}
-    onBlur={() => { const next = Math.max(5, Math.min(40, Number(draft) || value)); setDraft(String(next)); if (value !== next) onSave(next) }} />
+  const next = Math.max(5, Math.min(40, Number(draft) || value))
+  return <input type="number" min="5" max="40" value={draft}
+    data-book-draft={draft === String(value) ? undefined : next === value ? 'discard' : 'change'}
+    onChange={event => { setDraft(event.target.value); onDirty(event.target.value !== String(value)) }}
+    onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.currentTarget.blur() }}
+    onBlur={() => { onDirty(false); setDraft(String(next)); if (value !== next) onSave(next) }} />
 }
 
 function SaveStatus({ state, onFix }) {
@@ -314,12 +308,11 @@ function ZoomControls({ zoom, onZoom }) {
   </div>
 }
 
-export function WritingEditor({ book, chapter, library, onBack, onAccount, onSaveStatus }) {
+export function WritingEditor({ book, chapter, library, writingView, onViewChange, onBack, onAccount, onSaveStatus, onHistory }) {
   const [inspect, setInspect] = useState(false)
   const [writerTool, setWriterTool] = useState(null)
   const [focusMode, setFocusMode] = useState(false)
-  const [showSpread, setShowSpread] = useState(preferredSpread)
-  const [zoom, setZoom] = useState(preferredZoom)
+  const { showSpread, zoom } = writingView
   const [stageWidth, setStageWidth] = useState(0)
   const [coverOpen, setCoverOpen] = useState(false)
   const [spineOpen, setSpineOpen] = useState(false)
@@ -331,63 +324,79 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [output, setOutput] = useState(null)
   const [focusChapter, setFocusChapter] = useState(null)
+  const [pendingEdit, setPendingEdit] = useState(false)
   const callbacks = useRef({})
-  const lastCursor = useRef(book.cursor)
+  const editorKeys = useRef(new WeakMap())
+  const lastRestore = useRef(null)
+  const [serialize] = useState(createDocumentSerializer)
   const documentKey = chapter.id + ':' + (library.versions[book.id] ?? 0)
   const initial = useMemo(() => ({ cursor: book.cursor, content: chapter.content }), [documentKey])
-  useEffect(() => { lastCursor.current = initial.cursor }, [initial])
+  const replay = library.historyReplay?.id === book.id ? library.historyReplay : null
 
-  const patch = updater => library.update(book.id, updater)
+  const patch = (updater, options) => library.update(book.id, updater, options)
   const chapterIndex = book.chapters.findIndex(item => item.id === chapter.id)
 
   callbacks.current = {
-    update(editor) {
-      const { anchor, head } = editor.state.selection
-      const cursor = { anchor, head }
-      lastCursor.current = cursor
-      patch(current => ({
-        ...current,
-        chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, content: editor.getJSON() } : item),
-        cursor: current.activeChapterId === chapter.id ? cursor : current.cursor,
-      }))
-    },
-    cursor(editor) {
-      const { anchor, head } = editor.state.selection
-      if (anchor === lastCursor.current?.anchor && head === lastCursor.current?.head) return
-      const cursor = { anchor, head }
-      lastCursor.current = cursor
-      library.update(book.id, current => current.activeChapterId === chapter.id ? { ...current, cursor } : current)
+    history: onHistory,
+    edit(current, next, transaction) {
+      if (editorKeys.current.get(current) !== documentKey || transaction.getMeta(historyRestore)) return
+      const before = current.state
+      const changed = !before.doc.eq(next.doc)
+      if (changed || marksChanged(before, next, transaction)) {
+        const position = editPosition(next, chapter.id)
+        patch(book => changed ? {
+          ...book,
+          chapters: book.chapters.map(item => item.id === chapter.id ? { ...item, content: serialize(next.doc) } : item),
+          cursor: position.cursor,
+        } : book, {
+          beforePosition: editPosition(before, chapter.id), afterPosition: position,
+          group: changed ? typingGroup(before, next, transaction, chapter.id) : undefined,
+        })
+      } else if (current.isFocused && !before.selection.eq(next.selection)) {
+        const { anchor, head } = next.selection
+        patch(book => book.activeChapterId === chapter.id ? { ...book, cursor: { anchor, head } } : book, { record: false })
+      }
     },
   }
   const editor = useEditor({
     extensions: writingExtensions,
     content: initial.content,
     shouldRerenderOnTransaction: false,
-    editorProps: { attributes: { 'aria-label': '장 본문', 'aria-multiline': 'true', role: 'textbox', spellcheck: 'true' } },
-    onUpdate: ({ editor: current }) => callbacks.current.update(current),
-    onSelectionUpdate: ({ editor: current, transaction }) => {
-      if (current.isFocused && !transaction.docChanged) callbacks.current.cursor(current)
+    editorProps: {
+      attributes: { 'aria-label': '장 본문', 'aria-multiline': 'true', role: 'textbox', spellcheck: 'true' },
+      handleDOMEvents: { beforeinput: (_view, event) => {
+        if (!['historyUndo', 'historyRedo'].includes(event.inputType)) return false
+        event.preventDefault()
+        callbacks.current.history(event.inputType === 'historyUndo' ? 'undo' : 'redo')
+        return true
+      } },
     },
-    onCreate: ({ editor: current }) => {
-      const cursor = initial.cursor
-      if (!cursor || current.isDestroyed) return
-      const { doc, tr } = current.state
-      const max = doc.content.size
-      const selection = TextSelection.between(doc.resolve(Math.min(cursor.anchor, max)), doc.resolve(Math.min(cursor.head, max)))
-      current.view.dispatch(tr.setSelection(selection))
-      if (showSpread) return
-      requestAnimationFrame(() => {
-        if (!current.isDestroyed) revealVerticalCaret(current)
-      })
+    onBeforeCreate: ({ editor: current }) => {
+      editorKeys.current.set(current, documentKey)
+      current.on('beforeTransaction', ({ nextState, transaction }) => callbacks.current.edit(current, nextState, transaction))
     },
   }, [documentKey])
+
+  useLayoutEffect(() => {
+    if (!editor || editor.isDestroyed || editorKeys.current.get(editor) !== documentKey) return
+    const fresh = lastRestore.current?.editor !== editor
+    const restore = replay && replay !== lastRestore.current?.replay
+    if (!fresh && !restore) return
+    lastRestore.current = { editor, replay }
+    const position = restore && replay.position?.chapterId === chapter.id ? replay.position : null
+    restoreManuscript(editor, {
+      content: !fresh && restore && serialize(editor.state.doc) !== chapter.content ? chapter.content : null,
+      position,
+      cursor: position ? position.cursor : fresh ? initial.cursor : null,
+    })
+  }, [editor, documentKey, chapter.id, chapter.content, initial, replay, serialize])
 
   const chapterOrder = book.chapters.map(item => item.id).join('/')
   useLayoutEffect(() => {
     if (!editor || showSpread) return
     const frame = requestAnimationFrame(() => {
       if (editor.isDestroyed) return
-      if (initial.cursor || editor.isFocused) revealVerticalCaret(editor)
+      if (initial.cursor || replay?.position || editor.isFocused) revealVerticalCaret(editor)
       else {
         const view = stage.current
         const heading = view.querySelector('[data-current-chapter]')
@@ -396,7 +405,7 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
       }
     })
     return () => cancelAnimationFrame(frame)
-  }, [editor, showSpread, initial, chapterOrder])
+  }, [editor, showSpread, initial, chapterOrder, replay?.position])
 
   useLayoutEffect(() => {
     const element = stage.current
@@ -462,9 +471,7 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
   }
 
   function changeZoom(value) {
-    const next = Math.max(minZoom, Math.min(maxZoom, value))
-    setZoom(next)
-    try { localStorage.setItem(zoomKey, String(next)) } catch {}
+    onViewChange({ zoom: Math.max(minZoom, Math.min(maxZoom, value)) })
   }
 
   const counts = useMemo(() => [characterCount(chapter.content), characterCount(chapter.content, true), bookCharacters(book)], [chapter.content, book.chapters])
@@ -479,16 +486,12 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
   }
 
   function toggleSpread() {
-    const next = !showSpread
-    setShowSpread(next)
+    onViewChange({ showSpread: !showSpread })
     setFocusChapter(null)
-    try {
-      localStorage.setItem(paperViewKey, next ? 'spread' : 'single')
-    } catch {}
   }
 
   function selectChapter(id) {
-    if (id !== chapter.id) patch(current => ({ ...current, cursor: null, activeChapterId: id }))
+    if (id !== chapter.id) patch(current => ({ ...current, cursor: null, activeChapterId: id }), { record: false })
     else stage.current?.querySelector('[data-current-chapter]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }
 
@@ -497,8 +500,8 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     if (window.matchMedia('(max-width: 850px)').matches) setWriterTool(null)
   }
 
-  function updateWriterNotes(update) {
-    patch(current => ({ ...current, writerNotes: update(current.writerNotes ?? []) }))
+  function updateWriterNotes(update, group) {
+    patch(current => ({ ...current, writerNotes: update(current.writerNotes ?? []) }), { group })
   }
 
   function addChapter() {
@@ -533,12 +536,14 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
     setConfirmDelete(false)
   }
 
-  const manuscript = <ChapterFlow book={book} activeId={chapter.id} editor={editor} onSelect={selectChapter}>
-    <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter}
+  const manuscript = <ChapterFlow book={book} activeId={chapter.id} editor={editor} onSelect={selectChapter} single={!showSpread}>
+    <NameInput value={chapter.title} label="장 제목" className="editor-chapter-title" autoFocus={chapter.id === focusChapter} onDirty={setPendingEdit}
       onSave={title => patch(current => ({
         ...current, chapters: current.chapters.map(item => item.id === chapter.id ? { ...item, title } : item),
       }))} />
   </ChapterFlow>
+  const history = { canUndo: library.canUndo || pendingEdit, canRedo: library.canRedo && !pendingEdit, onStep: onHistory }
+  const viewAction = showSpread ? '단면 보기' : '양면 보기'
 
   return (
     <>
@@ -548,7 +553,8 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
             <button type="button" className="icon-button rail-toggle" aria-label="장 목록 열기" aria-expanded={chaptersOpen} onClick={() => setChaptersOpen(!chaptersOpen)}><ListTree size={21} /></button>
             <button type="button" className="back-button" onClick={onBack}><ArrowLeft size={18} /><span>내 서재</span></button>
             <span className="header-divider" />
-            <NameInput value={book.title} label="책 제목" className="editor-book-title" onSave={title => patch(current => ({ ...current, title }))} />
+            <NameInput value={book.title} label="책 제목" className="editor-book-title" onDirty={setPendingEdit}
+              onSave={title => patch(current => ({ ...current, title }))} />
           </div>
           <div className="editor-header-right">
             <div className="save-controls">
@@ -556,9 +562,9 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
               <button type="button" onClick={manualSave} className="icon-button manual-save-button"
                 aria-label="수동 저장" aria-keyshortcuts="Control+S Meta+S" title="수동 저장 (Ctrl+S / ⌘S)"><Save size={17} /></button>
             </div>
-            <button className="button button-secondary editor-action" type="button" onClick={toggleSpread}
-              aria-pressed={showSpread} title="양면 보기" aria-label="양면 보기">
-              <BookOpen size={17} /> <span>양면 보기</span>
+            <button className="button button-secondary editor-action paper-view-toggle" type="button" onClick={toggleSpread}
+              title={viewAction} aria-label={viewAction}>
+              <BookOpen size={17} /> <span>{viewAction}</span>
             </button>
             <button className="button button-secondary editor-action" type="button" onClick={() => { setWriterTool(null); setInspect(!inspect) }}
               aria-pressed={inspect} title="판형 설정" aria-label="판형 설정">
@@ -573,7 +579,7 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
             <AccountButton user={library.user} onClick={onAccount} ready={library.ready} />
           </div>
         </header>
-        <Toolbar editor={editor} book={book} onFocusMode={toggleFocusMode} />
+        <Toolbar editor={editor} book={book} history={history} onFocusMode={toggleFocusMode} />
         <main className={'workbench' + (inspect ? ' inspector-open' : '')}>
           <ChapterRail book={book} chapter={chapter} open={chaptersOpen} onClose={() => setChaptersOpen(false)}
             onSelect={selectChapter} onAdd={addChapter} onMove={moveChapter} onDelete={() => setConfirmDelete(true)} />
@@ -585,23 +591,23 @@ export function WritingEditor({ book, chapter, library, onBack, onAccount, onSav
                   chapterOrder={chapterOrder} restoreCursor={Boolean(initial.cursor)} zoom={zoom / 100}>{manuscript}</WritingSpread>
               ) : (
                 <div className="single-sheet-area" style={{
+                  ...articleStyle,
                   '--paper-base-width': sheetWidth + 'px',
                   '--paper-view-width': sheetWidth * zoom / 100 + 'px',
                   '--paper-view-scale': zoom / 100,
                 }}>
-                  <article className="paper-article" style={articleStyle}>
-                    {manuscript}
-                  </article>
+                  {manuscript}
                 </div>
               )}
             </div>
             {saveFlash && <p className="manual-save-feedback" role="status">{saveFlash}</p>}
             <ZoomControls zoom={zoom} onZoom={changeZoom} />
+            {focusMode && <div className="focus-history"><HistoryButtons {...history} /></div>}
             {focusMode && <button type="button" className="button button-secondary focus-exit" onClick={toggleFocusMode}>
               <X size={16} /> 집중 모드 종료
             </button>}
           </div>
-          {inspect && <Inspector book={book} onClose={() => setInspect(false)}
+          {inspect && <Inspector book={book} onClose={() => setInspect(false)} onDirty={setPendingEdit}
             onLayout={partial => patch(current => ({ ...current, layout: { ...current.layout, ...partial } }))}
             onCover={cover => patch(current => ({ ...current, cover }))} onDesignCover={() => setCoverOpen(true)} onSpine={() => setSpineOpen(true)} />}
           {writerTool && <WriterPanel key={writerTool} kind={writerTool} book={book} chapterId={chapter.id}

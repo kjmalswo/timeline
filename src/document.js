@@ -10,6 +10,8 @@ export const LINE_HEIGHTS = [1.2, 1.4, 1.5, 1.65, 1.75, 1.85, 2, 2.25, 2.5]
 export const INDENTS = [0, 0.5, 1, 1.5, 2, 3]
 export const BLOCK_INDENTS = [0, 1, 2, 3, 4, 5]
 export const DEFAULT_ALIGNMENT = 'justify'
+export const DEFAULT_LETTER_SPACING = 0
+const headingLineHeight = 1.45
 export const ALIGNS = [DEFAULT_ALIGNMENT, 'left', 'center', 'right']
 export const COLORS = ['#292433', '#7a42c8', '#325842', '#96374c', '#846026', '#285e81']
 
@@ -77,7 +79,7 @@ const WritingStyle = Extension.create({
 })
 
 export const writingExtensions = [
-  StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, codeBlock: false, strike: false, code: false }),
+  StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, codeBlock: false, strike: false, code: false, undoRedo: false }),
   TextStyle,
   WritingStyle,
   ManuscriptImage,
@@ -87,8 +89,55 @@ export function paperStyle(layout) {
   return {
     '--paper-font': FONTS[layout.font].family,
     '--paper-font-size': layout.fontSize + 'pt',
+    '--paper-letter-spacing': DEFAULT_LETTER_SPACING + 'em',
     '--paper-line-height': layout.lineHeight,
+    '--heading-line-height': headingLineHeight,
     '--paper-indent': layout.firstLine + 'em',
     '--paper-align': DEFAULT_ALIGNMENT,
+  }
+}
+
+function numericSelection(entries, fallback) {
+  if (!entries.length) return { selected: '', base: fallback }
+  const values = new Set(entries.map(([override, base]) => override ?? base))
+  const bases = new Set(entries.map(([, base]) => base))
+  const base = bases.size === 1 ? entries[0][1] : fallback
+  if (values.size > 1) return { selected: 'mixed', base }
+  return { selected: entries.some(([override]) => override != null) ? values.values().next().value : '', base }
+}
+
+export function formatSelection({ doc, selection, storedMarks }, layout) {
+  const spacing = []
+  const height = []
+  const indent = []
+  const { $from, from, to } = selection
+  const readMarks = marks => spacing.push([marks.find(mark => mark.type.name === 'textStyle')?.attrs.letterSpacing, DEFAULT_LETTER_SPACING])
+  function readBlock(node, position) {
+    if (!['paragraph', 'heading'].includes(node.type.name)) return
+    const heading = node.type.name === 'heading'
+    let defaultIndent = layout.firstLine
+    if (heading || node.attrs.align === 'center' || node.attrs.align === 'right') defaultIndent = 0
+    else {
+      const inside = doc.resolve(position)
+      for (let depth = inside.depth; depth > 0; depth -= 1) {
+        if (inside.node(depth).type.name === 'listItem') { defaultIndent = 0; break }
+      }
+    }
+    height.push([node.attrs.lineHeight, heading ? headingLineHeight : layout.lineHeight])
+    indent.push([node.attrs.firstLine, defaultIndent])
+  }
+  if (selection.empty) {
+    readMarks(storedMarks ?? $from.marks())
+    readBlock($from.parent, from)
+  } else {
+    doc.nodesBetween(from, to, (node, pos) => {
+      if (node.isText) readMarks(node.marks)
+      else readBlock(node, pos + 1)
+    })
+  }
+  return {
+    letterSpacing: numericSelection(spacing, DEFAULT_LETTER_SPACING),
+    lineHeight: numericSelection(height, layout.lineHeight),
+    firstLine: numericSelection(indent, layout.firstLine),
   }
 }

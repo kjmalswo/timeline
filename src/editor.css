@@ -164,7 +164,7 @@
   scrollbar-color: #cbbfdd transparent;
   background: radial-gradient(ellipse at 51% 0%, #f6f3fc, #efecf5 67%);
 }
-.single-sheet-area { width: max(100%, var(--paper-view-width)); display: grid; justify-items: center; }
+.single-sheet-area { width: max(100%, var(--paper-view-width)); display: grid; justify-items: center; gap: 18px; }
 .single-sheet-area .paper-article { width: var(--paper-base-width); zoom: var(--paper-view-scale); }
 .paper-article {
   --body-image-max: calc(var(--trim-height) - var(--m-top) - var(--m-bottom) - 6mm);
@@ -195,12 +195,12 @@
 }
 .editor-chapter-title:hover { box-shadow: 0 1px 0 #e4d9ee; }
 .chapter-switch { text-align: start; white-space: nowrap; overflow: hidden; }
-.chapter-entry + .chapter-entry { margin-block-start: 2.25em; }
 .chapter-heading { display: flow-root; break-inside: avoid; break-after: avoid; }
 .chapter-body p:empty::after { content: '\00a0'; }
 .paper-body {
   font-family: var(--paper-font);
   font-size: var(--paper-font-size);
+  letter-spacing: var(--paper-letter-spacing);
   font-synthesis: style;
   line-height: var(--paper-line-height);
   color: #292433;
@@ -212,7 +212,7 @@
 .paper-body li p { text-indent: 0; margin-bottom: .22em; }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
 .paper-body p:last-child { margin-bottom: 0; }
-.paper-body :is(h1, h2, h3) { font-family: inherit; margin: 1em 0 .45em; line-height: 1.45; }
+.paper-body :is(h1, h2, h3) { font-family: inherit; margin: 1em 0 .45em; line-height: var(--heading-line-height); }
 .paper-body h1 { font-size: 1.63em; }
 .paper-body h2 { font-size: 1.37em; }
 .paper-body h3 { font-size: 1.18em; }
@@ -242,7 +242,7 @@
 .editor-photo-busy, .editor-photo-error { font-size: 11px; color: var(--muted); }
 .editor-photo-error { border: 0; padding: 4px; color: #963d35; background: #fff4ee; border-radius: 5px; }
 .paper-body .tiptap { outline: none; caret-color: var(--purple-ink); }
-.paper-article > .chapter-entry:only-child .tiptap { min-height: 13em; }
+.paper-article .tiptap { min-height: 13em; }
 .paper-body .tiptap:has(> p:only-child > br.ProseMirror-trailingBreak:only-child) > p::before {
   content: '여기에 원고를 작성하세요.';
   float: left;
@@ -330,6 +330,7 @@
   orphans: 2;
   widows: 2;
 }
+.spread-manuscript .chapter-entry + .chapter-entry { -webkit-column-break-before: always; break-before: column; }
 .spread-manuscript .paper-body :is(h1, h2, h3) { break-after: avoid-column; }
 
 .editor-footer {
@@ -443,6 +444,7 @@
 .writer-delete { margin-top: 10px; color: #a03757; }
 .editor-focused :is(.editor-header, .toolbar, .chapter-rail, .writer-dock, .editor-footer) { display: none; }
 .focus-exit { position: absolute; z-index: 3; inset: auto auto 13px 14px; min-height: 34px; font-size: 11.5px; }
+.focus-history { position: absolute; z-index: 3; inset: 12px 14px auto auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 
 .output-dialog { width: min(calc(100% - 26px), 472px); }
 .print-spec {
@@ -500,6 +502,9 @@
 @media (max-width: 640px) {
   .editor-header { gap: 5px; min-height: 52px; }
   .editor-header .header-divider, .back-button span, .editor-header-right .account-button > span:not(.account-avatar), .editor-action span { display: none; }
+  .paper-view-toggle { padding-inline: 5px; white-space: nowrap; }
+  .paper-view-toggle span { display: inline; font-size: 10px; }
+  .paper-view-toggle svg { display: none; }
   .editor-header .back-button { padding: 4px 2px; }
   .editor-book-title { font-size: 12.5px; padding-inline: 3px; }
   .save-status { font-size: 0; }
@@ -525,6 +530,7 @@
   .print-front { page: yeobaek-cover; width: var(--front-width); height: var(--front-height); }
   .print-front + .print-text { break-before: page; }
   .print-wrap .cover-wrap { width: var(--wrap-width); height: var(--wrap-height); }
+  .print-chapter + .print-chapter { break-before: page; }
   .print-chapter h2 { font-size: 17pt; font-weight: 780; margin: 3mm 0 8mm; }
   .print-manuscript .paper-body :is(h1, h2, h3) { break-after: avoid; }
   .paper-body p { orphans: 2; widows: 2; }

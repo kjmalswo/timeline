@@ -9,6 +9,8 @@ import './cover.css'
 import { Dashboard } from './dashboard.jsx'
 import { AccountDialog, AuthDialog, ConflictDialog, CreateDialog, Dialog } from './dialogs.jsx'
 import { useLibrary } from './library.js'
+import { historyShortcut } from './keyboard.js'
+import { readWritingView, saveWritingView } from './writing-view.js'
 
 const WritingEditor = lazy(() => import('./editor.jsx').then(module => ({ default: module.WritingEditor })))
 const shelfViews = new Set(['library', 'favorites', 'trash'])
@@ -24,9 +26,12 @@ function App() {
   const [route, setRoute] = useState(readRoute)
   const [modal, setModal] = useState(null)
   const [issueId, setIssueId] = useState(null)
+  const [writingView, setWritingView] = useState(readWritingView)
+  const currentWritingView = useRef(writingView)
 
   const previousBook = useRef(route.id)
   const authRoute = useRef(null)
+  const historyAction = useRef(null)
 
   useEffect(() => {
     function onHashChange() { setRoute(readRoute()) }
@@ -45,6 +50,47 @@ function App() {
     setRoute({ view, id })
     window.scrollTo(0, 0)
   }
+
+  function moveHistory(direction) {
+    const field = document.activeElement
+    if (field?.dataset.bookDraft) {
+      const commitDraft = field.dataset.bookDraft === 'change'
+      field.blur()
+      if (!commitDraft) return
+    }
+    const change = library.stepHistory(direction)
+    if (change?.view) applyWritingView(change.view)
+    const changedBook = change?.book
+    if (!changedBook || route.view !== 'book') return
+    if (changedBook.trashed && changedBook.id === route.id) navigate('library')
+    else if (!changedBook.trashed && changedBook.id !== route.id) navigate('book', changedBook.id)
+  }
+
+  function applyWritingView(fields) {
+    const next = { ...currentWritingView.current, ...fields }
+    currentWritingView.current = next
+    setWritingView(next)
+    saveWritingView(fields)
+  }
+
+  function changeWritingView(fields) {
+    const previous = Object.fromEntries(Object.keys(fields).map(key => [key, currentWritingView.current[key]]))
+    if (Object.keys(fields).every(key => previous[key] === fields[key])) return
+    library.recordView(route.id, previous, fields)
+    applyWritingView(fields)
+  }
+
+  historyAction.current = moveHistory
+  useEffect(() => {
+    function onHistoryKey(event) {
+      const direction = historyShortcut(event)
+      if (!direction || event.defaultPrevented || document.querySelector('dialog[open]') || event.target?.matches?.('input[type="search"]')) return
+      event.preventDefault()
+      historyAction.current(direction)
+    }
+    window.addEventListener('keydown', onHistoryKey, true)
+    return () => window.removeEventListener('keydown', onHistoryKey, true)
+  }, [])
 
   function requestRoute(view, id) {
     if (library.user || view === 'library') {
@@ -102,11 +148,13 @@ function App() {
     <>
       {route.view !== 'book' ? (
         <Dashboard library={library} view={library.user ? route.view : 'library'} onNavigate={requestRoute}
-          onOpen={id => requestRoute('book', id)} onCreate={requestNewBook} onAccount={openAccount} onSaveStatus={resolveIssue} />
+          onOpen={id => requestRoute('book', id)} onCreate={requestNewBook} onAccount={openAccount}
+          onSaveStatus={resolveIssue} onHistory={moveHistory} />
       ) : book && chapter ? (
         <Suspense fallback={<main className="missing-book" role="status">편집기를 여는 중…</main>}>
           <WritingEditor key={library.user.id + '/' + book.id} book={book} chapter={chapter} library={library}
-            onBack={() => navigate('library')} onAccount={openAccount} onSaveStatus={() => resolveIssue(book.id)} />
+            writingView={writingView} onViewChange={changeWritingView}
+            onBack={() => navigate('library')} onAccount={openAccount} onSaveStatus={() => resolveIssue(book.id)} onHistory={moveHistory} />
         </Suspense>
       ) : (
         <main className="missing-book">

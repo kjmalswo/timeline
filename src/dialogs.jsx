@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { BookOpen, Check, Cloud, Feather, Layers, LockKeyhole, Sparkles, X } from 'lucide-react'
 import { COVERS, newBook, PAPERS, TEMPLATES } from './catalog.js'
+import { handleDraftHistory, HistoryButtons, useDraftHistory } from './history-controls.jsx'
 
 const templateIcons = { feather: Feather, book: BookOpen, sparkles: Sparkles, layers: Layers }
 
-export function Dialog({ title, description, onClose, className = '', children }) {
+export function Dialog({ title, description, onClose, onKeyDown, className = '', children }) {
   const ref = useRef(null)
   useEffect(() => {
     const dialog = ref.current
@@ -13,6 +14,7 @@ export function Dialog({ title, description, onClose, className = '', children }
   }, [])
   return (
     <dialog ref={ref} className={'dialog ' + className} aria-labelledby="dialog-title"
+      onKeyDown={onKeyDown}
       onCancel={event => { event.preventDefault(); onClose() }}
       onClick={event => { if (event.target === event.currentTarget) onClose() }}>
       <div className="dialog-inner">
@@ -26,15 +28,17 @@ export function Dialog({ title, description, onClose, className = '', children }
 }
 
 export function CreateDialog({ onClose, onCreate }) {
-  const [template, setTemplate] = useState('essay')
-  const [cover, setCover] = useState(TEMPLATES.essay.cover)
-  const [paper, setPaper] = useState(TEMPLATES.essay.layout.paper)
-  const [title, setTitle] = useState('')
+  const draft = useDraftHistory(() => ({ template: 'essay', cover: TEMPLATES.essay.cover, paper: TEMPLATES.essay.layout.paper, title: '' }))
+  const { template, cover, paper, title } = draft.value
+
+  function set(field, value, group) {
+    draft.change(current => current[field] === value ? current : { ...current, [field]: value }, { group })
+  }
 
   function choose(key) {
-    setTemplate(key)
-    setCover(TEMPLATES[key].cover)
-    setPaper(TEMPLATES[key].layout.paper)
+    const choice = TEMPLATES[key]
+    draft.change(current => current.template === key && current.cover === choice.cover && current.paper === choice.layout.paper ? current :
+      { ...current, template: key, cover: choice.cover, paper: choice.layout.paper })
   }
 
   function submit(event) {
@@ -43,10 +47,12 @@ export function CreateDialog({ onClose, onCreate }) {
   }
 
   return (
-    <Dialog title="새 책 쓰기" description="책의 분위기에 맞는 서식을 고르세요. 편집기에서 세부 설정을 바꿀 수 있어요." onClose={onClose} className="create-dialog">
+    <Dialog title="새 책 쓰기" description="책의 분위기에 맞는 서식을 고르세요. 편집기에서 세부 설정을 바꿀 수 있어요."
+      onClose={onClose} onKeyDown={event => handleDraftHistory(event, draft.step)} className="create-dialog">
       <form onSubmit={submit}>
+        <HistoryButtons canUndo={draft.canUndo} canRedo={draft.canRedo} onStep={draft.step} />
         <label className="field">책 제목
-          <input value={title} onChange={event => setTitle(event.target.value)} placeholder="예: 나만의 이야기" required maxLength={160} />
+          <input value={title} onChange={event => set('title', event.target.value, 'title')} placeholder="예: 나만의 이야기" required maxLength={160} />
         </label>
         <fieldset className="template-field">
           <legend>기본 서식</legend>
@@ -64,7 +70,7 @@ export function CreateDialog({ onClose, onCreate }) {
         </fieldset>
         <div className="create-options">
           <label className="field">판형
-            <select value={paper} onChange={event => setPaper(event.target.value)}>
+            <select value={paper} onChange={event => set('paper', event.target.value)}>
               {Object.entries(PAPERS).map(([key, option]) => <option key={key} value={key}>{option.name}</option>)}
             </select>
           </label>
@@ -73,7 +79,7 @@ export function CreateDialog({ onClose, onCreate }) {
             <div className="swatches">
               {Object.entries(COVERS).map(([key, option]) => <button type="button" key={key}
                 className={'cover-swatch artwork-' + key} aria-pressed={cover === key} aria-label={option.name}
-                title={option.name} onClick={() => setCover(key)} />)}
+                title={option.name} onClick={() => set('cover', key)} />)}
             </div>
           </fieldset>
         </div>

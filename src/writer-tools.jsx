@@ -67,8 +67,8 @@ export function WriterPanel({ kind, book, chapterId, onChange, onJump, onClose }
     setOpenNote({ id: entry.id, detail: entry.detail })
   }
 
-  function updateNote(id, partial) {
-    onChange(current => current.map(note => note.id === id ? { ...note, ...partial } : note))
+  function updateNote(id, partial, field) {
+    onChange(current => current.map(note => note.id === id ? { ...note, ...partial } : note), field ? id + ':' + field : undefined)
   }
 
   return <aside className="writer-panel" aria-label={tool.name}>
@@ -82,7 +82,7 @@ export function WriterPanel({ kind, book, chapterId, onChange, onJump, onClose }
     <div className="writer-entries">
       {entries.map(note => {
         const open = openNote?.id === note.id
-        const update = partial => updateNote(note.id, partial)
+        const update = (partial, field) => updateNote(note.id, partial, field)
         return <section className="writer-entry" key={note.id}>
           <button type="button" className="writer-entry-toggle" aria-expanded={open}
             onClick={() => setOpenNote(open ? null : { id: note.id, detail: note.detail })}>
@@ -91,13 +91,13 @@ export function WriterPanel({ kind, book, chapterId, onChange, onJump, onClose }
           </button>
           {open && <div className="writer-entry-fields">
             <label className="field">{tool.title}
-              <input value={note.title} autoFocus maxLength={NOTE_TITLE_LIMIT} onChange={event => update({ title: event.target.value })} />
+              <input value={note.title} autoFocus maxLength={NOTE_TITLE_LIMIT} onChange={event => update({ title: event.target.value }, 'title')} />
             </label>
             {tool.detail && <label className="field">{tool.detail}
-              <input value={note.detail} maxLength={NOTE_TITLE_LIMIT} onChange={event => update({ detail: event.target.value })} />
+              <input value={note.detail} maxLength={NOTE_TITLE_LIMIT} onChange={event => update({ detail: event.target.value }, 'detail')} />
             </label>}
             <label className="field">{tool.body}
-              <textarea value={note.body} rows={4} maxLength={NOTE_BODY_LIMIT} onChange={event => update({ body: event.target.value })} />
+              <textarea value={note.body} rows={4} maxLength={NOTE_BODY_LIMIT} onChange={event => update({ body: event.target.value }, 'body')} />
             </label>
             <ChapterLink label={isForeshadow ? '단서를 심은 장' : '관련 장'} value={note.chapterId} chapters={book.chapters}
               onChange={chapterId => update({ chapterId })} onJump={onJump} />

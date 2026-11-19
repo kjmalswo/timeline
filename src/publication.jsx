@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import { BookOpen, FileDown, Printer } from 'lucide-react'
 import { FONTS, PAPERS, TEMPLATES } from './catalog.js'
 import { Dialog } from './dialogs.jsx'
+import { handleDraftHistory, HistoryButtons, useDraftHistory } from './history-controls.jsx'
 import { paperStyle } from './document.js'
 import { FormattedChapter } from './chapter-flow.jsx'
 import { CoverWrap, coverSize, FrontCover } from './spine.jsx'
@@ -51,11 +52,14 @@ function PrintSpecification({ book }) {
 }
 
 function PrintSettings({ book, onClose, onPrint }) {
-  const [includeCover, setIncludeCover] = useState(true)
-  return <Dialog className="output-dialog" title="인쇄 설정" onClose={onClose}>
+  const draft = useDraftHistory(() => ({ includeCover: true }))
+  const { includeCover } = draft.value
+  return <Dialog className="output-dialog" title="인쇄 설정" onClose={onClose} onKeyDown={event => handleDraftHistory(event, draft.step)}>
     <PrintSpecification book={book} />
-    <label className="output-checkbox"><input type="checkbox" checked={includeCover} onChange={event => setIncludeCover(event.target.checked)} /> 앞표지 포함</label>
+    <label className="output-checkbox"><input type="checkbox" checked={includeCover}
+      onChange={event => draft.change(() => ({ includeCover: event.target.checked }))} /> 앞표지 포함</label>
     <div className="dialog-actions">
+      <HistoryButtons canUndo={draft.canUndo} canRedo={draft.canRedo} onStep={draft.step} />
       <button type="button" className="button button-secondary" onClick={onClose}>취소</button>
       <button type="button" className="button button-primary" onClick={() => onPrint('manuscript', includeCover)}><Printer size={17} /> 인쇄 창 열기</button>
     </div>

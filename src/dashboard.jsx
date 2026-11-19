@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { COVERS, relativeDate, STATUSES, TEMPLATES } from './catalog.js'
 import { CoverArtwork } from './cover-artwork.jsx'
+import { HistoryButtons } from './history-controls.jsx'
 
 const views = {
   library: { label: '내 서재', icon: BookOpen },
@@ -138,7 +139,7 @@ function Hero({ book, onOpen, onCreate }) {
   )
 }
 
-export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccount, onSaveStatus }) {
+export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccount, onSaveStatus, onHistory }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('recent')
   const [mode, setMode] = useState('grid')
@@ -191,7 +192,10 @@ export function Dashboard({ library, view, onNavigate, onOpen, onCreate, onAccou
         <main className="dashboard">
           <div className="page-heading">
             <div><h1>{views[view].label}</h1><p>{subtitle}</p></div>
-            {view !== 'trash' && <button type="button" className="button button-primary new-book-button" onClick={onCreate}><Plus size={19} strokeWidth={2.1} /> 신규 작성</button>}
+            <div className="shelf-heading-actions">
+              {library.user && <HistoryButtons canUndo={library.canUndo} canRedo={library.canRedo} onStep={onHistory} />}
+              {view !== 'trash' && <button type="button" className="button button-primary new-book-button" onClick={onCreate}><Plus size={19} strokeWidth={2.1} /> 신규 작성</button>}
+            </div>
           </div>
 
           {view === 'library' && !needle && <Hero book={latest} onOpen={() => onOpen(latest.id)} onCreate={onCreate} />}

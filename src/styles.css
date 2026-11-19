@@ -68,6 +68,10 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 }
 .icon-button:hover:not(:disabled) { color: var(--purple-ink); background: var(--purple-light); }
 .icon-button:disabled { opacity: .37; }
+.history-buttons, .shelf-heading-actions { display: flex; align-items: center; gap: 3px; }
+.history-buttons .icon-button { width: 30px; height: 32px; flex: 0 0 auto; }
+.shelf-heading-actions { gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.dialog form > .history-buttons { margin-bottom: 10px; }
 .text-button {
   background: none;
   border: 0;
