@@ -11,7 +11,7 @@ const ignoredTags = new Set(['applet', 'audio', 'button', 'embed', 'form', 'head
   'script', 'style', 'svg', 'template', 'title', 'video'])
 const textStyles = {
   textAlign: /^(left|right|center|justify|start|end)$/,
-  fontSize: /^(?:\d|[1-4]\d)(?:\.\d{1,2})?(?:pt|px)$/,
+  fontSize: /^(?:\d|[1-6]\d|7[0-2])(?:\.\d{1,2})?(?:pt|px)$/,
   fontWeight: /^(normal|bold|[1-9]\d{2})$/,
   fontStyle: /^(normal|italic|oblique)$/,
   fontFamily: /^[\p{L}\d ,"'-]{1,140}$/u,
@@ -20,7 +20,7 @@ const textStyles = {
   textIndent: /^\d(?:\.\d{1,2})?em$/,
   letterSpacing: /^-?0(?:\.\d{1,3})?em$/,
   marginInlineStart: /^\d(?:\.\d{1,2})?em$/,
-  marginBottom: /^(?:[0-2](?:\.\d{1,2})?|3(?:\.0{1,2})?)em$/,
+  marginBottom: /^(?:(?:[0-2](?:\.\d{1,2})?|3(?:\.0{1,2})?)em|\d{1,3}(?:\.\d{1,3})?pt)$/,
 }
 
 function archivePath(href, directoryFile = '') {

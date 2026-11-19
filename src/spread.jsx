@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { pixelsPerMillimeter } from './catalog.js'
 import { pageNumberAlignment, pageNumberPosition } from './page-numbers.js'
 
-export const pixelsPerMillimeter = 96 / 25.4
 const seam = 4
 const minimumScale = 0.58
 
@@ -131,7 +131,7 @@ export function WritingSpread({ editor, paper, layout, style, activeId, chapterL
       view.removeEventListener('load', remeasure, true)
     }
   }, [editor, activeId, chapterLayout, restoreCursor, pitch, columnWidth, scale, step, windowWidth, paper.height, top, bottom,
-    layout.font, layout.fontSize, layout.lineHeight, layout.paragraphSpacing, layout.firstLine])
+    layout.font, layout.fontSize, layout.letterSpacing, layout.lineHeight, layout.paragraphSpacing, layout.firstLine])
 
   function turn(amount) {
     following.current = false

@@ -4,7 +4,7 @@ import { BookOpen, FileDown, Printer } from 'lucide-react'
 import { FONTS, PAPERS, TEMPLATES } from './catalog.js'
 import { Dialog } from './dialogs.jsx'
 import { handleDraftHistory, HistoryButtons, useDraftHistory } from './history-controls.jsx'
-import { paragraphSpacing, paperStyle } from './document.js'
+import { letterSpacing, paragraphSpacing, paragraphSpacingPoints, paperStyle } from './document.js'
 import { FormattedChapter } from './chapter-flow.jsx'
 import { ChapterHeading } from './chapter-heading.jsx'
 import { PAGE_NUMBER_POSITIONS, pageNumberPosition, printPageNumbers } from './page-numbers.js'
@@ -46,7 +46,7 @@ function PrintSpecification({ book }) {
   return <dl className="print-spec">
     <dt>서식</dt><dd>{TEMPLATES[book.template].name}</dd>
     <dt>판형</dt><dd>{paper.name} ({paper.width} × {paper.height} mm)</dd>
-    <dt>본문</dt><dd>{FONTS[layout.font].name} {layout.fontSize} pt · 행간 {layout.lineHeight}배 · 문단 간격 {paragraphSpacing(layout)} em · 들여쓰기 {layout.firstLine}자</dd>
+    <dt>본문</dt><dd>{FONTS[layout.font].name} {layout.fontSize} pt · 자간 {letterSpacing(layout)} em · 행간 {layout.lineHeight}배 · 문단 간격 {paragraphSpacingPoints(paragraphSpacing(layout), layout)} pt · 들여쓰기 {layout.firstLine}자</dd>
     <dt>여백</dt><dd>위 {top} · 오른쪽 {right} · 아래 {bottom} · 왼쪽 {left} mm</dd>
     <dt>페이지 번호</dt><dd>{PAGE_NUMBER_POSITIONS[pageNumberPosition(layout)]}</dd>
   </dl>

@@ -4,7 +4,7 @@ import { getSchema } from '@tiptap/core'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { sanitizeBook } from '../server/books.js'
 import { makeDocument, newBook, newChapter } from '../src/catalog.js'
-import { formatSelection, paragraphSpacing, paperStyle, writingExtensions } from '../src/document.js'
+import { formatSelection, paragraphSpacing, paperStyle, updateManuscriptLayout, writingExtensions } from '../src/document.js'
 import { bookChange, createHistory, restoreBook } from '../src/history.js'
 import { historyShortcut } from '../src/keyboard.js'
 import { createDocumentSerializer, editPosition, restoreManuscript, typingGroup } from '../src/manuscript-history.js'
@@ -120,13 +120,36 @@ test('paragraph spacing and page number settings survive saving and sharing', ()
   book.chapters[0].content.content[0].attrs = { paragraphSpacing: 1.5 }
 
   const copy = readingCopy(sanitizeBook(book, book.id))
-  assert.equal(paperStyle(copy.layout)['--paper-paragraph-spacing'], '0em')
+  assert.equal(paperStyle(copy.layout)['--paper-paragraph-spacing'], '0pt')
   assert.equal(pageNumberAlignment(pageNumberPosition(copy.layout), 0), 'center')
   assert.match(printPageNumbers(copy.layout), /@bottom-center \{ content: counter\(page\)/)
   const schema = getSchema(writingExtensions)
   const node = schema.nodeFromJSON(copy.chapters[0].content).firstChild
-  assert.match(node.type.spec.toDOM(node)[1].style, /margin-bottom: 1\.5em/)
+  assert.equal(node.type.spec.toDOM(node)[1]['data-paragraph-spacing'], 1.5)
+  assert.match(node.type.spec.toDOM(node)[1].style, /margin-bottom: calc\(1\.5 \* var\(--paper-paragraph-unit/)
 
   book.layout.pageNumberPosition = 'top'
   assert.throws(() => sanitizeBook(book, book.id), /Invalid manuscript/)
+})
+
+test('base font size changes the manuscript type while paragraph gaps stay fixed', () => {
+  const book = newBook({ title: '원고', template: 'novel', paper: 'b6', cover: 'ivory' })
+  const content = makeDocument('기본 본문', '별도 크기')
+  content.content[1].attrs = { paragraphSpacing: 1.5 }
+  content.content[1].content[0].marks = [{ type: 'textStyle', attrs: { fontSize: 14, color: '#292433' } }]
+  book.chapters[0].content = content
+  const changed = updateManuscriptLayout(book, { fontSize: 12, letterSpacing: 0.08 })
+  const saved = sanitizeBook(changed, book.id)
+  const style = paperStyle(saved.layout)
+  assert.equal(style['--paper-font-size'], '12pt')
+  assert.equal(style['--paper-letter-spacing'], '0.08em')
+  assert.equal(style['--paper-paragraph-spacing'], paperStyle(book.layout)['--paper-paragraph-spacing'])
+  assert.equal(style['--paper-paragraph-unit'], '10.5pt')
+  assert.equal(changed.chapters[0].content.content[0], content.content[0])
+  assert.equal(saved.chapters[0].content.content[1].attrs.paragraphSpacing, 1.5)
+  assert.deepEqual(saved.chapters[0].content.content[1].content[0].marks[0].attrs, { fontSize: 16, color: '#292433' })
+
+  const state = EditorState.create({ doc: getSchema(writingExtensions).nodeFromJSON(saved.chapters[0].content) })
+  assert.deepEqual(formatSelection(state, saved.layout).letterSpacing, { selected: '', base: 0.08 })
+  assert.deepEqual(restoreBook(saved, bookChange(book, changed).before).chapters, book.chapters)
 })

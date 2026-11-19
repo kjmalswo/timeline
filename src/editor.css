@@ -213,6 +213,8 @@
 .paper-body {
   font-family: var(--paper-font);
   font-size: var(--paper-font-size);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   letter-spacing: var(--paper-letter-spacing);
   font-synthesis: style;
   line-height: var(--paper-line-height);
@@ -225,10 +227,11 @@
 .paper-body li p { text-indent: 0; margin-bottom: var(--list-paragraph-spacing); }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
 .paper-body p:last-child { margin-bottom: 0; }
-.paper-body :is(h1, h2, h3) { font-family: inherit; margin: 1em 0 var(--heading-paragraph-spacing); line-height: var(--heading-line-height); }
-.paper-body h1 { font-size: 1.63em; }
-.paper-body h2 { font-size: 1.37em; }
-.paper-body h3 { font-size: 1.18em; }
+.paper-body :is(h1, h2, h3) { font-family: inherit; font-size: calc(var(--heading-scale) * 1em);
+  margin: 1em 0 calc(var(--heading-scale) * var(--heading-paragraph-spacing)); line-height: var(--heading-line-height); }
+.paper-body h1 { --heading-scale: var(--heading-1-scale); }
+.paper-body h2 { --heading-scale: var(--heading-2-scale); }
+.paper-body h3 { --heading-scale: var(--heading-3-scale); }
 .paper-body blockquote { border-left: .16em solid #dbd1e8; margin: .65em 0; padding-inline-start: .76em; color: #5c5268; }
 .paper-body :is(ul, ol) { padding-inline-start: 1.52em; margin: .5em 0; }
 .paper-body hr { border: 0; border-top: 1px solid #ded5e8; margin: 1em 0; }

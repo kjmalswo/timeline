@@ -1,5 +1,5 @@
 import { getSchema } from '@tiptap/core'
-import { ALIGNS, COLORS, inRange, MAX_PARAGRAPH_SPACING, writingExtensions } from '../src/document.js'
+import { ALIGNS, COLORS, inRange, LETTER_SPACING_RANGE, MAX_PARAGRAPH_SPACING, TEXT_SIZE_RANGE, writingExtensions } from '../src/document.js'
 import { COVERS, FONTS, PAPERS, STATUSES, TEMPLATES } from '../src/catalog.js'
 import {
   COVER_LAYER_LIMIT, COVER_STROKE_LIMIT, COVER_TEXT_LIMIT, SPINE_WIDTH_RANGE, STROKE_POINT_LIMIT, coverAlignments, photoFits, validColor,
@@ -160,8 +160,8 @@ function sanitizeDocument(document) {
         const source = mark.attrs ?? {}
         const attrs = {}
         if (Object.hasOwn(FONTS, source.font)) attrs.font = source.font
-        if (inRange(source.fontSize, 6, 72)) attrs.fontSize = source.fontSize
-        if (inRange(source.letterSpacing, -0.15, 0.3)) attrs.letterSpacing = source.letterSpacing
+        if (inRange(source.fontSize, TEXT_SIZE_RANGE.min, TEXT_SIZE_RANGE.max)) attrs.fontSize = source.fontSize
+        if (inRange(source.letterSpacing, LETTER_SPACING_RANGE.min, LETTER_SPACING_RANGE.max)) attrs.letterSpacing = source.letterSpacing
         if (COLORS.includes(source.color)) attrs.color = source.color
         return { type: mark.type, attrs }
       })
@@ -205,9 +205,11 @@ export function sanitizeBook(source, id) {
     favorite: source.favorite === true, trashed: source.trashed === true, chapters: cleanChapters,
     layout: {
       paper: layout.paper, font: layout.font, margins,
-      fontSize: range(layout.fontSize, 6, 72),
+      fontSize: range(layout.fontSize, TEXT_SIZE_RANGE.min, TEXT_SIZE_RANGE.max),
+      ...(layout.letterSpacing == null ? {} : { letterSpacing: range(layout.letterSpacing, LETTER_SPACING_RANGE.min, LETTER_SPACING_RANGE.max) }),
       lineHeight: range(layout.lineHeight, 1, 3),
       ...(layout.paragraphSpacing == null ? {} : { paragraphSpacing: range(layout.paragraphSpacing, 0, MAX_PARAGRAPH_SPACING) }),
+      ...(layout.paragraphSpacingUnit == null ? {} : { paragraphSpacingUnit: range(layout.paragraphSpacingUnit, TEXT_SIZE_RANGE.min, TEXT_SIZE_RANGE.max) }),
       ...(layout.pageNumberPosition == null ? {} : { pageNumberPosition: layout.pageNumberPosition }),
       firstLine: range(layout.firstLine, 0, 6),
     },

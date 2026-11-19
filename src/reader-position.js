@@ -1,18 +1,20 @@
-import { PAPERS } from './catalog.js'
+import { PAPERS, pixelsPerMillimeter } from './catalog.js'
+
+const gap = 5
 
 export function readerPageSize(box, layout, mode) {
   const visible = box.width >= 720 && mode !== 'single' ? 2 : 1
   const paper = PAPERS[layout.paper]
-  const ratio = paper.width / paper.height
-  const gap = visible === 2 ? 5 : 9
-  const width = Math.max(1, Math.floor(Math.min((box.width - gap * (visible - 1)) / visible, box.height * ratio)))
-  const height = Math.max(1, Math.floor(width / ratio))
-  const margin = (side, size, trim, maximum) => Math.min(size * maximum, Math.max(12, layout.margins[side] * size / trim))
-  const left = margin('left', width, paper.width, .19)
-  const right = margin('right', width, paper.width, .19)
-  const top = margin('top', height, paper.height, .17)
-  const bottom = margin('bottom', height, paper.height, .17)
-  return { visible, width, height, left, right, top, bottom, gap, pitch: width + gap,
+  const pixels = millimeters => Math.round(millimeters * pixelsPerMillimeter)
+  const width = pixels(paper.width)
+  const height = pixels(paper.height)
+  const left = pixels(layout.margins.left)
+  const right = pixels(layout.margins.right)
+  const top = pixels(layout.margins.top)
+  const bottom = pixels(layout.margins.bottom)
+  const spreadWidth = width * visible + gap * (visible - 1)
+  const fit = Math.min(box.width / spreadWidth, box.height / height)
+  return { visible, width, height, left, right, top, bottom, gap, pitch: width + gap, spreadWidth, fit,
     textWidth: width - left - right, textHeight: height - top - bottom }
 }
 
@@ -30,7 +32,7 @@ export function readingPoint(page, starts, count, chapters) {
 }
 
 export function bookmarkPage(point, starts, count, chapters) {
-  if (!point || !count) return -1
+  if (!point || !count || !starts.length) return -1
   const index = chapters.findIndex(chapter => chapter.id === point.id)
   const fallback = Number.isInteger(point.index) ? Math.max(0, Math.min(point.index, starts.length - 1)) : 0
   const chapter = index < 0 ? fallback : index

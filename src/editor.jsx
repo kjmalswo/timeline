@@ -6,7 +6,7 @@ import {
   CloudAlert, CloudCheck, Eraser, FileDown, FileText, Focus, Italic, Link2, List, ListOrdered, ListTree, Minus, Paintbrush, PencilLine, Plus, Printer,
   Save, Search, SlidersHorizontal, SpellCheck, Trash2, Type, Underline, X,
 } from 'lucide-react'
-import { bookCharacters, characterCount, COVERS, FONTS, newChapter, PAPERS, TEMPLATES } from './catalog.js'
+import { bookCharacters, characterCount, COVERS, FONTS, newChapter, PAPERS, pixelsPerMillimeter, TEMPLATES } from './catalog.js'
 import { AccountButton } from './dashboard.jsx'
 import { Dialog } from './dialogs.jsx'
 import { CoverStudio } from './cover-studio.jsx'
@@ -17,7 +17,7 @@ import { EditorPhotoTools } from './editor-photo.jsx'
 import { isSaveShortcut } from './keyboard.js'
 import { HistoryButtons } from './history-controls.jsx'
 import { createDocumentSerializer, editPosition, formatEdit, historyRestore, marksChanged, restoreManuscript, typingGroup } from './manuscript-history.js'
-import { pixelsPerMillimeter, revealVerticalCaret, WritingSpread } from './spread.jsx'
+import { revealVerticalCaret, WritingSpread } from './spread.jsx'
 import { Publication } from './publication.jsx'
 import { SpineEditor } from './spine.jsx'
 import { WriterDock, WriterPanel, writerShortcut } from './writer-tools.jsx'
@@ -26,8 +26,8 @@ import { setSpelling, spellingExtension, spellingStatus } from './spelling.js'
 import { isReadableBook } from './reader-book.js'
 import { PAGE_NUMBER_POSITIONS, pageNumberPosition } from './page-numbers.js'
 import {
-  BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, LETTER_SPACINGS, LINE_HEIGHTS,
-  PARAGRAPH_SPACINGS, paragraphSpacing, paperStyle, TEXT_SIZES, writingExtensions,
+  BLOCK_INDENTS, COLORS, DEFAULT_ALIGNMENT, formatSelection, INDENTS, letterSpacing, LETTER_SPACINGS, LINE_HEIGHTS,
+  PARAGRAPH_SPACINGS, paragraphSpacing, paragraphSpacingPoints, paperStyle, resizeTextMarks, TEXT_SIZES, updateManuscriptLayout, writingExtensions,
 } from './document.js'
 
 const formatNumber = new Intl.NumberFormat('ko-KR')
@@ -61,17 +61,18 @@ function ToolSelect({ label, title = label, value, onChange, options, className 
   )
 }
 
-function numberOptions(values, label, suffix, active) {
+function numberOptions(values, label, suffix, active, display = String) {
   const configured = typeof active === 'number' && !values.includes(active) ? [...values, active].sort((a, b) => a - b) : values
-  return [['', label], ...configured.map(value => [value, String(value) + suffix])]
+  return [['', label], ...configured.map(value => [value, display(value) + suffix])]
 }
 
-function NumericFormat({ label, values, unit, reading, onChange }) {
+function NumericFormat({ label, values, unit, reading, display = String, onChange }) {
   const { selected, base } = reading
-  const options = numberOptions(values, `${base}${unit} (기본)`, unit, selected)
+  const formattedBase = `${display(base)}${unit}`
+  const options = numberOptions(values, `${formattedBase} (기본)`, unit, selected, display)
     .map(([value, name]) => [value, label + ' ' + name])
   if (selected === 'mixed') options.unshift(['mixed', label + ' 혼합', true])
-  return <ToolSelect label={label} title={`${label} · 기본 ${base}${unit}`} value={selected} options={options}
+  return <ToolSelect label={label} title={`${label} · 기본 ${formattedBase}`} value={selected} options={options}
     onChange={value => onChange(value === '' ? null : Number(value))} />
 }
 
@@ -140,7 +141,8 @@ function Toolbar({ editor, book, history, spellcheck, onSpelling, onFocusMode, o
           onChange={letterSpacing => mark({ letterSpacing })} />
         <NumericFormat label="행간" reading={state.formats.lineHeight} values={LINE_HEIGHTS} unit="배"
           onChange={lineHeight => paragraph({ lineHeight })} />
-        <NumericFormat label="문단 간격" reading={state.formats.paragraphSpacing} values={PARAGRAPH_SPACINGS} unit=" em"
+        <NumericFormat label="문단 간격" reading={state.formats.paragraphSpacing} values={PARAGRAPH_SPACINGS} unit=" pt"
+          display={value => paragraphSpacingPoints(value, layout)}
           onChange={paragraphSpacing => paragraph({ paragraphSpacing })} />
         <NumericFormat label="첫 줄 들여쓰기" reading={state.formats.firstLine} values={INDENTS} unit="자"
           onChange={firstLine => paragraph({ firstLine })} />
@@ -225,7 +227,7 @@ function ChapterRail({ book, chapter, open, onClose, onSelect, onAdd, onMove, on
 }
 
 function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onDirty, onClose }) {
-  const layout = { ...book.layout, paragraphSpacing: paragraphSpacing(book.layout) }
+  const layout = { ...book.layout, paragraphSpacing: paragraphSpacing(book.layout), letterSpacing: letterSpacing(book.layout) }
   const paper = PAPERS[layout.paper]
   return (
     <aside className="design-rail" aria-label="책 디자인 설정">
@@ -265,14 +267,15 @@ function Inspector({ book, onLayout, onCover, onDesignCover, onSpine, onDirty, o
         </label>
         <div className="inspector-pair">
           {[
-            ['fontSize', '크기 (pt)', TEXT_SIZES],
+            ['fontSize', '글자 크기 (pt)', TEXT_SIZES],
+            ['letterSpacing', '자간 (em)', LETTER_SPACINGS],
             ['lineHeight', '행간 (배)', LINE_HEIGHTS],
-            ['paragraphSpacing', '문단 간격 (em)', PARAGRAPH_SPACINGS],
+            ['paragraphSpacing', '문단 간격 (pt)', PARAGRAPH_SPACINGS, value => paragraphSpacingPoints(value, layout)],
             ['firstLine', '첫 줄 들여쓰기', INDENTS],
-          ].map(([key, label, values]) => (
+          ].map(([key, label, values, display]) => (
             <label key={key} className="field">{label}
               <select value={layout[key]} onChange={event => onLayout({ [key]: Number(event.target.value) })}>
-                {numberOptions(values, '', '', layout[key]).slice(1).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
+                {numberOptions(values, '', '', layout[key], display).slice(1).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
               </select>
             </label>
           ))}
@@ -424,17 +427,24 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
 
   useLayoutEffect(() => {
     if (!editor || editor.isDestroyed || editorKeys.current.get(editor) !== documentKey) return
-    const fresh = lastRestore.current?.editor !== editor
-    const restore = replay && replay !== lastRestore.current?.replay
-    if (!fresh && !restore) return
-    lastRestore.current = { editor, replay }
-    const position = restore && replay.position?.chapterId === chapter.id ? replay.position : null
+    const previous = lastRestore.current
+    const fresh = previous?.editor !== editor
+    const restore = replay && replay !== previous?.replay
+    const fontSize = book.layout.fontSize
+    const resized = !fresh && fontSize !== previous.fontSize
+    if (!fresh && !restore && !resized) return
+    lastRestore.current = { editor, replay, fontSize }
+    let position = restore && replay.position?.chapterId === chapter.id ? replay.position : null
+    if (resized && !position) {
+      position = editPosition(editor.state, chapter.id)
+      position.marks = resizeTextMarks(position.marks, fontSize / previous.fontSize)
+    }
     restoreManuscript(editor, {
-      content: !fresh && restore && serialize(editor.state.doc) !== chapter.content ? chapter.content : null,
+      content: !fresh && (restore || resized) && serialize(editor.state.doc) !== chapter.content ? chapter.content : null,
       position,
       cursor: position ? position.cursor : fresh ? initial.cursor : null,
     })
-  }, [editor, documentKey, chapter.id, chapter.content, initial, replay, serialize])
+  }, [editor, documentKey, chapter.id, chapter.content, book.layout.fontSize, initial, replay, serialize])
 
   useLayoutEffect(() => {
     if (focusChapter !== chapter.id || !editor || editor.isDestroyed || editorKeys.current.get(editor) !== documentKey) return
@@ -676,7 +686,7 @@ export function WritingEditor({ book, chapter, library, writingView, onViewChang
             </button>}
           </div>
           {inspect && <Inspector book={book} onClose={() => setInspect(false)} onDirty={setPendingEdit}
-            onLayout={partial => patch(current => ({ ...current, layout: { ...current.layout, ...partial } }))}
+            onLayout={partial => patch(current => updateManuscriptLayout(current, partial))}
             onCover={cover => patch(current => ({ ...current, cover }))} onDesignCover={() => setCoverOpen(true)} onSpine={() => setSpineOpen(true)} />}
           {writerTool && <WriterPanel key={writerTool} kind={writerTool} book={book} chapterId={chapter.id}
             onChange={updateWriterNotes} onJump={jumpFromNote} onClose={() => setWriterTool(null)} />}

@@ -1,3 +1,5 @@
+export const pixelsPerMillimeter = 96 / 25.4
+
 export const PAPERS = {
   b6: { name: '46판 · 문학', width: 128, height: 188 },
   a5: { name: '국판 · A5', width: 148, height: 210 },

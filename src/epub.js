@@ -3,7 +3,7 @@ import { strToU8, zipSync } from 'fflate'
 import { FONTS } from './catalog.js'
 import { chapterLabel, chapterName, headingDefaults, headingStyle } from './chapter-heading.js'
 import { coverAuthor } from './cover-model.js'
-import { DEFAULT_ALIGNMENT, paragraphSpacing, writingExtensions } from './document.js'
+import { DEFAULT_ALIGNMENT, letterSpacing, listParagraphSpacing, paragraphSpacing, paragraphSpacingPoints, writingExtensions } from './document.js'
 import { ebookCover, ebookPhoto } from './ebook-images.js'
 
 const epubType = 'application/epub+zip'
@@ -20,9 +20,9 @@ function xhtml(title, content) {
 
 function stylesheet(layout) {
   return `body { font-family: ${FONTS[layout.font].family}; font-size: ${layout.fontSize}pt; line-height: ${layout.lineHeight}; }
-.paper-body { text-align: ${DEFAULT_ALIGNMENT}; overflow-wrap: anywhere; }
-.paper-body p { margin: 0 0 ${paragraphSpacing(layout)}em; text-indent: ${layout.firstLine}em; }
-.paper-body li p { text-indent: 0; margin-bottom: .22em; }
+.paper-body { text-align: ${DEFAULT_ALIGNMENT}; letter-spacing: ${letterSpacing(layout)}em; overflow-wrap: anywhere; }
+.paper-body p { margin: 0 0 ${paragraphSpacingPoints(paragraphSpacing(layout), layout)}pt; text-indent: ${layout.firstLine}em; }
+.paper-body li p { text-indent: 0; margin-bottom: ${paragraphSpacingPoints(listParagraphSpacing, layout)}pt; }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
 .chapter-kicker { display: block; font-size: ${headingDefaults.labelStyle.fontSize}pt; color: ${headingDefaults.labelStyle.color}; font-weight: bold; }
 .chapter-display-title { font-size: ${headingDefaults.titleStyle.fontSize}pt; font-weight: bold; margin: .3em 0 .9em; }
@@ -54,9 +54,16 @@ function chapterHeader(chapter, index, serializer) {
 async function chapterMarkup(chapter, index, layout, imagePath) {
   const body = document.createElement('div')
   body.className = 'paper-body'
+  body.style.fontFamily = FONTS[layout.font].family
+  body.style.fontSize = layout.fontSize + 'pt'
+  if (layout.letterSpacing != null) body.style.letterSpacing = letterSpacing(layout) + 'em'
   body.innerHTML = generateHTML(chapter.content, writingExtensions)
-  if (layout.paragraphSpacing != null) {
-    const margin = paragraphSpacing(layout) + 'em'
+  for (const block of body.querySelectorAll('[data-paragraph-spacing]')) {
+    block.style.marginBottom = paragraphSpacingPoints(Number(block.dataset.paragraphSpacing), layout) + 'pt'
+    block.removeAttribute('data-paragraph-spacing')
+  }
+  if (layout.paragraphSpacing != null || layout.paragraphSpacingUnit != null) {
+    const margin = paragraphSpacingPoints(paragraphSpacing(layout), layout) + 'pt'
     for (const paragraph of body.querySelectorAll('p')) {
       if (!paragraph.style.marginBottom && !paragraph.closest('li')) paragraph.style.marginBottom = margin
     }
