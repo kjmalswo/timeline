@@ -14,7 +14,7 @@ export function revealVerticalCaret(editor, caret = editor.view.coordsAtPos(edit
   else if (caret.bottom > bounds.bottom - inset) stage.scrollTop += caret.bottom - bounds.bottom + inset
 }
 
-export function WritingSpread({ editor, paper, layout, style, activeId, chapterOrder, restoreCursor, zoom = 1, children }) {
+export function WritingSpread({ editor, paper, layout, style, activeId, chapterLayout, restoreCursor, zoom = 1, children }) {
   const frame = useRef(null)
   const flow = useRef(null)
   const viewport = useRef(null)
@@ -129,7 +129,7 @@ export function WritingSpread({ editor, paper, layout, style, activeId, chapterO
       document.fonts.removeEventListener('loadingdone', remeasure)
       view.removeEventListener('load', remeasure, true)
     }
-  }, [editor, activeId, chapterOrder, restoreCursor, pitch, columnWidth, scale, step, windowWidth, paper.height, top, bottom,
+  }, [editor, activeId, chapterLayout, restoreCursor, pitch, columnWidth, scale, step, windowWidth, paper.height, top, bottom,
     layout.font, layout.fontSize, layout.lineHeight, layout.firstLine])
 
   function turn(amount) {

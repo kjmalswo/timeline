@@ -25,7 +25,6 @@ function stylesheet(layout) {
 .paper-body li p { text-indent: 0; margin-bottom: .22em; }
 .paper-body p[style*='text-align: center'], .paper-body p[style*='text-align: right'] { text-indent: 0; }
 .chapter-kicker { display: block; font-size: ${headingDefaults.labelStyle.fontSize}pt; color: ${headingDefaults.labelStyle.color}; font-weight: bold; }
-.chapter-kicker:only-child { margin-bottom: 1.2em; }
 .chapter-display-title { font-size: ${headingDefaults.titleStyle.fontSize}pt; font-weight: bold; margin: .3em 0 .9em; }
 blockquote { margin: .65em 0; padding-left: .76em; border-left: .16em solid #ddd; }
 figure { margin: .75em auto; break-inside: avoid; }

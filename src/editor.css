@@ -179,7 +179,6 @@
   overflow-wrap: anywhere;
 }
 .chapter-kicker { display: block; width: 100%; color: #75608c; font-size: 9pt; font-weight: 740; letter-spacing: .035em; text-align: start; }
-.chapter-kicker:only-child { margin-bottom: 1.2em; }
 .chapter-kicker.chapter-switch { border: 0; padding: 0; background: transparent; }
 .chapter-display-title {
   margin: 5px 0 20px;
@@ -206,9 +205,9 @@
   text-overflow: ellipsis;
 }
 .editor-chapter-title:hover { box-shadow: 0 1px 0 #e4d9ee; }
-.editor-chapter-title::placeholder { color: #8d829a; font-weight: 490; }
 .chapter-switch { text-align: start; white-space: nowrap; overflow: hidden; }
 .chapter-heading { display: flow-root; break-inside: avoid; break-after: avoid; }
+.chapter-start { height: 0; break-after: avoid; }
 .chapter-body p:empty::after { content: '\00a0'; }
 .paper-body {
   font-family: var(--paper-font);
