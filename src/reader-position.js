@@ -18,6 +18,22 @@ export function readerPageSize(box, layout, mode) {
     textWidth: width - left - right, textHeight: height - top - bottom }
 }
 
+export function measureReaderPages(flow, pitch, textWidth) {
+  const bounds = flow.getBoundingClientRect()
+  const scale = bounds.width / textWidth
+  if (scale <= 0) return null
+
+  const starts = Array.from(flow.querySelectorAll('[data-chapter-anchor]'), anchor =>
+    Math.max(0, Math.round((anchor.getBoundingClientRect().left - bounds.left) / (pitch * scale))))
+  // Some layouts underreport the horizontally overflowing columns. Include the last chapter's rendered fragments.
+  const lastChapter = flow.lastElementChild?.getBoundingClientRect()
+  const renderedEnd = lastChapter ? (lastChapter.right - bounds.left) / scale : 0
+  const count = Math.max(1, (starts.at(-1) ?? 0) + 1,
+    Math.ceil((flow.scrollWidth - textWidth - 2) / pitch) + 1,
+    Math.ceil(renderedEnd / pitch))
+  return { count, starts }
+}
+
 export function pageForSpread(page, count, visible) {
   if (!count || !Number.isFinite(page) || page < 0) return -1
   return Math.floor(Math.min(page, count - 1) / visible) * visible

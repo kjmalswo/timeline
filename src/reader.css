@@ -96,13 +96,12 @@
 .reader-front .cover-artwork img { object-fit: inherit; }
 .reader-spread, .reader-viewport, .reader-sheets { position: absolute; inset: 0; }
 .reader-spread-hidden { visibility: hidden; }
-.reader-viewport { overflow: hidden; }
+.reader-viewport { overflow: hidden; overflow: clip; }
 .reader-sheets { display: grid; grid-template-columns: repeat(var(--reader-visible), var(--reader-width)); gap: var(--reader-gap); }
 .reader-sheet { --page-number-ink: var(--reader-muted); position: relative; background: var(--reader-paper); border: 1px solid var(--reader-edge);
   border-radius: 5px 2px 2px 5px; box-shadow: 1px 4px 0 var(--reader-edge), 3px 9px 22px #211c2230; }
 .reader-sheets:has(> :nth-child(2)) .reader-sheet:first-child { background: linear-gradient(to left, var(--reader-fold), var(--reader-paper) 20px); }
 .reader-sheet:nth-child(2) { border-radius: 2px 5px 5px 2px; background: linear-gradient(to right, var(--reader-fold), var(--reader-paper) 20px); }
-.reader-track { position: relative; height: var(--reader-height); }
 .reader-ink { position: absolute; }
 .reader-columns { column-count: 1; column-fill: auto; orphans: 2; widows: 2; overflow-wrap: anywhere; }
 .reader-chapter + .reader-chapter { -webkit-column-break-before: always; break-before: column; }

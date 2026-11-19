@@ -7,7 +7,7 @@ import { chapterName } from './chapter-heading.js'
 import { Dialog } from './dialogs.jsx'
 import { paperStyle } from './document.js'
 import { pageNumberAlignment, pageNumberPosition } from './page-numbers.js'
-import { bookmarkPage, pageForSpread, readerPageSize, readingPoint } from './reader-position.js'
+import { bookmarkPage, measureReaderPages, pageForSpread, readerPageSize, readingPoint } from './reader-position.js'
 import { FrontCover } from './spine.jsx'
 import { maxZoom, minZoom } from './writing-view.js'
 
@@ -103,7 +103,6 @@ export function BookReader({ book, identity, onBack }) {
   const [initialPoint] = useState(() => readLocal(progressKey))
   const stage = useRef(null)
   const pan = useRef(null)
-  const viewport = useRef(null)
   const columns = useRef(null)
   const touch = useRef(null)
   const progress = useRef(initialPoint)
@@ -162,17 +161,13 @@ export function BookReader({ book, identity, onBack }) {
   useLayoutEffect(() => {
     const flow = columns.current
     if (!flow || !ready || textWidth < 1 || textHeight < 1) return
+    const fonts = document.fonts
     let frame = 0
+    let disposed = false
 
     function measure() {
-      const bounds = flow.getBoundingClientRect()
-      const scale = bounds.width / textWidth
-      if (!scale) return
-      const starts = Array.from(flow.querySelectorAll('[data-chapter-anchor]'), element =>
-        Math.max(0, Math.round((element.getBoundingClientRect().left - bounds.left) / (pitch * scale))))
-      const count = Math.max(1, starts.at(-1) + 1, Math.ceil((flow.scrollWidth - textWidth - 2) / pitch) + 1)
-      const page = bookmarkPage(progress.current, starts, count, book.chapters)
-      updateLocation({ count, starts, page })
+      const pages = measureReaderPages(flow, pitch, textWidth)
+      if (pages) updateLocation({ ...pages, page: bookmarkPage(progress.current, pages.starts, pages.count, book.chapters) })
     }
 
     function schedule() {
@@ -181,18 +176,17 @@ export function BookReader({ book, identity, onBack }) {
     }
 
     measure()
+    if (!showingCover) schedule()
     flow.addEventListener('load', schedule, true)
-    document.fonts?.addEventListener('loadingdone', schedule)
+    fonts?.addEventListener('loadingdone', schedule)
+    fonts?.ready?.then(() => { if (!disposed) schedule() })
     return () => {
+      disposed = true
       cancelAnimationFrame(frame)
       flow.removeEventListener('load', schedule, true)
-      document.fonts?.removeEventListener('loadingdone', schedule)
+      fonts?.removeEventListener('loadingdone', schedule)
     }
-  }, [book, pitch, ready, textHeight, textWidth])
-
-  useLayoutEffect(() => {
-    if (viewport.current) viewport.current.scrollLeft = Math.max(0, spreadPage) * pitch
-  }, [spreadPage, pitch, count, visible])
+  }, [book, pitch, ready, showingCover, textHeight, textWidth])
 
   useLayoutEffect(() => {
     const scroller = pan.current
@@ -317,15 +311,13 @@ export function BookReader({ book, identity, onBack }) {
                   </span>}
                 </div>)}
               </div>
-              <div className="reader-viewport" ref={viewport}>
-                <div className="reader-track" style={{ width: Math.max(visible, spreadCount * visible) * pitch - gap }}>
-                  <article className="reader-ink" style={{ top, left }}>
-                    <div className="reader-columns" ref={columns} style={{ width: textWidth, height: textHeight,
-                      columnGap: left + right + gap, '--body-image-max': Math.max(20, textHeight - 18) + 'px' }}>
-                      <ReaderChapters book={book} />
-                    </div>
-                  </article>
-                </div>
+              <div className="reader-viewport">
+                <article className="reader-ink" style={{ top, left: left - Math.max(0, spreadPage) * pitch, width: textWidth }}>
+                  <div className="reader-columns" ref={columns} style={{ width: textWidth, height: textHeight, columnWidth: textWidth,
+                    columnGap: left + right + gap, '--body-image-max': Math.max(20, textHeight - 18) + 'px' }}>
+                    <ReaderChapters book={book} />
+                  </div>
+                </article>
               </div>
             </div>
           </div>
