@@ -101,10 +101,13 @@ const WritingStyle = Extension.create({
   },
 })
 
-const Ellipsis = Extension.create({
-  name: 'yeobaekEllipsis',
+const Punctuation = Extension.create({
+  name: 'yeobaekPunctuation',
   addInputRules() {
-    return [textInputRule({ find: /\.\.\.$/, replace: '…' })]
+    return [
+      textInputRule({ find: /\.\.\.$/, replace: '…' }),
+      textInputRule({ find: /(?<!-)--$/, replace: '—' }),
+    ]
   },
 })
 
@@ -112,7 +115,7 @@ export const writingExtensions = [
   StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, codeBlock: false, strike: false, code: false, undoRedo: false }),
   TextStyle,
   WritingStyle,
-  Ellipsis,
+  Punctuation,
   ManuscriptImage,
 ]
 
